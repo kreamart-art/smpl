@@ -3,7 +3,7 @@ import cors from 'cors'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { db, seedIfEmpty, pubUser, meUser, rowToBattle, rowToSubmission } from './db.js'
+import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission } from './db.js'
 import { hashPassword, verifyPassword, signToken, verifyToken } from './auth.js'
 import { STATUS, nextStatus } from '../src/data/status.js'
 
@@ -14,6 +14,7 @@ const PORT =
     ? process.env.PORT || 5191
     : process.env.SMPL_API_PORT || 5191
 const seeded = seedIfEmpty()
+migrate()
 
 const app = express()
 app.use(cors())
@@ -188,7 +189,7 @@ app.post('/api/auth/signup', (req, res) => {
     id,
     alias: cleanAlias,
     email: cleanEmail,
-    role: role === 'producer' || role === 'vocalist' ? role : 'listener',
+    role: role === 'producer' || role === 'artist' ? role : 'listener',
     name: String(name || '').trim(),
     dob: String(dob || '').trim(),
     bio: String(bio || '').trim(),
@@ -289,12 +290,12 @@ app.post('/api/battles/:id/attend', requireAuth, (req, res) => {
 app.post('/api/battles/:id/register', requireAuth, (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
   if (!b) return fail(res, 404, 'Battle not found.')
-  const need = b.kind === 'VERSES' ? 'vocalist' : 'producer'
+  const need = b.kind === 'VERSES' ? 'artist' : 'producer'
   if (req.user.role !== need)
     return fail(
       res,
       403,
-      need === 'vocalist' ? 'Only vocalists can claim a verse slot.' : 'Only producers can claim a slot.',
+      need === 'artist' ? 'Only artists can claim a verse slot.' : 'Only producers can claim a slot.',
     )
   if (b.status !== STATUS.OPEN_FOR_SIGNUP) return fail(res, 400, 'Signups are not open.')
   if (b.signups.includes(req.user.id)) return ok(res, {})

@@ -50,7 +50,7 @@ function EditorialHead({ index, kicker, title, live, right }) {
 
 const HOW = [
   ['01', 'ANNOUNCED', 'A curator picks one source — a sample to flip or a beat to rhyme over.'],
-  ['02', 'SIGNUP', 'Producers or vocalists claim a slot. Limited seats per battle.'],
+  ['02', 'SIGNUP', 'Producers or artists claim a slot. Limited seats per battle.'],
   ['03', 'SUBMISSION', 'Everyone interprets the same source. Links go in.'],
   ['04', 'VOTING', 'Drops play anonymously. One vote each. No names.'],
   ['05', 'WINNER', 'The room decides. Names revealed. Soul wins.'],
@@ -92,7 +92,7 @@ export default function Landing() {
             </h1>
             <p className="mt-9 max-w-xl font-mono text-[13px] leading-relaxed text-muted">
               Curators drop one source — a sample to flip, or a beat to rhyme over. Producers and
-              vocalists interpret it; the room votes blind. No names, no clout — just the work.
+              artists interpret it; the room votes blind. No names, no clout — just the work.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Btn to="/signup" variant="solid" size="lg">

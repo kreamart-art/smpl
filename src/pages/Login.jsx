@@ -7,6 +7,7 @@ import { Btn, Field, inputCls, Label } from '../components/ui.jsx'
 const QUICK = [
   { email: 'curator@smpl.app', label: 'Curator', sub: 'manage battles' },
   { email: 'koder@smpl.app', label: 'KODER', sub: 'producer' },
+  { email: 'vex@smpl.app', label: 'VEX', sub: 'artist' },
   { email: 'listener@smpl.app', label: 'earwitness', sub: 'listener' },
 ]
 

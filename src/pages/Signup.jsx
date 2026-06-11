@@ -31,9 +31,9 @@ const ROLES = [
     blurb: 'Flip the sample, submit beats, build a battle record.',
   },
   {
-    key: 'vocalist',
-    title: 'Vocalist',
-    blurb: 'Drop verses on the beat. Rap or sing — one take, judged blind.',
+    key: 'artist',
+    title: 'Artist',
+    blurb: 'Drop verses or vocals on the beat. Rap, sing, spoken word — one take, judged blind.',
   },
   {
     key: 'listener',
@@ -60,7 +60,7 @@ export default function Signup() {
   const { signup } = useApp()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const initialRole = ['vocalist', 'listener'].includes(params.get('role'))
+  const initialRole = ['artist', 'listener'].includes(params.get('role'))
     ? params.get('role')
     : 'producer'
 

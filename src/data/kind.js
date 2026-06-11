@@ -11,9 +11,9 @@ export function kindCopy(kind) {
       glyph: '✎',
       sourceLabel: 'BEAT', // the shared source is a beat
       sourceVerb: 'Drop a verse on',
-      competitor: 'vocalist',
-      competitors: 'vocalists',
-      competitorTitle: 'Vocalists',
+      competitor: 'artist',
+      competitors: 'artists',
+      competitorTitle: 'Artists',
       drop: 'verse',
       drops: 'verses',
       register: 'Claim a verse slot',
@@ -40,5 +40,5 @@ export function kindCopy(kind) {
 }
 
 export function roleLabel(role) {
-  return { producer: 'Producer', vocalist: 'Vocalist', listener: 'Listener', curator: 'Curator' }[role] || role
+  return { producer: 'Producer', artist: 'Artist', listener: 'Listener', curator: 'Curator' }[role] || role
 }

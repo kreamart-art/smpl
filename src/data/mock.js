@@ -144,7 +144,7 @@ export const seedUsers = [
     id: 'u_vex',
     alias: 'VEX',
     email: 'vex@smpl.app',
-    role: 'vocalist',
+    role: 'artist',
     name: 'Naomi Okafor',
     dob: '1997-02-19',
     joinedAt: now - 240 * DAY,
@@ -161,7 +161,7 @@ export const seedUsers = [
     id: 'u_sable',
     alias: 'sable',
     email: 'sable@smpl.app',
-    role: 'vocalist',
+    role: 'artist',
     name: 'Inès Laurent',
     dob: '1995-07-04',
     joinedAt: now - 190 * DAY,
@@ -175,7 +175,7 @@ export const seedUsers = [
     id: 'u_8tongue',
     alias: '8TONGUE',
     email: '8tongue@smpl.app',
-    role: 'vocalist',
+    role: 'artist',
     name: 'Marcus Bell',
     dob: '1993-10-30',
     joinedAt: now - 120 * DAY,
@@ -267,7 +267,7 @@ export const seedBattles = [
     signups: ['u_koder', 'u_mono', 'u_ash', 'u_dither', 'u_vhs'],
     winnerSubmissionId: 's3_mono',
   },
-  // 4 — VERSES battle, voting live (vocalists drop a verse on one beat)
+  // 4 — VERSES battle, voting live (artists drop a verse on one beat)
   {
     id: 'b4',
     kind: 'VERSES',

@@ -8,7 +8,7 @@ import { roleLabel } from '../data/kind.js'
 const TABS = [
   { key: 'all', label: 'ALL' },
   { key: 'producer', label: 'PRODUCERS' },
-  { key: 'vocalist', label: 'VOCALISTS' },
+  { key: 'artist', label: 'ARTISTS' },
 ]
 
 function PersonCard({ user }) {
@@ -87,7 +87,7 @@ export default function People() {
   const creators = useMemo(
     () =>
       users
-        .filter((u) => u.role === 'producer' || u.role === 'vocalist')
+        .filter((u) => u.role === 'producer' || u.role === 'artist')
         .filter((u) => tab === 'all' || u.role === tab)
         .sort((a, b) => followerCount(b.id) - followerCount(a.id)),
     [users, tab, followerCount],

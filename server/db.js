@@ -151,3 +151,9 @@ export function seedIfEmpty() {
 
   return true
 }
+
+// Idempotent migrations applied on every boot (safe to re-run on an existing db).
+export function migrate() {
+  // 2026-06-12: the verses-competitor role "vocalist" was renamed to "artist".
+  db.exec("UPDATE users SET role = 'artist' WHERE role = 'vocalist'")
+}
