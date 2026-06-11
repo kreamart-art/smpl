@@ -1,0 +1,97 @@
+import { Link } from 'react-router-dom'
+import { usePlayback } from '../context/AppContext.jsx'
+import Waveform from './Waveform.jsx'
+import { Glyph } from './AudioPlayer.jsx'
+import { fmtTime } from '../utils/wave.js'
+
+// A single beat row. Anonymous during voting (label = "BEAT #n"), revealed
+// after the winner is declared (label = producer alias, linked to profile).
+export default function BeatPlayer({
+  meta,
+  index,
+  noun = 'BEAT',
+  revealed = false,
+  alias,
+  votes,
+  showVotes = false,
+  isWinner = false,
+  rank,
+  rightSlot,
+}) {
+  const { track, playing, elapsed, toggle, playAt } = usePlayback()
+  const isCurrent = track?.id === meta.id
+  const isPlaying = isCurrent && playing
+  const progress = isCurrent ? elapsed / meta.duration : 0
+
+  return (
+    <div
+      className={`border ${
+        isWinner ? 'border-ink' : 'border-line'
+      } ${isWinner ? 'bg-ink text-bg' : 'bg-panel text-ink'}`}
+    >
+      <div
+        className={`flex items-center justify-between px-3 py-2 border-b ${
+          isWinner ? 'border-black/30' : 'border-line'
+        }`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          {typeof rank === 'number' ? (
+            <span className="font-mono text-[11px] tnum opacity-70">
+              {String(rank).padStart(2, '0')}
+            </span>
+          ) : null}
+          <span className="truncate font-mono text-[11px] uppercase tracking-[0.16em]">
+            {revealed && alias ? (
+              <Link to={`/profile/${encodeURIComponent(alias)}`} className="underline-offset-4 hover:underline">
+                @{alias}
+              </Link>
+            ) : (
+              `${noun} #${index}`
+            )}
+          </span>
+          {isWinner ? <span className="font-mono text-[10px] font-bold">★ WINNER</span> : null}
+        </div>
+        <div className="flex items-center gap-3">
+          {showVotes ? (
+            <span className="font-mono text-[11px] tnum">
+              {votes} {votes === 1 ? 'vote' : 'votes'}
+            </span>
+          ) : null}
+          <span className="font-mono text-[10px] tnum opacity-70">
+            {fmtTime(isCurrent ? elapsed : 0)}/{fmtTime(meta.duration)}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-stretch">
+        <button
+          onClick={() => toggle(meta)}
+          aria-label={isPlaying ? 'pause' : 'play'}
+          className={`flex w-12 shrink-0 items-center justify-center border-r transition-colors ${
+            isWinner
+              ? 'border-black/30 hover:bg-black hover:text-ink'
+              : 'border-line hover:bg-ink hover:text-bg'
+          }`}
+        >
+          <Glyph playing={isPlaying} />
+        </button>
+        <div className="flex-1 px-3 py-2 min-w-0">
+          <Waveform
+            seed={meta.seed}
+            progress={progress}
+            onSeek={(f) => playAt(meta, f)}
+            height={34}
+            bars={72}
+            playedClass={isWinner ? 'bg-bg' : 'bg-ink'}
+            baseClass={isWinner ? 'bg-black/40' : 'bg-line-bright'}
+          />
+        </div>
+        {rightSlot ? (
+          <div className={`flex items-center border-l px-3 ${isWinner ? 'border-black/30' : 'border-line'}`}>
+            {rightSlot}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
