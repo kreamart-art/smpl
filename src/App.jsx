@@ -10,6 +10,7 @@ import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Feed from './pages/Feed.jsx'
 import People from './pages/People.jsx'
+import Notifications from './pages/Notifications.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 function BootScreen({ error }) {
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/battles/:id" element={<BattleDetail />} />
         <Route path="/profile/:alias" element={<Profile />} />
         <Route path="/feed" element={<Feed />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/people" element={<People />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />

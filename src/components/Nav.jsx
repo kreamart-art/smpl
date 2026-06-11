@@ -64,10 +64,10 @@ export default function Nav() {
               <NotificationsBell />
               <Link
                 to={currentUser.role === 'curator' ? '/dashboard' : `/profile/${encodeURIComponent(currentUser.alias)}`}
-                className="hidden items-center gap-2 text-right sm:flex"
+                className="flex items-center gap-2 text-right"
                 title="Your profile"
               >
-                <div>
+                <div className="hidden sm:block">
                   <div className="font-mono text-[11px] leading-tight text-ink">@{currentUser.alias}</div>
                   <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-faint">
                     {currentUser.role}

@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { usePWA } from '../context/PWAContext.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Waveform from '../components/Waveform.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
+import { IconSettings, IconLogout } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -172,12 +174,52 @@ function Editor({ user, onClose }) {
   )
 }
 
+function SettingsPanel({ user, onEdit, onClose }) {
+  const { logout } = useApp()
+  const { standalone } = usePWA()
+  const navigate = useNavigate()
+  const out = async () => {
+    await logout()
+    navigate(standalone ? '/login' : '/')
+  }
+  const Item = ({ icon, label, onClick, danger }) => (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 px-5 py-4 text-left font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-bg ${
+        danger ? 'text-ink' : 'text-ink-dim'
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+      <span className="ml-auto text-muted">▸</span>
+    </button>
+  )
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Settings</span>
+        <button onClick={onClose} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          Close ✕
+        </button>
+      </div>
+      <div className="divide-y divide-line">
+        <Item icon={<IconSettings size={18} />} label="Edit profile" onClick={() => { onClose(); onEdit() }} />
+        <Item icon={<IconLogout size={18} />} label="Log out" onClick={out} danger />
+      </div>
+      <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">
+        Signed in as {user.email || user.alias} · SMPL v1.2
+      </div>
+    </div>
+  )
+}
+
 export default function Profile() {
   const { alias } = useParams()
   const { getUserByAlias, producerStats, followerCount, isFollowing, toggleFollow, currentUser, follows } =
     useApp()
   const base = getUserByAlias(alias)
   const [editing, setEditing] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   if (!base) {
     return (
@@ -242,12 +284,27 @@ export default function Profile() {
               <div className="font-mono text-2xl tnum leading-none">{followingCount}</div>
             </div>
             {isSelf ? (
-              <button
-                onClick={() => setEditing((v) => !v)}
-                className="h-12 border border-line-bright px-6 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
-              >
-                {editing ? 'Close' : 'Edit profile'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setSettingsOpen(false)
+                    setEditing((v) => !v)
+                  }}
+                  className="h-12 border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
+                >
+                  {editing ? 'Close' : 'Edit'}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(false)
+                    setSettingsOpen((v) => !v)
+                  }}
+                  aria-label="settings"
+                  className="flex h-12 w-12 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
+                >
+                  <IconSettings size={18} />
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => toggleFollow(user.id)}
@@ -266,6 +323,13 @@ export default function Profile() {
       {isSelf && editing ? (
         <div className="mt-6">
           <Editor user={user} onClose={() => setEditing(false)} />
+        </div>
+      ) : null}
+
+      {/* SETTINGS (self) */}
+      {isSelf && settingsOpen ? (
+        <div className="mt-6">
+          <SettingsPanel user={user} onEdit={() => setEditing(true)} onClose={() => setSettingsOpen(false)} />
         </div>
       ) : null}
 
