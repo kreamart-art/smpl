@@ -27,8 +27,8 @@ export default function Nav() {
     <header className="sticky top-0 z-30 border-b border-line bg-black/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-5">
-          <Link to="/" className="group flex items-center gap-3">
-            <span className="font-sans text-xl font-bold tracking-[0.32em]">SMPL</span>
+          <Link to="/" className="group flex items-center gap-3" aria-label="SMPL — home">
+            <img src="/logo.png" alt="SMPL" className="h-6 w-auto sm:h-7" />
             <span className="hidden font-mono text-[9px] uppercase leading-relaxed tracking-[0.2em] text-faint sm:block">
               same sample.
               <br />
