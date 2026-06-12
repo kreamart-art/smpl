@@ -1,8 +1,9 @@
 import express from 'express'
 import cors from 'cors'
 import { randomUUID } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission } from './db.js'
 import {
   hashPassword,
@@ -25,6 +26,15 @@ const PORT =
     : process.env.SMPL_API_PORT || 5191
 const seeded = seedIfEmpty()
 migrate()
+
+// Uploaded audio (curator samples / open-verse beats) lives next to the DB —
+// same persistent volume in production (/app/data/uploads).
+const UPLOAD_DIR =
+  process.env.SMPL_UPLOAD_DIR ||
+  (process.env.SMPL_DB_PATH
+    ? path.join(path.dirname(process.env.SMPL_DB_PATH), 'uploads')
+    : fileURLToPath(new URL('./uploads', import.meta.url)))
+mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const app = express()
 app.use(cors())
@@ -526,6 +536,37 @@ app.post('/api/notifications/seen', requireAuth, (req, res) => {
   db.prepare('UPDATE users SET lastSeenAt = ? WHERE id = ?').run(Date.now(), req.user.id)
   return ok(res, {})
 })
+
+// ----- audio uploads (curator-only) ------------------------------------------
+// Served under /api/uploads so the dev Vite proxy (/api → api server) and the
+// single-origin production server both reach the files without extra config.
+app.use('/api/uploads', express.static(UPLOAD_DIR, { maxAge: '1y', immutable: true }))
+
+const AUDIO_EXT = {
+  'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav',
+  'audio/wave': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac',
+  'audio/ogg': 'ogg', 'audio/webm': 'webm', 'audio/flac': 'flac', 'audio/x-flac': 'flac',
+}
+
+app.post(
+  '/api/uploads/audio',
+  requireCurator,
+  express.raw({ type: ['audio/*', 'application/octet-stream'], limit: '30mb' }),
+  (req, res) => {
+    const buf = req.body
+    if (!buf || !buf.length) return fail(res, 400, 'No audio received.')
+    const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+    const ext = AUDIO_EXT[ct]
+    if (!ext) return fail(res, 415, 'Unsupported audio — use mp3, wav, m4a, aac, ogg or flac.')
+    const name = `a_${randomUUID().slice(0, 12)}.${ext}`
+    try {
+      writeFileSync(path.join(UPLOAD_DIR, name), buf)
+    } catch {
+      return fail(res, 500, 'Could not store the file.')
+    }
+    return ok(res, { url: `/api/uploads/${name}` })
+  },
+)
 
 // ----- production: serve the built SPA from the same origin ------------------
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))

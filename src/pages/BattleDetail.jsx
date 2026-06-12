@@ -42,6 +42,11 @@ function PhasePipeline({ status }) {
   )
 }
 
+// Only drive the real <audio> element from URLs that are actually playable
+// audio files (our uploads, or a direct file link) — not SoundCloud/YouTube pages.
+const playableAudio = (u) =>
+  !!u && (u.startsWith('/api/uploads/') || /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i.test(u))
+
 function Feedback({ msg }) {
   if (!msg) return null
   return (
@@ -113,6 +118,7 @@ export default function BattleDetail() {
     sub: battle.title,
     duration: battle.sampleDuration || 10,
     seed: `sample-${battle.id}`,
+    src: battle.sampleRevealed && playableAudio(battle.sampleUrl) ? battle.sampleUrl : undefined,
   }
 
   const beatMeta = (s, idx, revealed) => ({

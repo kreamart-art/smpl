@@ -275,6 +275,9 @@ export function AppProvider({ children }) {
     [mutate],
   )
 
+  // Curator audio upload (sample / open-verse beat). Returns { ok, url }.
+  const uploadAudio = useCallback((file) => api.upload('/api/uploads/audio', file), [])
+
   // --- profile + social ----------------------------------------------------
   const updateProfile = useCallback((payload) => mutate(() => api.patch('/api/me', payload)), [mutate])
   const fetchFeed = useCallback(() => api.get('/api/feed'), [])
@@ -329,6 +332,7 @@ export function AppProvider({ children }) {
     advanceStatus,
     declareWinner,
     approveSubmission,
+    uploadAudio,
     updateProfile,
     fetchFeed,
     fetchNotifications,
@@ -349,10 +353,63 @@ export function PlaybackProvider({ children }) {
   const [track, setTrack] = useState(null)
   const [playing, setPlaying] = useState(false)
   const [elapsed, setElapsed] = useState(0)
+  const [audioDur, setAudioDur] = useState(0)
   const elapsedRef = useRef(0)
+  const trackRef = useRef(null)
+  const audioRef = useRef(null)
+  const seekRef = useRef(null) // pending seek fraction, applied once metadata loads
 
+  const real = !!track?.src
+
+  const play = () => {
+    const a = audioRef.current
+    if (!a) return
+    const p = a.play()
+    if (p && p.catch) p.catch(() => {})
+  }
+  const loadReal = (src, frac = 0) => {
+    const a = audioRef.current
+    if (!a) return
+    setAudioDur(0)
+    seekRef.current = frac > 0 ? frac : null
+    a.src = src
+    a.load()
+    play()
+  }
+
+  // Wire the shared <audio> element once — real tracks drive elapsed/duration.
   useEffect(() => {
-    if (!playing || !track) return
+    const a = audioRef.current
+    if (!a) return
+    const onTime = () => {
+      elapsedRef.current = a.currentTime
+      setElapsed(a.currentTime)
+    }
+    const onMeta = () => {
+      setAudioDur(a.duration || 0)
+      if (seekRef.current != null) {
+        a.currentTime = seekRef.current * (a.duration || 0)
+        seekRef.current = null
+      }
+    }
+    const onEnded = () => {
+      setPlaying(false)
+      elapsedRef.current = 0
+      setElapsed(0)
+    }
+    a.addEventListener('timeupdate', onTime)
+    a.addEventListener('loadedmetadata', onMeta)
+    a.addEventListener('ended', onEnded)
+    return () => {
+      a.removeEventListener('timeupdate', onTime)
+      a.removeEventListener('loadedmetadata', onMeta)
+      a.removeEventListener('ended', onEnded)
+    }
+  }, [])
+
+  // Simulated transport — only for tracks WITHOUT real audio.
+  useEffect(() => {
+    if (!playing || !track || real) return
     let raf
     let last = null
     const loop = (ts) => {
@@ -360,46 +417,86 @@ export function PlaybackProvider({ children }) {
       const dt = (ts - last) / 1000
       last = ts
       let n = elapsedRef.current + dt
-      if (n >= track.duration) n = n % track.duration
+      const d = track.duration || 1
+      if (n >= d) n = n % d
       elapsedRef.current = n
       setElapsed(n)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [playing, track])
+  }, [playing, track, real])
+
+  // Effective duration of the current track (real audio overrides the estimate).
+  const duration = real ? audioDur || track?.duration || 0 : track?.duration || 0
 
   const toggle = useCallback((meta) => {
-    setTrack((cur) => {
-      const same = cur && cur.id === meta.id
-      if (same) {
-        setPlaying((p) => !p)
-        return cur
-      }
-      elapsedRef.current = 0
-      setElapsed(0)
-      setPlaying(true)
-      return meta
-    })
+    const cur = trackRef.current
+    const a = audioRef.current
+    if (cur && cur.id === meta.id) {
+      setPlaying((p) => {
+        const np = !p
+        if (meta.src && a) np ? play() : a.pause()
+        return np
+      })
+      return
+    }
+    elapsedRef.current = 0
+    setElapsed(0)
+    setAudioDur(0)
+    trackRef.current = meta
+    setTrack(meta)
+    setPlaying(true)
+    if (meta.src) loadReal(meta.src, 0)
+    else if (a) {
+      a.pause()
+      a.removeAttribute('src')
+    }
   }, [])
 
   const playAt = useCallback((meta, frac) => {
-    const n = Math.max(0, Math.min(1, frac)) * meta.duration
-    elapsedRef.current = n
-    setElapsed(n)
+    const f = Math.max(0, Math.min(1, frac))
+    const cur = trackRef.current
+    const a = audioRef.current
+    const same = cur && cur.id === meta.id
+    trackRef.current = meta
     setTrack(meta)
     setPlaying(true)
+    if (meta.src) {
+      if (same && a && a.duration) {
+        a.currentTime = f * a.duration
+        play()
+      } else {
+        loadReal(meta.src, f)
+      }
+      return
+    }
+    const n = f * (meta.duration || 0)
+    elapsedRef.current = n
+    setElapsed(n)
   }, [])
 
   const stop = useCallback(() => {
+    const a = audioRef.current
+    if (a) {
+      a.pause()
+      a.removeAttribute('src')
+    }
     setPlaying(false)
     setTrack(null)
+    trackRef.current = null
+    setAudioDur(0)
     elapsedRef.current = 0
     setElapsed(0)
   }, [])
 
-  const value = { track, playing, elapsed, toggle, playAt, stop }
-  return <PlayCtx.Provider value={value}>{children}</PlayCtx.Provider>
+  const value = { track, playing, elapsed, duration, toggle, playAt, stop }
+  return (
+    <PlayCtx.Provider value={value}>
+      <audio ref={audioRef} preload="metadata" />
+      {children}
+    </PlayCtx.Provider>
+  )
 }
 
 export function Providers({ children }) {

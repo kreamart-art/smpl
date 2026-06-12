@@ -6,10 +6,11 @@ import { fmtTime } from '../utils/wave.js'
 
 // Fixed DAW-style transport at the bottom — shows whatever is playing.
 export default function TransportBar() {
-  const { track, playing, elapsed, toggle, playAt, stop } = usePlayback()
+  const { track, playing, elapsed, duration, toggle, playAt, stop } = usePlayback()
   const { standalone } = usePWA()
   if (!track) return null
-  const progress = elapsed / track.duration
+  const dur = duration || track.duration
+  const progress = dur ? elapsed / dur : 0
 
   return (
     <div
@@ -37,7 +38,7 @@ export default function TransportBar() {
         </div>
 
         <div className="shrink-0 font-mono text-[11px] text-muted tnum">
-          {fmtTime(elapsed)} / {fmtTime(track.duration)}
+          {fmtTime(elapsed)} / {fmtTime(dur)}
         </div>
 
         <button

@@ -19,10 +19,11 @@ function Glyph({ playing }) {
 
 // The always-visible sample player on the battle detail page.
 export default function AudioPlayer({ meta, sealed = false }) {
-  const { track, playing, elapsed, toggle, playAt } = usePlayback()
+  const { track, playing, elapsed, duration, toggle, playAt } = usePlayback()
   const isCurrent = track?.id === meta.id
   const isPlaying = isCurrent && playing
-  const progress = isCurrent ? elapsed / meta.duration : 0
+  const dur = (isCurrent && duration) || meta.duration
+  const progress = isCurrent && dur ? elapsed / dur : 0
 
   return (
     <div className="border border-line bg-panel">
@@ -31,7 +32,7 @@ export default function AudioPlayer({ meta, sealed = false }) {
           {sealed ? 'SAMPLE / SEALED' : 'SAMPLE'}
         </div>
         <div className="font-mono text-[10px] text-muted tnum">
-          {fmtTime(isCurrent ? elapsed : 0)} / {fmtTime(meta.duration)}
+          {fmtTime(isCurrent ? elapsed : 0)} / {fmtTime(dur)}
         </div>
       </div>
 

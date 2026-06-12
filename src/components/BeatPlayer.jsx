@@ -18,10 +18,11 @@ export default function BeatPlayer({
   rank,
   rightSlot,
 }) {
-  const { track, playing, elapsed, toggle, playAt } = usePlayback()
+  const { track, playing, elapsed, duration, toggle, playAt } = usePlayback()
   const isCurrent = track?.id === meta.id
   const isPlaying = isCurrent && playing
-  const progress = isCurrent ? elapsed / meta.duration : 0
+  const dur = (isCurrent && duration) || meta.duration
+  const progress = isCurrent && dur ? elapsed / dur : 0
 
   return (
     <div
@@ -58,7 +59,7 @@ export default function BeatPlayer({
             </span>
           ) : null}
           <span className="font-mono text-[10px] tnum opacity-70">
-            {fmtTime(isCurrent ? elapsed : 0)}/{fmtTime(meta.duration)}
+            {fmtTime(isCurrent ? elapsed : 0)}/{fmtTime(dur)}
           </span>
         </div>
       </div>

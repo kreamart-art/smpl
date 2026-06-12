@@ -11,6 +11,8 @@ const empty = {
   kind: 'BEATS',
   sampleArtist: '',
   sampleSong: '',
+  sampleUrl: '',
+  sampleName: '',
   maxProducers: 8,
   description: '',
   sampleRevealed: true,
@@ -42,10 +44,32 @@ export default function Dashboard() {
     advanceStatus,
     declareWinner,
     approveSubmission,
+    uploadAudio,
   } = app
   const [form, setForm] = useState(empty)
   const [msg, setMsg] = useState(null)
   const [openId, setOpenId] = useState(null)
+  const [uploading, setUploading] = useState(false)
+
+  const onPickSample = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 30 * 1024 * 1024) {
+      setMsg({ ok: false, text: 'That audio is over 30 MB — trim or bounce it smaller.' })
+      e.target.value = ''
+      return
+    }
+    setUploading(true)
+    const r = await uploadAudio(file)
+    setUploading(false)
+    e.target.value = ''
+    if (r.ok) {
+      setForm((f) => ({ ...f, sampleUrl: r.url, sampleName: file.name }))
+      setMsg({ ok: true, text: `Uploaded ${file.name}.` })
+    } else {
+      setMsg({ ok: false, text: r.error || 'Upload failed.' })
+    }
+  }
 
   if (!isCurator) {
     return (
@@ -164,6 +188,46 @@ export default function Dashboard() {
                       onChange={(e) => setForm({ ...form, sampleSong: e.target.value })}
                     />
                   </Field>
+                </div>
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <Label>{form.kind === 'VERSES' ? 'The beat (audio)' : 'Sample audio'}</Label>
+                    <span className="font-mono text-[10px] text-muted">optional · mp3/wav/m4a · ≤30MB</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <label
+                      className={`cursor-pointer border border-line-bright px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg ${
+                        uploading ? 'pointer-events-none opacity-40' : ''
+                      }`}
+                    >
+                      {uploading ? 'Uploading…' : form.sampleUrl ? 'Replace file' : 'Upload audio'}
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        className="hidden"
+                        onChange={onPickSample}
+                        disabled={uploading}
+                      />
+                    </label>
+                    {form.sampleUrl ? (
+                      <span className="flex items-center gap-2 font-mono text-[11px] text-ink">
+                        <span className="text-muted">✓</span>
+                        <span className="max-w-[170px] truncate">{form.sampleName || 'uploaded'}</span>
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, sampleUrl: '', sampleName: '' }))}
+                          className="text-muted hover:text-ink"
+                          aria-label="remove audio"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] text-muted">
+                        Players hear this. No file = stylised silent waveform.
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Field label="Max producers">
                   <input
