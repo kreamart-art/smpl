@@ -1005,13 +1005,24 @@ app.get('/api/threads', requireAuth, (req, res) => {
       if (isBlocked(uid, t.partner)) return null // hide threads with blocked people
       const u = pubUser(getUserRow(t.partner))
       if (!u) return null
+      const L = t.last
+      const kind = L.deletedAt
+        ? 'deleted'
+        : L.imageUrl
+          ? 'image'
+          : L.audioUrl
+            ? 'audio'
+            : L.battleId && !L.body
+              ? 'battle'
+              : 'text'
       return {
         user: u,
         last: {
-          body: t.last.body,
-          createdAt: t.last.createdAt,
-          mine: t.last.fromId === uid,
-          battleId: t.last.battleId || null,
+          body: L.deletedAt ? '' : L.body,
+          createdAt: L.createdAt,
+          mine: L.fromId === uid,
+          battleId: L.deletedAt ? null : L.battleId || null,
+          kind,
         },
         unread: t.unread,
         isRequest: !t.sentByMe && !followees.has(t.partner),
@@ -1035,42 +1046,116 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
   db.prepare('UPDATE messages SET readAt = ? WHERE toId = ? AND fromId = ? AND readAt IS NULL').run(
     Date.now(), uid, other.id,
   )
+  const byId = {}
+  for (const m of msgs) byId[m.id] = m
+  // all reactions for the thread in one query, grouped per message + emoji
+  const reactByMsg = {}
+  const ids = msgs.map((m) => m.id)
+  if (ids.length) {
+    const ph = ids.map(() => '?').join(',')
+    for (const r of db.prepare(`SELECT messageId, emoji, userId FROM message_reactions WHERE messageId IN (${ph})`).all(...ids)) {
+      const list = (reactByMsg[r.messageId] ||= {})
+      const e = (list[r.emoji] ||= { emoji: r.emoji, count: 0, mine: false })
+      e.count++
+      if (r.userId === uid) e.mine = true
+    }
+  }
+  const preview = (m) => {
+    if (!m) return null
+    const mine = m.fromId === uid
+    if (m.deletedAt) return { id: m.id, mine, kind: 'deleted' }
+    if (m.imageUrl) return { id: m.id, mine, kind: 'image' }
+    if (m.audioUrl) return { id: m.id, mine, kind: 'audio' }
+    return { id: m.id, mine, kind: 'text', snippet: (m.body || '').slice(0, 90) }
+  }
   return ok(res, {
     user: pubUser(other),
     messages: msgs.map((m) => ({
       id: m.id,
-      body: m.body,
+      body: m.deletedAt ? '' : m.body,
       createdAt: m.createdAt,
       mine: m.fromId === uid,
-      battleId: m.battleId || null,
+      battleId: m.deletedAt ? null : m.battleId || null,
+      imageUrl: m.deletedAt ? null : m.imageUrl || null,
+      audioUrl: m.deletedAt ? null : m.audioUrl || null,
+      reply: m.deletedAt ? null : preview(byId[m.replyTo]),
+      reactions: m.deletedAt ? [] : Object.values(reactByMsg[m.id] || {}),
+      readAt: m.readAt || null,
+      deleted: !!m.deletedAt,
     })),
   })
 })
 
 app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) => {
-  const { toAlias, body, battleId } = req.body || {}
+  const { toAlias, body, battleId, replyTo, imageUrl, audioUrl } = req.body || {}
   const text = String(body || '').trim()
   let bId = null
   if (battleId) {
     if (!getBattleRow(battleId)) return fail(res, 404, 'Battle not found.')
     bId = battleId
   }
-  if (!text && !bId) return fail(res, 400, 'Write something first.')
+  // attachments must be our own opaque uploads
+  const img = typeof imageUrl === 'string' && /^\/api\/uploads\/i_/.test(imageUrl) ? imageUrl : null
+  const aud = typeof audioUrl === 'string' && /^\/api\/uploads\/a_/.test(audioUrl) ? audioUrl : null
+  if (!text && !bId && !img && !aud) return fail(res, 400, 'Write something first.')
   if (text.length > 2000) return fail(res, 400, 'That message is too long.')
   const other = getUserByAliasRow(toAlias)
   if (!other) return fail(res, 404, 'User not found.')
   if (other.id === req.user.id) return fail(res, 400, 'You cannot message yourself.')
   if (isBlocked(req.user.id, other.id)) return fail(res, 403, 'You can’t message this person.')
+  // a reply must point at a real message in THIS conversation
+  let rId = null
+  if (replyTo) {
+    const rm = db.prepare('SELECT fromId, toId FROM messages WHERE id = ?').get(String(replyTo))
+    if (rm && ((rm.fromId === req.user.id && rm.toId === other.id) || (rm.fromId === other.id && rm.toId === req.user.id))) {
+      rId = String(replyTo)
+    }
+  }
+  const id = `m_${randomUUID().slice(0, 10)}`
   db.prepare(
-    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId) VALUES (?,?,?,?,?,NULL,?)',
-  ).run(`m_${randomUUID().slice(0, 10)}`, req.user.id, other.id, text, Date.now(), bId)
+    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId, replyTo, imageUrl, audioUrl) VALUES (?,?,?,?,?,NULL,?,?,?,?)',
+  ).run(id, req.user.id, other.id, text, Date.now(), bId, rId, img, aud)
   // notify the recipient on their devices (no-op if they have no subscriptions)
   sendPush(other.id, {
     title: `@${req.user.alias}`,
-    body: text ? text.slice(0, 140) : 'Shared a battle with you',
+    body: text ? text.slice(0, 140) : img ? 'Sent a photo' : aud ? 'Sent a voice clip' : 'Shared a battle with you',
     tag: `dm-${req.user.id}`,
     url: `/messages/${req.user.alias}`,
   }).catch(() => {})
+  return ok(res, { id })
+})
+
+// toggle an emoji reaction on a message in your conversation
+const REACTIONS = ['❤️', '🔥', '😂', '👍', '😮', '😢', '🙏']
+app.post('/api/messages/:id/react', requireAuth, (req, res) => {
+  const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id)
+  if (!m) return fail(res, 404, 'Message not found.')
+  const uid = req.user.id
+  if (m.fromId !== uid && m.toId !== uid) return fail(res, 403, 'Not your conversation.')
+  if (m.deletedAt) return fail(res, 400, 'That message was deleted.')
+  const emoji = String(req.body?.emoji || '').trim()
+  const existing = db.prepare('SELECT emoji FROM message_reactions WHERE messageId=? AND userId=?').get(m.id, uid)
+  if (!emoji || (existing && existing.emoji === emoji)) {
+    db.prepare('DELETE FROM message_reactions WHERE messageId=? AND userId=?').run(m.id, uid)
+    return ok(res, { emoji: null })
+  }
+  if (!REACTIONS.includes(emoji)) return fail(res, 400, 'Unsupported reaction.')
+  db.prepare(
+    'INSERT INTO message_reactions (messageId, userId, emoji, createdAt) VALUES (?,?,?,?) ON CONFLICT(messageId, userId) DO UPDATE SET emoji=excluded.emoji, createdAt=excluded.createdAt',
+  ).run(m.id, uid, emoji, Date.now())
+  return ok(res, { emoji })
+})
+
+// unsend your own message (soft delete → renders as "message deleted")
+app.delete('/api/messages/:id', requireAuth, (req, res) => {
+  const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id)
+  if (!m) return fail(res, 404, 'Message not found.')
+  if (m.fromId !== req.user.id) return fail(res, 403, 'You can only unsend your own messages.')
+  if (m.deletedAt) return ok(res, {})
+  db.prepare(
+    "UPDATE messages SET deletedAt=?, body='', imageUrl=NULL, audioUrl=NULL, battleId=NULL, replyTo=NULL WHERE id=?",
+  ).run(Date.now(), m.id)
+  db.prepare('DELETE FROM message_reactions WHERE messageId=?').run(m.id)
   return ok(res, {})
 })
 
@@ -1121,6 +1206,33 @@ app.post(
       writeFileSync(path.join(UPLOAD_DIR, name), stripAudioMetadata(buf))
     } catch {
       return fail(res, 500, 'Could not store the file.')
+    }
+    return ok(res, { url: `/api/uploads/${name}` })
+  },
+)
+
+const IMAGE_EXT = {
+  'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png',
+  'image/webp': 'webp', 'image/gif': 'gif', 'image/heic': 'heic',
+}
+
+// Image attachments for DMs (and anywhere else). Stored opaque under /api/uploads.
+app.post(
+  '/api/uploads/image',
+  rateLimit('upload', 40, 60 * 60_000),
+  requireAuth,
+  express.raw({ type: ['image/*', 'application/octet-stream'], limit: '12mb' }),
+  (req, res) => {
+    const buf = req.body
+    if (!buf || !buf.length) return fail(res, 400, 'No image received.')
+    const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+    const ext = IMAGE_EXT[ct]
+    if (!ext) return fail(res, 415, 'Unsupported image — use jpg, png, webp or gif.')
+    const name = `i_${randomUUID().slice(0, 12)}.${ext}`
+    try {
+      writeFileSync(path.join(UPLOAD_DIR, name), buf)
+    } catch {
+      return fail(res, 500, 'Could not store the image.')
     }
     return ok(res, { url: `/api/uploads/${name}` })
   },

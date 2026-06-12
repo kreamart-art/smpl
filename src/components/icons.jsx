@@ -37,6 +37,26 @@ export function IconPeople(props) {
   )
 }
 
+export function IconImage(props) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="16" />
+      <circle cx="8.5" cy="9.5" r="1.6" />
+      <path d="M3 17l5-5 4 4 3-3 6 6" />
+    </Svg>
+  )
+}
+
+export function IconMic(props) {
+  return (
+    <Svg {...props}>
+      <rect x="9" y="2.5" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v3" />
+    </Svg>
+  )
+}
+
 export function IconFeed(props) {
   return (
     <Svg {...props}>

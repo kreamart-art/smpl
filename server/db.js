@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS reports (
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   endpoint TEXT PRIMARY KEY, userId TEXT, p256dh TEXT, auth TEXT, createdAt INTEGER
 );
+CREATE TABLE IF NOT EXISTS message_reactions (
+  messageId TEXT, userId TEXT, emoji TEXT, createdAt INTEGER, PRIMARY KEY (messageId, userId)
+);
 CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (userId);
 CREATE TABLE IF NOT EXISTS comments (
   id TEXT PRIMARY KEY, submissionId TEXT, battleId TEXT, userId TEXT, body TEXT, createdAt INTEGER
@@ -203,6 +206,11 @@ export function migrate() {
   addColumn('users', 'backupCodes', 'TEXT')
   // 2026-06-12: a DM can reference a shared battle.
   addColumn('messages', 'battleId', 'TEXT')
+  // 2026-06-12: rich DMs — quote-replies, image/voice attachments, unsend.
+  addColumn('messages', 'replyTo', 'TEXT')
+  addColumn('messages', 'imageUrl', 'TEXT')
+  addColumn('messages', 'audioUrl', 'TEXT')
+  addColumn('messages', 'deletedAt', 'INTEGER')
   // 2026-06-12: optional public contact email on a profile.
   addColumn('users', 'contactEmail', 'TEXT')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.

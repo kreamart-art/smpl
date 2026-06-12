@@ -37,7 +37,7 @@ export default function ShareToDM({ battleId, className = '' }) {
 
   const send = async (alias) => {
     setBusy(true)
-    const r = await sendMessage(alias, '', battleId)
+    const r = await sendMessage(alias, '', { battleId })
     setBusy(false)
     if (r.ok) {
       setSentTo(alias)

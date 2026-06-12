@@ -431,9 +431,20 @@ export function AppProvider({ children }) {
   const fetchThreads = useCallback(() => api.get('/api/threads'), [])
   const fetchThread = useCallback((alias) => api.get(`/api/threads/${encodeURIComponent(alias)}`), [])
   const sendMessage = useCallback(
-    (toAlias, body, battleId) => api.post('/api/messages', { toAlias, body, battleId }),
+    (toAlias, body, opts = {}) =>
+      api.post('/api/messages', {
+        toAlias,
+        body,
+        battleId: opts.battleId,
+        replyTo: opts.replyTo,
+        imageUrl: opts.imageUrl,
+        audioUrl: opts.audioUrl,
+      }),
     [],
   )
+  const reactMessage = useCallback((id, emoji) => api.post(`/api/messages/${id}/react`, { emoji }), [])
+  const unsendMessage = useCallback((id) => api.del(`/api/messages/${id}`), [])
+  const uploadImage = useCallback((file) => api.upload('/api/uploads/image', file), [])
   const markNotificationsSeen = useCallback(async () => {
     await api.post('/api/notifications/seen')
     await refresh()
@@ -523,6 +534,9 @@ export function AppProvider({ children }) {
     fetchThreads,
     fetchThread,
     sendMessage,
+    reactMessage,
+    unsendMessage,
+    uploadImage,
   }
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>

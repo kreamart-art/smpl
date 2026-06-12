@@ -5,7 +5,10 @@ import { usePWA } from '../context/PWAContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
+import { IconImage, IconMic } from '../components/icons.jsx'
 import { Btn, inputCls } from '../components/ui.jsx'
+
+const REACTIONS = ['❤️', '🔥', '😂', '👍', '😮', '😢', '🙏']
 
 function shortAgo(ts) {
   const d = Date.now() - ts
@@ -20,6 +23,52 @@ function shortAgo(ts) {
 const clock = (ts) => {
   const d = new Date(ts)
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+const sameDay = (a, b) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+function dayKey(ts) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+function dayLabel(ts, t) {
+  const d = new Date(ts)
+  const now = new Date()
+  const y = new Date(now)
+  y.setDate(now.getDate() - 1)
+  if (sameDay(d, now)) return t('messages.today')
+  if (sameDay(d, y)) return t('messages.yesterday')
+  return d
+    .toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    })
+    .toUpperCase()
+}
+
+// Shrink a picked photo before upload so DMs stay light.
+function downscaleImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const max = 1600
+        const scale = Math.min(1, max / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const c = document.createElement('canvas')
+        c.width = w
+        c.height = h
+        c.getContext('2d').drawImage(img, 0, 0, w, h)
+        c.toBlob((blob) => resolve(blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.85)
+      }
+      img.onerror = () => resolve(file)
+      img.src = reader.result
+    }
+    reader.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
 }
 
 function LoginGate() {
@@ -67,6 +116,14 @@ function Inbox() {
   const requests = threads.filter((x) => x.isRequest)
   const list = tab === 'primary' ? primary : requests
 
+  const lastLabel = (last) => {
+    if (last.kind === 'deleted') return `↺ ${t('messages.deleted')}`
+    if (last.kind === 'image') return `▣ ${t('messages.photo')}`
+    if (last.kind === 'audio') return `▶ ${t('messages.voiceClip')}`
+    if (last.kind === 'battle') return `↗ ${t('messages.sharedBattle')}`
+    return last.body
+  }
+
   const TabBtn = ({ id, label, count, dot }) => (
     <button
       onClick={() => setTab(id)}
@@ -112,7 +169,7 @@ function Inbox() {
                 <div className="mt-0.5 flex items-center gap-2">
                   <span className={`truncate font-mono text-[11px] ${th.unread ? 'text-ink' : 'text-muted'}`}>
                     {th.last.mine ? t('messages.you') : ''}
-                    {th.last.battleId && !th.last.body ? `↗ ${t('messages.sharedBattle')}` : th.last.body}
+                    {lastLabel(th.last)}
                   </span>
                   {th.unread > 0 ? <span className="ml-auto block h-2 w-2 shrink-0 bg-ink" /> : null}
                 </div>
@@ -134,7 +191,7 @@ function Inbox() {
   )
 }
 
-// ----- one conversation ------------------------------------------------------
+// ----- shared battle card in a thread ---------------------------------------
 function BattlePreview({ battleId }) {
   const { getBattle } = useApp()
   const t = useT()
@@ -157,15 +214,72 @@ function BattlePreview({ battleId }) {
   )
 }
 
+// ----- a voice clip player ---------------------------------------------------
+function AudioClip({ src, mine }) {
+  const ref = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [p, setP] = useState(0)
+  useEffect(() => {
+    const a = ref.current
+    if (!a) return
+    const onT = () => setP(a.duration ? a.currentTime / a.duration : 0)
+    const onEnd = () => {
+      setPlaying(false)
+      setP(0)
+    }
+    a.addEventListener('timeupdate', onT)
+    a.addEventListener('ended', onEnd)
+    return () => {
+      a.removeEventListener('timeupdate', onT)
+      a.removeEventListener('ended', onEnd)
+    }
+  }, [])
+  const toggle = () => {
+    const a = ref.current
+    if (!a) return
+    if (playing) {
+      a.pause()
+      setPlaying(false)
+    } else {
+      a.play()
+      setPlaying(true)
+    }
+  }
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <audio ref={ref} src={src} preload="metadata" />
+      <button
+        type="button"
+        onClick={toggle}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center border text-[11px] ${
+          mine ? 'border-bg/40 text-bg' : 'border-line-bright text-ink'
+        }`}
+      >
+        {playing ? '❚❚' : '▶'}
+      </button>
+      <div className={`h-1 w-28 ${mine ? 'bg-bg/30' : 'bg-line'}`}>
+        <div className={`h-full ${mine ? 'bg-bg' : 'bg-ink'}`} style={{ width: `${p * 100}%` }} />
+      </div>
+    </div>
+  )
+}
+
+// ----- one conversation ------------------------------------------------------
 function Thread({ alias }) {
-  const { fetchThread, sendMessage, refresh, currentUser } = useApp()
+  const { fetchThread, sendMessage, reactMessage, unsendMessage, uploadImage, uploadAudio, refresh, currentUser } = useApp()
   const { standalone } = usePWA()
   const t = useT()
   const [data, setData] = useState(null)
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
   const [err, setErr] = useState('')
+  const [replyTo, setReplyTo] = useState(null) // a message object to quote
+  const [activeMsg, setActiveMsg] = useState(null) // message id with its action bar open
+  const [recording, setRecording] = useState(false)
+  const [recSecs, setRecSecs] = useState(0)
+  const fileRef = useRef(null)
   const endRef = useRef(null)
+  const recRef = useRef(null)
   const didRefresh = useRef(false)
 
   const load = useCallback(
@@ -201,18 +315,92 @@ function Thread({ alias }) {
     if (!text) return
     setSending(true)
     setErr('')
-    const r = await sendMessage(alias, text)
+    const r = await sendMessage(alias, text, { replyTo: replyTo?.id })
     setSending(false)
     if (r.ok) {
       setBody('')
+      setReplyTo(null)
       load(false)
     } else setErr(r.error)
   }
 
+  const onPickImage = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setSending(true)
+    setErr('')
+    const small = await downscaleImage(file)
+    const up = await uploadImage(small)
+    if (up.ok && up.url) {
+      const r = await sendMessage(alias, '', { imageUrl: up.url, replyTo: replyTo?.id })
+      if (r.ok) {
+        setReplyTo(null)
+        load(false)
+      } else setErr(r.error)
+    } else setErr(up.error || t('messages.uploadFailed'))
+    setSending(false)
+  }
+
+  const startRec = async () => {
+    setErr('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream)
+      const chunks = []
+      mr.ondataavailable = (ev) => {
+        if (ev.data.size) chunks.push(ev.data)
+      }
+      mr.onstop = async () => {
+        stream.getTracks().forEach((tr) => tr.stop())
+        clearInterval(recRef.current?.timer)
+        if (recRef.current?.cancelled) return
+        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' })
+        const ext = (mr.mimeType || '').includes('mp4') ? 'm4a' : 'webm'
+        const file = new File([blob], `clip.${ext}`, { type: blob.type })
+        setSending(true)
+        const up = await uploadAudio(file)
+        if (up.ok && up.url) {
+          const r = await sendMessage(alias, '', { audioUrl: up.url, replyTo: replyTo?.id })
+          if (r.ok) {
+            setReplyTo(null)
+            load(false)
+          } else setErr(r.error)
+        } else setErr(up.error || t('messages.uploadFailed'))
+        setSending(false)
+      }
+      const timer = setInterval(() => setRecSecs((s) => s + 1), 1000)
+      recRef.current = { mr, stream, timer, cancelled: false }
+      mr.start()
+      setRecording(true)
+      setRecSecs(0)
+    } catch {
+      setErr(t('messages.micDenied'))
+    }
+  }
+  const stopRec = (cancel) => {
+    const r = recRef.current
+    if (!r?.mr) return
+    r.cancelled = !!cancel
+    r.mr.stop()
+    setRecording(false)
+  }
+
+  const react = async (id, emoji) => {
+    setActiveMsg(null)
+    await reactMessage(id, emoji)
+    load(false)
+  }
+  const unsend = async (id) => {
+    setActiveMsg(null)
+    await unsendMessage(id)
+    load(false)
+  }
+
   const u = data?.user
+  const msgs = data?.messages || []
+  const lastMineId = [...msgs].reverse().find((m) => m.mine && !m.deleted)?.id
   return (
-    // Full-height column so the composer is always pinned to the bottom, even
-    // with only a couple of messages (it used to float up near the top).
     <div
       className="mx-auto flex w-full max-w-[760px] flex-col px-4 sm:px-6"
       style={{
@@ -238,32 +426,160 @@ function Thread({ alias }) {
       </div>
 
       {/* messages grow + scroll; with few messages they sit just above the composer */}
-      <div className="-mx-4 flex-1 overflow-y-auto px-4 sm:-mx-6 sm:px-6">
-        <div className="flex min-h-full flex-col justify-end gap-2 py-4">
-          {data && data.messages.length ? (
-            data.messages.map((m) => (
-              <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
-                <div className="max-w-[80%] space-y-1.5">
-                  {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
-                  {m.body ? (
-                    <div
-                      className={`border px-3 py-2 ${
-                        m.mine ? 'border-ink bg-ink text-bg' : 'border-line bg-panel text-ink'
-                      }`}
-                    >
-                      <div className="font-sans text-[14px] leading-snug">{m.body}</div>
-                      <div className={`mt-1 font-mono text-[9px] ${m.mine ? 'text-bg/60' : 'text-faint'}`}>
-                        {clock(m.createdAt)}
-                      </div>
+      <div className="-mx-4 flex-1 overflow-y-auto px-4 sm:-mx-6 sm:px-6" onClick={() => setActiveMsg(null)}>
+        <div className="flex min-h-full flex-col justify-end gap-1 py-4">
+          {msgs.length ? (
+            msgs.map((m, i) => {
+              const prev = msgs[i - 1]
+              const next = msgs[i + 1]
+              const newDay = !prev || dayKey(prev.createdAt) !== dayKey(m.createdAt)
+              const groupEnd = !next || next.mine !== m.mine || dayKey(next.createdAt) !== dayKey(m.createdAt)
+              const open = activeMsg === m.id
+              const av = m.mine ? currentUser : u
+              return (
+                <div key={m.id}>
+                  {newDay ? (
+                    <div className="my-3 flex items-center justify-center">
+                      <span className="border border-line bg-panel px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-faint">
+                        {dayLabel(m.createdAt, t)}
+                      </span>
                     </div>
-                  ) : (
-                    <div className={`font-mono text-[9px] text-faint ${m.mine ? 'text-right' : ''}`}>
-                      {clock(m.createdAt)}
+                  ) : null}
+                  <div className={`flex items-end gap-2 ${m.mine ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {/* avatar gutter — only the last bubble of a run shows it */}
+                    <div className="w-7 shrink-0">
+                      {groupEnd ? <Avatar alias={av?.alias || '?'} src={av?.avatar} size={28} /> : null}
                     </div>
-                  )}
+                    <div className={`flex max-w-[78%] flex-col ${m.mine ? 'items-end' : 'items-start'}`}>
+                      {m.deleted ? (
+                        <div className="border border-dashed border-line px-3 py-2 font-mono text-[11px] italic text-faint">
+                          ↺ {t('messages.deleted')}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveMsg(open ? null : m.id)
+                          }}
+                          className="block text-left"
+                        >
+                          {m.reply ? (
+                            <div
+                              className={`mb-0.5 max-w-full truncate border-l-2 px-2 py-0.5 font-mono text-[10px] ${
+                                m.mine ? 'border-ink/40 text-muted' : 'border-line-bright text-muted'
+                              }`}
+                            >
+                              {m.reply.kind === 'image'
+                                ? `▣ ${t('messages.photo')}`
+                                : m.reply.kind === 'audio'
+                                  ? `▶ ${t('messages.voiceClip')}`
+                                  : m.reply.kind === 'deleted'
+                                    ? `↺ ${t('messages.deleted')}`
+                                    : m.reply.snippet}
+                            </div>
+                          ) : null}
+                          <div className="space-y-1.5">
+                            {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
+                            {m.imageUrl ? (
+                              <img
+                                src={m.imageUrl}
+                                alt=""
+                                className="max-h-72 w-auto max-w-full border border-line"
+                                loading="lazy"
+                              />
+                            ) : null}
+                            {m.audioUrl ? (
+                              <div className={`border px-2 ${m.mine ? 'border-ink bg-ink' : 'border-line bg-panel'}`}>
+                                <AudioClip src={m.audioUrl} mine={m.mine} />
+                              </div>
+                            ) : null}
+                            {m.body ? (
+                              <div
+                                className={`border px-3 py-2 ${
+                                  m.mine ? 'border-ink bg-ink text-bg' : 'border-line bg-panel text-ink'
+                                }`}
+                              >
+                                <div className="whitespace-pre-wrap break-words font-sans text-[14px] leading-snug">
+                                  {m.body}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </button>
+                      )}
+
+                      {/* reactions on the bubble */}
+                      {m.reactions?.length ? (
+                        <div className={`mt-0.5 flex flex-wrap gap-1 ${m.mine ? 'justify-end' : ''}`}>
+                          {m.reactions.map((r) => (
+                            <button
+                              key={r.emoji}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                react(m.id, r.emoji)
+                              }}
+                              className={`flex items-center gap-1 border px-1.5 py-0.5 text-[11px] leading-none ${
+                                r.mine ? 'border-ink bg-bg' : 'border-line bg-panel'
+                              }`}
+                            >
+                              <span>{r.emoji}</span>
+                              {r.count > 1 ? <span className="font-mono text-[9px] text-muted">{r.count}</span> : null}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {/* tap-to-open action bar: react / reply / unsend */}
+                      {open && !m.deleted ? (
+                        <div
+                          className={`mt-1 flex flex-wrap items-center gap-1 border border-line-bright bg-panel px-1.5 py-1 ${
+                            m.mine ? 'justify-end' : ''
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {REACTIONS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => react(m.id, emoji)}
+                              className="px-1 text-[15px] leading-none transition-transform hover:scale-125"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                          <span className="mx-0.5 h-4 w-px bg-line" />
+                          <button
+                            onClick={() => {
+                              setReplyTo(m)
+                              setActiveMsg(null)
+                            }}
+                            className="px-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted hover:text-ink"
+                          >
+                            ↩ {t('messages.reply')}
+                          </button>
+                          {m.mine ? (
+                            <button
+                              onClick={() => unsend(m.id)}
+                              className="px-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted hover:text-ink"
+                            >
+                              🗑 {t('messages.unsend')}
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {/* timestamp on the last bubble of a run */}
+                      {groupEnd ? (
+                        <div className="mt-0.5 font-mono text-[9px] text-faint">
+                          {clock(m.createdAt)}
+                          {m.id === lastMineId && m.readAt ? ` · ${t('messages.seen')}` : ''}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           ) : (
             <p className="py-12 text-center font-mono text-[12px] text-muted">{t('messages.threadEmpty')}</p>
           )}
@@ -275,18 +591,68 @@ function Thread({ alias }) {
         <div className="mt-2 shrink-0 border border-line-bright px-3 py-2 font-mono text-[11px] text-ink">! {err}</div>
       ) : null}
 
-      <form onSubmit={onSend} className="flex shrink-0 gap-2 border-t border-line py-3">
-        <input
-          className={`${inputCls} flex-1`}
-          placeholder={t('messages.placeholder')}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          maxLength={2000}
-        />
-        <Btn type="submit" variant="solid" disabled={sending || !body.trim()}>
-          {t('messages.send')}
-        </Btn>
-      </form>
+      {/* reply preview above the composer */}
+      {replyTo ? (
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-panel px-3 py-2">
+          <span className="border-l-2 border-line-bright pl-2 font-mono text-[10px] text-muted">
+            ↩ {replyTo.imageUrl ? `▣ ${t('messages.photo')}` : replyTo.audioUrl ? `▶ ${t('messages.voiceClip')}` : (replyTo.body || '').slice(0, 60)}
+          </span>
+          <button onClick={() => setReplyTo(null)} className="ml-auto font-mono text-[12px] text-faint hover:text-ink">
+            ✕
+          </button>
+        </div>
+      ) : null}
+
+      {recording ? (
+        <div className="flex shrink-0 items-center gap-3 border-t border-line py-3">
+          <span className="pulse-dot text-[12px] text-ink">●</span>
+          <span className="font-mono text-[12px] text-ink tnum">
+            {Math.floor(recSecs / 60)}:{String(recSecs % 60).padStart(2, '0')}
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t('messages.recording')}</span>
+          <button
+            onClick={() => stopRec(true)}
+            className="ml-auto font-mono text-[10px] uppercase tracking-[0.14em] text-muted hover:text-ink"
+          >
+            {t('common.cancel')}
+          </button>
+          <Btn type="button" variant="solid" onClick={() => stopRec(false)}>
+            {t('messages.send')}
+          </Btn>
+        </div>
+      ) : (
+        <form onSubmit={onSend} className="flex shrink-0 items-center gap-2 border-t border-line py-3">
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={sending}
+            aria-label={t('messages.photo')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors hover:border-ink disabled:opacity-40"
+          >
+            <IconImage size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={startRec}
+            disabled={sending}
+            aria-label={t('messages.voiceClip')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors hover:border-ink disabled:opacity-40"
+          >
+            <IconMic size={18} />
+          </button>
+          <input
+            className={`${inputCls} flex-1`}
+            placeholder={t('messages.placeholder')}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            maxLength={2000}
+          />
+          <Btn type="submit" variant="solid" disabled={sending || !body.trim()}>
+            {t('messages.send')}
+          </Btn>
+        </form>
+      )}
     </div>
   )
 }
