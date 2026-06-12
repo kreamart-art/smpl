@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS battles (
   sampleDuration INTEGER, sampleRevealed INTEGER, description TEXT, curatorId TEXT,
   maxProducers INTEGER, signupStart INTEGER, signupEnd INTEGER, submitStart INTEGER,
   submitEnd INTEGER, voteStart INTEGER, voteEnd INTEGER, status TEXT,
-  attendees TEXT, signups TEXT, winnerSubmissionId TEXT, blind INTEGER, scheduled INTEGER
+  attendees TEXT, signups TEXT, winnerSubmissionId TEXT, blind INTEGER, scheduled INTEGER, genre TEXT
 );
 CREATE TABLE IF NOT EXISTS submissions (
   id TEXT PRIMARY KEY, battleId TEXT, producerId TEXT, audioUrl TEXT,
@@ -189,4 +189,6 @@ export function migrate() {
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.
   addColumn('battles', 'blind', 'INTEGER')
   addColumn('battles', 'scheduled', 'INTEGER')
+  // 2026-06-12: a battle genre (shown on the share card to pull makers in).
+  addColumn('battles', 'genre', 'TEXT')
 }

@@ -374,15 +374,15 @@ app.post('/api/battles', requireAuth, (req, res) => {
   const status = scheduled ? scheduledStatus(t, signupStart, signupEnd, submitEnd) : STATUS.ANNOUNCED
   const id = `b_${randomUUID().slice(0, 8)}`
   db.prepare(
-    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled,genre)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id, kind,
     String(d.title || '').trim() || 'UNTITLED BATTLE', d.sampleUrl || '',
     String(d.sampleArtist || '').trim() || 'Unknown', String(d.sampleSong || '').trim() || 'Untitled sample',
     10, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
     Number(d.maxProducers) || 8, signupStart, signupEnd, submitStart, submitEnd, voteStart, voteEnd,
-    status, '[]', '[]', null, d.blind ? 1 : 0, scheduled,
+    status, '[]', '[]', null, d.blind ? 1 : 0, scheduled, String(d.genre || '').trim(),
   )
   return ok(res, { battle: rowToBattle(getBattleRow(id)) })
 })

@@ -17,6 +17,46 @@ export default function SharePage() {
   const [format, setFormat] = useState('story')
   const [scale, setScale] = useState(0.33)
   const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  // Inline the wordmark as a data URL so it bakes into the exported PNG
+  // (a plain <img src="/logo.png"> can get dropped by html-to-image in prod).
+  const [logoUrl, setLogoUrl] = useState('/logo.png')
+
+  useEffect(() => {
+    let alive = true
+    fetch('/logo.png')
+      .then((r) => r.blob())
+      .then(
+        (b) =>
+          new Promise((res) => {
+            const fr = new FileReader()
+            fr.onload = () => res(fr.result)
+            fr.readAsDataURL(b)
+          }),
+      )
+      .then((url) => {
+        if (alive && typeof url === 'string') setLogoUrl(url)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // Deep link to the battle/profile — the card is an image, so to make it
+  // tappable the user pastes this into an Instagram Link sticker.
+  const deepLink = `${typeof window !== 'undefined' ? window.location.origin : ''}${
+    kind === 'profile' ? `/profile/${encodeURIComponent(id)}` : `/battles/${id}`
+  }`
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(deepLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     const measure = () => {
@@ -43,11 +83,14 @@ export default function SharePage() {
     if (kind === 'battle' || kind === 'win') {
       const b = app.getBattle(id)
       if (b && kind === 'battle') {
+        const desc = (b.description || '').trim()
         data = {
           kind: b.kind,
           title: b.title,
           curator: app.getUser(b.curatorId)?.alias || 'SMPL',
           sampleLine: b.sampleRevealed ? `${b.sampleArtist} — ${b.sampleSong}` : null,
+          genre: b.genre || '',
+          description: desc.length > 150 ? `${desc.slice(0, 150).trim()}…` : desc,
           status: b.status,
           seed: b.id,
           cta: battleCta(b.status),
@@ -101,6 +144,12 @@ export default function SharePage() {
 
   const onShare = async () => {
     setBusy(true)
+    // pre-copy the deep link so it's ready to paste into an IG Link sticker
+    try {
+      await navigator.clipboard.writeText(deepLink)
+    } catch {
+      /* ignore */
+    }
     try {
       const url = await render()
       const blob = await (await fetch(url)).blob()
@@ -169,20 +218,24 @@ export default function SharePage() {
                 style={{ width: 1080 * scale, height: H * scale, overflow: 'hidden' }}
               >
                 <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: 1080 }}>
-                  <ShareCard cardRef={cardRef} kind={kind} data={data} format={format} />
+                  <ShareCard cardRef={cardRef} kind={kind} data={data} format={format} logoSrc={logoUrl} />
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Btn onClick={onShare} variant="solid" size="lg" disabled={busy}>
                 {busy ? t('share.generating') : `↑ ${t('share.shareBtn')}`}
               </Btn>
               <Btn onClick={onDownload} variant="ghost" size="lg" disabled={busy}>
                 ↓ {t('share.download')}
               </Btn>
+              <Btn onClick={copyLink} variant="ghost" size="lg">
+                {copied ? t('share.linkCopied') : `↗ ${t('share.copyLink')}`}
+              </Btn>
             </div>
             <p className="mt-4 font-mono text-[11px] leading-relaxed text-muted">{t('share.hint')}</p>
+            <p className="mt-2 font-mono text-[11px] leading-relaxed text-faint">{t('share.linkHint')}</p>
           </>
         )}
       </div>

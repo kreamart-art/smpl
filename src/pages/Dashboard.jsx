@@ -15,6 +15,7 @@ const empty = {
   sampleUrl: '',
   sampleName: '',
   maxProducers: 8,
+  genre: '',
   description: '',
   sampleRevealed: true,
   blind: false,
@@ -294,16 +295,26 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                <Field label={t('dashboard.create.maxProducers')}>
-                  <input
-                    type="number"
-                    min={2}
-                    max={64}
-                    className={inputCls}
-                    value={form.maxProducers}
-                    onChange={(e) => setForm({ ...form, maxProducers: e.target.value })}
-                  />
-                </Field>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <Field label={t('dashboard.create.maxProducers')}>
+                    <input
+                      type="number"
+                      min={2}
+                      max={64}
+                      className={inputCls}
+                      value={form.maxProducers}
+                      onChange={(e) => setForm({ ...form, maxProducers: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t('host.genre')} hint={t('host.genreHint')}>
+                    <input
+                      className={inputCls}
+                      placeholder="trap · drill · boom bap"
+                      value={form.genre}
+                      onChange={(e) => setForm({ ...form, genre: e.target.value })}
+                    />
+                  </Field>
+                </div>
                 <Field label={t('dashboard.create.description')}>
                   <textarea
                     rows={3}

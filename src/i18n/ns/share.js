@@ -16,6 +16,10 @@ export const share = {
     'share.generating': 'Rendering…',
     'share.notFound': 'Nothing to share here.',
     'share.hint': 'Download it, or share straight to your Instagram story or feed.',
+    'share.copyLink': 'Copy link',
+    'share.linkCopied': '✓ Link copied',
+    'share.linkHint':
+      'The card is an image — to make it tappable, add Instagram’s Link sticker and paste the battle link (copied for you when you share).',
   },
   nl: {
     'share.title': 'Deelkaart',
@@ -34,5 +38,9 @@ export const share = {
     'share.generating': 'Renderen…',
     'share.notFound': 'Niets om te delen.',
     'share.hint': 'Download het, of deel direct naar je Instagram-story of feed.',
+    'share.copyLink': 'Kopieer link',
+    'share.linkCopied': '✓ Link gekopieerd',
+    'share.linkHint':
+      'De kaart is een afbeelding — maak hem tikbaar met Instagram’s Link-sticker en plak de battle-link (bij Delen automatisch gekopieerd).',
   },
 }

@@ -50,6 +50,8 @@ export const extra = {
 
     'host.nav': 'Host',
     'host.console': 'Host console',
+    'host.genre': 'Genre',
+    'host.genreHint': 'optional · shown on the share card',
     'host.openVerse': 'you host this',
     'host.noneYet': 'You haven’t hosted a battle yet — create one on the left.',
     'host.community': 'Community',
@@ -119,6 +121,8 @@ export const extra = {
 
     'host.nav': 'Host',
     'host.console': 'Host-console',
+    'host.genre': 'Genre',
+    'host.genreHint': 'optioneel · op de deelkaart',
     'host.openVerse': 'jij host deze',
     'host.noneYet': 'Je hebt nog geen battle gehost — maak er links eentje aan.',
     'host.community': 'Community',
