@@ -373,12 +373,12 @@ export default function Profile() {
               />
               {isSelf ? (
                 <>
-                  {isCuratorProfile ? (
+                  {user.role !== 'listener' ? (
                     <Link
                       to="/dashboard"
                       className="flex h-12 items-center border border-ink bg-ink px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors duration-300 hover:bg-bright"
                     >
-                      {t('common.dashboard')}
+                      {t(isCuratorProfile ? 'common.dashboard' : 'host.nav')}
                     </Link>
                   ) : null}
                   <button

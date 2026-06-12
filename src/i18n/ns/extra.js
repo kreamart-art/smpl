@@ -48,6 +48,12 @@ export const extra = {
     'battleDetail.blindBadge': 'Blind',
     'battleDetail.voting.subBlind': 'Blind · one per person · not your own · names at the end',
 
+    'host.nav': 'Host',
+    'host.console': 'Host console',
+    'host.openVerse': 'you host this',
+    'host.noneYet': 'You haven’t hosted a battle yet — create one on the left.',
+    'host.community': 'Community',
+
     'notFound.kicker': 'Error / 404',
     'notFound.title': 'No signal.',
     'notFound.body': 'This page never made it past the noise floor.',
@@ -110,6 +116,12 @@ export const extra = {
     'dashboard.schedule.fillAll': 'Vul het hele schema in.',
     'battleDetail.blindBadge': 'Blind',
     'battleDetail.voting.subBlind': 'Blind · één per persoon · niet je eigen · namen aan het eind',
+
+    'host.nav': 'Host',
+    'host.console': 'Host-console',
+    'host.openVerse': 'jij host deze',
+    'host.noneYet': 'Je hebt nog geen battle gehost — maak er links eentje aan.',
+    'host.community': 'Community',
 
     'notFound.kicker': 'Fout / 404',
     'notFound.title': 'Geen signaal.',

@@ -234,6 +234,10 @@ const requireAuth = (req, res, next) => (req.user ? next() : fail(res, 401, 'Log
 const requireCurator = (req, res, next) =>
   req.user?.role === 'curator' ? next() : fail(res, 403, 'Curator only.')
 
+// A curator manages any battle; a host (producer/artist) manages their own.
+const canManageBattle = (user, battle) =>
+  !!user && (user.role === 'curator' || (battle && battle.curatorId === user.id))
+
 // ----- health ----------------------------------------------------------------
 app.get('/api/health', (_req, res) => ok(res, { seeded }))
 
@@ -332,8 +336,16 @@ app.get('/api/battles/:id', (req, res) => {
 })
 
 // ----- battles (curator) -----------------------------------------------------
-app.post('/api/battles', requireCurator, (req, res) => {
+app.post('/api/battles', requireAuth, (req, res) => {
   const d = req.body || {}
+  const kind = d.kind === 'VERSES' ? 'VERSES' : 'BEATS'
+  const role = req.user.role
+  // Curators run anything. Producers + artists can HOST open-verse (VERSES)
+  // battles — drop a beat/track for others to rhyme over, for the sport or to
+  // find a collab. Sample-flip (BEATS) battles stay curator-only.
+  if (role !== 'curator' && !(kind === 'VERSES' && (role === 'producer' || role === 'artist'))) {
+    return fail(res, 403, 'Curators run sample battles. Producers and artists can host open-verse battles.')
+  }
   const t = Date.now()
   const DAY = 86400000
   // Schedule: either curator-set (auto-runs the phases) or the default manual
@@ -365,7 +377,7 @@ app.post('/api/battles', requireCurator, (req, res) => {
     `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
-    id, d.kind === 'VERSES' ? 'VERSES' : 'BEATS',
+    id, kind,
     String(d.title || '').trim() || 'UNTITLED BATTLE', d.sampleUrl || '',
     String(d.sampleArtist || '').trim() || 'Unknown', String(d.sampleSong || '').trim() || 'Untitled sample',
     10, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
@@ -375,17 +387,19 @@ app.post('/api/battles', requireCurator, (req, res) => {
   return ok(res, { battle: rowToBattle(getBattleRow(id)) })
 })
 
-app.patch('/api/battles/:id/status', requireCurator, (req, res) => {
+app.patch('/api/battles/:id/status', requireAuth, (req, res) => {
   const b = getBattleRow(req.params.id)
   if (!b) return fail(res, 404, 'Battle not found.')
+  if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
   const status = req.body?.status || nextStatus(b.status)
   db.prepare('UPDATE battles SET status = ? WHERE id = ?').run(status, b.id)
   return ok(res, { battle: rowToBattle(getBattleRow(b.id)) })
 })
 
-app.post('/api/battles/:id/winner', requireCurator, (req, res) => {
+app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
   const b = getBattleRow(req.params.id)
   if (!b) return fail(res, 404, 'Battle not found.')
+  if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
   const sub = getSubmissionRow(req.body?.submissionId)
   if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not in this battle.')
   db.prepare('UPDATE battles SET status = ?, winnerSubmissionId = ? WHERE id = ?').run(
@@ -454,9 +468,10 @@ app.post('/api/battles/:id/submissions', requireAuth, (req, res) => {
   return ok(res, {})
 })
 
-app.patch('/api/submissions/:id/approve', requireCurator, (req, res) => {
+app.patch('/api/submissions/:id/approve', requireAuth, (req, res) => {
   const s = getSubmissionRow(req.params.id)
   if (!s) return fail(res, 404, 'Beat not found.')
+  if (!canManageBattle(req.user, getBattleRow(s.battleId))) return fail(res, 403, 'You do not host this battle.')
   db.prepare('UPDATE submissions SET approved = ? WHERE id = ?').run(s.approved ? 0 : 1, s.id)
   return ok(res, {})
 })

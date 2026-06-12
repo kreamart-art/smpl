@@ -58,6 +58,9 @@ export default function Dashboard() {
   const [msg, setMsg] = useState(null)
   const [openId, setOpenId] = useState(null)
   const [uploading, setUploading] = useState(false)
+  // Curators run everything; producers + artists host their own open-verse battles.
+  const canHost = !!currentUser && currentUser.role !== 'listener'
+  const myBattles = isCurator ? battles : battles.filter((b) => b.curatorId === currentUser?.id)
 
   const onPickSample = async (e) => {
     const file = e.target.files?.[0]
@@ -79,7 +82,7 @@ export default function Dashboard() {
     }
   }
 
-  if (!isCurator) {
+  if (!canHost) {
     return (
       <div className="mx-auto max-w-[760px] px-4 py-28 text-center sm:px-6">
         <div className="font-mono text-[10px] uppercase tracking-[0.26em] text-faint">{t('dashboard.restricted.kicker')}</div>
@@ -113,7 +116,7 @@ export default function Dashboard() {
       setMsg({ ok: false, text: t('dashboard.msg.needTitle') })
       return
     }
-    const payload = { ...form }
+    const payload = { ...form, kind: isCurator ? form.kind : 'VERSES' }
     if (form.scheduled) {
       const toMs = (v) => (v ? new Date(v).getTime() : NaN)
       payload.signupStart = toMs(form.signupStart)
@@ -151,7 +154,7 @@ export default function Dashboard() {
           <span className="font-mono text-[13px] text-faint tnum">C0</span>
           <div>
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
-              {t('dashboard.console.kicker')}
+              {t(isCurator ? 'dashboard.console.kicker' : 'host.console')}
             </div>
             <h1 className="font-sans text-[clamp(2.4rem,6vw,4.5rem)] font-bold uppercase leading-none tracking-tighter">
               {t('dashboard.console.title')}
@@ -191,22 +194,28 @@ export default function Dashboard() {
                 </Field>
                 <div>
                   <Label>{t('dashboard.create.type')}</Label>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
-                    {['BEATS', 'VERSES'].map((k) => (
-                      <button
-                        type="button"
-                        key={k}
-                        onClick={() => setForm({ ...form, kind: k })}
-                        className={`border px-3 py-2.5 text-center font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${
-                          form.kind === k
-                            ? 'border-ink bg-ink text-bg'
-                            : 'border-line text-muted hover:border-line-bright hover:text-ink'
-                        }`}
-                      >
-                        {k === 'VERSES' ? `✎ ${t('kind.VERSES')}` : `≋ ${t('kind.BEATS')}`}
-                      </button>
-                    ))}
-                  </div>
+                  {isCurator ? (
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      {['BEATS', 'VERSES'].map((k) => (
+                        <button
+                          type="button"
+                          key={k}
+                          onClick={() => setForm({ ...form, kind: k })}
+                          className={`border px-3 py-2.5 text-center font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${
+                            form.kind === k
+                              ? 'border-ink bg-ink text-bg'
+                              : 'border-line text-muted hover:border-line-bright hover:text-ink'
+                          }`}
+                        >
+                          {k === 'VERSES' ? `✎ ${t('kind.VERSES')}` : `≋ ${t('kind.BEATS')}`}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-2 border border-line-bright bg-bg px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink">
+                      ✎ {t('kind.VERSES')} · {t('host.openVerse')}
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <Field
@@ -378,10 +387,13 @@ export default function Dashboard() {
               <PanelHead
                 index="C2"
                 title={t('dashboard.manage.title')}
-                note={t('dashboard.manage.note', { n: battles.length })}
+                note={t('dashboard.manage.note', { n: myBattles.length })}
               />
               <div className="divide-y divide-line">
-                {battles.map((b) => {
+                {myBattles.length === 0 ? (
+                  <p className="px-6 py-8 font-mono text-[12px] text-muted">{t('host.noneYet')}</p>
+                ) : null}
+                {myBattles.map((b) => {
                   const subs = battleSubmissions(b.id)
                   const isOpen = openId === b.id
                   const atEnd = b.status === STATUS.WINNER_DECLARED

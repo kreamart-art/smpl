@@ -19,7 +19,9 @@ const CD_KEY = {
 
 export default function BattleCard({ battle }) {
   const t = useT()
-  const { battleSubmissions } = useApp()
+  const { battleSubmissions, getUser } = useApp()
+  const host = getUser(battle.curatorId)
+  const isCommunity = !!host && host.role !== 'curator'
   const { ts } = countdownTarget(battle)
   const subs = battleSubmissions(battle.id).length
   const attendees = battle.attendees.length
@@ -44,6 +46,11 @@ export default function BattleCard({ battle }) {
         {battle.blind ? (
           <span className="border border-line-bright px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-ink">
             ◈ {t('battleDetail.blindBadge')}
+          </span>
+        ) : null}
+        {isCommunity ? (
+          <span className="border border-line px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted">
+            {t('host.community')}
           </span>
         ) : null}
       </div>

@@ -123,6 +123,7 @@ export default function BattleDetail() {
 
   const { ts } = countdownTarget(battle)
   const curator = getUser(battle.curatorId)
+  const isCommunity = !!curator && curator.role !== 'curator'
   const c = kindCopy(battle.kind)
   const attending = currentUser && battle.attendees.includes(currentUser.id)
   const isRegistered = currentUser && battle.signups.includes(currentUser.id)
@@ -225,6 +226,11 @@ export default function BattleDetail() {
             {battle.blind ? (
               <span className="border border-line-bright px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
                 ◈ {t('battleDetail.blindBadge')}
+              </span>
+            ) : null}
+            {isCommunity ? (
+              <span className="border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                {t('host.community')}
               </span>
             ) : null}
           </div>
