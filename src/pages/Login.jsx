@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
@@ -25,6 +25,20 @@ export default function Login() {
   const [ticket, setTicket] = useState('') // set when the account has 2FA on
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
+  // The demo quick-login chips are hidden from the public — only the owner's
+  // device shows them (set via ?dev=1 or after logging in with the owner email).
+  const [showDemo, setShowDemo] = useState(false)
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('dev') === '1') localStorage.setItem('smpl_dev', '1')
+      if (params.get('dev') === '0') localStorage.removeItem('smpl_dev')
+      setShowDemo(localStorage.getItem('smpl_dev') === '1')
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   const land = (me) => navigate(me?.role === 'curator' ? '/dashboard' : '/battles')
 
@@ -37,6 +51,14 @@ export default function Login() {
       setTicket(r.ticket)
       setError('')
       return
+    }
+    // mark this device as the owner's so the demo chips show next time
+    if (String(mail).toLowerCase() === 'info.kreamix@gmail.com') {
+      try {
+        localStorage.setItem('smpl_dev', '1')
+      } catch {
+        /* ignore */
+      }
     }
     land(r.me)
   }
@@ -148,7 +170,7 @@ export default function Login() {
               </Btn>
             </form>
 
-            <div className="mt-8">
+            <div className={`mt-8 ${showDemo ? '' : 'hidden'}`}>
               <Label>{t('auth.quick.title')}</Label>
               <p className="mt-1 font-mono text-[10px] text-faint">{t('auth.quick.note')}</p>
               <div className="mt-3 grid gap-2">

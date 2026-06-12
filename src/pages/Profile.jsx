@@ -8,6 +8,7 @@ import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
 import BattleCard from '../components/BattleCard.jsx'
 import ShareButton from '../components/ShareButton.jsx'
+import AvatarCropper from '../components/AvatarCropper.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
 import LangToggle from '../components/LangToggle.jsx'
 import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe } from '../components/icons.jsx'
@@ -86,10 +87,12 @@ function Editor({ user, onClose }) {
   })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [cropFile, setCropFile] = useState(null)
 
   const onPick = (e) => {
     const file = e.target.files?.[0]
-    if (file) fileToAvatar(file, (data) => setForm((f) => ({ ...f, avatar: data })))
+    if (file) setCropFile(file) // open the zoom/crop tool
+    e.target.value = ''
   }
 
   const save = async () => {
@@ -118,6 +121,16 @@ function Editor({ user, onClose }) {
 
   return (
     <div className="border border-line-bright bg-panel">
+      {cropFile ? (
+        <AvatarCropper
+          file={cropFile}
+          onSave={(data) => {
+            setForm((f) => ({ ...f, avatar: data }))
+            setCropFile(null)
+          }}
+          onCancel={() => setCropFile(null)}
+        />
+      ) : null}
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('profile.editProfile')}</span>
         <button onClick={onClose} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">

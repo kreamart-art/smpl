@@ -29,6 +29,13 @@ export const extra = {
     'profile.contactHint': 'optional · shown publicly',
     'profile.contactLabel': 'Contact',
 
+    'battleDetail.downloadSource.BEATS': 'Download sample',
+    'battleDetail.downloadSource.VERSES': 'Download beat',
+
+    'crop.title': 'Adjust photo',
+    'crop.hint': 'Drag to move · slider to zoom',
+    'crop.save': 'Use photo',
+
     'notFound.kicker': 'Error / 404',
     'notFound.title': 'No signal.',
     'notFound.body': 'This page never made it past the noise floor.',
@@ -72,6 +79,13 @@ export const extra = {
     'profile.contactEmail': 'Contact-e-mail',
     'profile.contactHint': 'optioneel · openbaar zichtbaar',
     'profile.contactLabel': 'Contact',
+
+    'battleDetail.downloadSource.BEATS': 'Sample downloaden',
+    'battleDetail.downloadSource.VERSES': 'Beat downloaden',
+
+    'crop.title': 'Foto bijsnijden',
+    'crop.hint': 'Sleep om te verplaatsen · schuif om te zoomen',
+    'crop.save': 'Foto gebruiken',
 
     'notFound.kicker': 'Fout / 404',
     'notFound.title': 'Geen signaal.',

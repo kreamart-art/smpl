@@ -88,7 +88,7 @@ export const battleDetail = {
 
     // VOTING_PHASE panel
     'battleDetail.voting.title': 'Voting phase',
-    'battleDetail.voting.sub': 'Anonymous · one vote per person · not your own beat',
+    'battleDetail.voting.sub': 'Vote for your favourite · one per person · not your own',
     'battleDetail.voting.loginToVote': 'Log in to vote.',
     'battleDetail.voting.loginLink': 'Login ▸',
     'battleDetail.voting.voteIn': '✓ Your vote is in. Names + tallies appear when the curator declares the winner.',
@@ -188,7 +188,7 @@ export const battleDetail = {
 
     // VOTING_PHASE panel
     'battleDetail.voting.title': 'stemfase',
-    'battleDetail.voting.sub': 'anoniem · één stem per persoon · niet je eigen beat',
+    'battleDetail.voting.sub': 'stem op je favoriet · één per persoon · niet je eigen',
     'battleDetail.voting.loginToVote': 'log in om te stemmen.',
     'battleDetail.voting.loginLink': 'inloggen ▸',
     'battleDetail.voting.voteIn': '✓ je stem is binnen. namen + tellingen verschijnen als de curator de winnaar uitroept.',

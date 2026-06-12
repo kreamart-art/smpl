@@ -126,6 +126,16 @@ export default function BattleDetail() {
   const attending = currentUser && battle.attendees.includes(currentUser.id)
   const isRegistered = currentUser && battle.signups.includes(currentUser.id)
   const myVote = currentUser ? userVoteInBattle(battle.id, currentUser.id) : null
+  // Competitors download the source to work on it: producers get the sample
+  // (BEATS), artists get the beat (VERSES), curators get either.
+  const canDownloadSource =
+    !!currentUser &&
+    battle.sampleRevealed &&
+    playableAudio(battle.sampleUrl) &&
+    (currentUser.role === 'curator' ||
+      (battle.kind === 'BEATS' && currentUser.role === 'producer') ||
+      (battle.kind === 'VERSES' && currentUser.role === 'artist'))
+  const sourceExt = (battle.sampleUrl?.match(/\.(\w+)$/) || [])[1] || 'mp3'
 
   const sampleMeta = {
     id: `sample-${battle.id}`,
@@ -256,9 +266,18 @@ export default function BattleDetail() {
 
       {/* SAMPLE — always visible */}
       <div className="mt-4">
-        <Label className="mb-2">
-          {t(`battleDetail.sampleCaption.${battle.kind}`)}
-        </Label>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <Label>{t(`battleDetail.sampleCaption.${battle.kind}`)}</Label>
+          {canDownloadSource ? (
+            <a
+              href={battle.sampleUrl}
+              download={`SMPL-${(battle.title || 'source').replace(/[^\w]+/g, '_')}.${sourceExt}`}
+              className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
+            >
+              ↓ {t(`battleDetail.downloadSource.${battle.kind}`)}
+            </a>
+          ) : null}
+        </div>
         <AudioPlayer meta={sampleMeta} sealed={!battle.sampleRevealed} />
       </div>
 
@@ -441,7 +460,7 @@ export default function BattleDetail() {
             <div className="space-y-3">
               {shuffled.map((s, i) => {
                 const index = i + 1
-                const meta = beatMeta(s, index, false)
+                const meta = beatMeta(s, index, true)
                 const isOwn = s.mine
                 const votedThis = myVote && myVote.submissionId === s.id
                 let btn
@@ -473,7 +492,15 @@ export default function BattleDetail() {
                   )
                 }
                 return (
-                  <BeatPlayer key={s.id} meta={meta} index={index} noun={c.drop.toUpperCase()} rightSlot={btn} />
+                  <BeatPlayer
+                    key={s.id}
+                    meta={meta}
+                    index={index}
+                    noun={c.drop.toUpperCase()}
+                    revealed
+                    alias={getUser(s.producerId)?.alias}
+                    rightSlot={btn}
+                  />
                 )
               })}
               {!shuffled.length ? (

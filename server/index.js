@@ -73,20 +73,24 @@ function serSub(s, battle, uid, counts) {
     createdAt: s.createdAt,
     approved: !!s.approved,
   }
-  // An uploaded file has an opaque, random URL — safe to play during blind
-  // voting. Link submissions (SoundCloud/YouTube/arbitrary URL) can carry the
-  // producer's identity, so they stay hidden until the winner is declared.
-  const uploaded = s.audioUrl && s.audioUrl.startsWith('/api/uploads/') ? s.audioUrl : null
-  if (battle && battle.status === STATUS.WINNER_DECLARED) {
+  // Open voting: names + audio are visible from the voting phase on, so people
+  // can vote for their favourite maker. Live tallies stay hidden until the
+  // winner is declared (avoids bandwagon voting).
+  const reveal =
+    battle && (battle.status === STATUS.VOTING_PHASE || battle.status === STATUS.WINNER_DECLARED)
+  if (reveal) {
     return {
       ...base,
+      mine: !!uid && s.producerId === uid,
       producerId: s.producerId,
-      votes: counts[s.id] || 0,
       audioUrl: s.audioUrl || '',
       soundcloudUrl: s.soundcloudUrl || '',
       youtubeUrl: s.youtubeUrl || '',
+      ...(battle.status === STATUS.WINNER_DECLARED ? { votes: counts[s.id] || 0 } : {}),
     }
   }
+  // Before voting opens, only the opaque uploaded file is exposed (no identity).
+  const uploaded = s.audioUrl && s.audioUrl.startsWith('/api/uploads/') ? s.audioUrl : null
   return { ...base, mine: !!uid && s.producerId === uid, audioUrl: uploaded || undefined }
 }
 
