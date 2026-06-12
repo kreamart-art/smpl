@@ -95,6 +95,16 @@ export function IconShare(props) {
   )
 }
 
+export function IconPoster(props) {
+  return (
+    <Svg {...props}>
+      <rect x="4" y="3" width="16" height="18" />
+      <path d="M4 15l4-4 3 3 4-5 5 6" />
+      <circle cx="9.5" cy="8" r="1.4" />
+    </Svg>
+  )
+}
+
 export function IconMessage(props) {
   return (
     <Svg {...props}>

@@ -11,7 +11,7 @@ import ShareButton from '../components/ShareButton.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
 import LangToggle from '../components/LangToggle.jsx'
-import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe } from '../components/icons.jsx'
+import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconPoster } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -357,6 +357,14 @@ export default function Profile() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to={`/share/profile/${encodeURIComponent(user.alias)}`}
+                aria-label={t('share.title')}
+                title={t('share.title')}
+                className="flex h-12 w-12 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
+              >
+                <IconPoster size={18} />
+              </Link>
               <ShareButton
                 iconOnly
                 className="h-12 w-12"

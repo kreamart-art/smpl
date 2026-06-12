@@ -6,6 +6,7 @@ import BeatPlayer from '../components/BeatPlayer.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import ShareButton from '../components/ShareButton.jsx'
 import ShareToDM from '../components/ShareToDM.jsx'
+import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
 import { STATUS, STATUS_ORDER, STATUS_INDEX, countdownTarget } from '../data/status.js'
@@ -235,6 +236,14 @@ export default function BattleDetail() {
             >
               {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
             </button>
+            <Link
+              to={battle.status === STATUS.WINNER_DECLARED ? `/share/win/${battle.id}` : `/share/battle/${battle.id}`}
+              aria-label={t('share.title')}
+              title={t('share.title')}
+              className="flex h-10 w-10 items-center justify-center border border-line-bright text-ink transition-colors hover:border-ink"
+            >
+              <IconPoster size={18} />
+            </Link>
             <ShareToDM battleId={battle.id} className="h-10 w-10" />
             <ShareButton
               iconOnly

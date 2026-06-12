@@ -12,6 +12,7 @@ import Feed from './pages/Feed.jsx'
 import People from './pages/People.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Messages from './pages/Messages.jsx'
+import SharePage from './pages/SharePage.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 function BootScreen({ error }) {
@@ -47,6 +48,8 @@ export default function App() {
 
   return (
     <Routes>
+      {/* full-bleed, no chrome — a shareable poster */}
+      <Route path="/share/:kind/:id" element={<SharePage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/battles" element={<Battles />} />
