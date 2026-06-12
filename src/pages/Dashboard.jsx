@@ -17,6 +17,12 @@ const empty = {
   maxProducers: 8,
   description: '',
   sampleRevealed: true,
+  blind: false,
+  scheduled: false,
+  signupStart: '',
+  submissionsOpen: '',
+  votingOpens: '',
+  votingCloses: '',
 }
 
 function PanelHead({ index, title, note }) {
@@ -107,14 +113,30 @@ export default function Dashboard() {
       setMsg({ ok: false, text: t('dashboard.msg.needTitle') })
       return
     }
-    const r = await createBattle(form)
+    const payload = { ...form }
+    if (form.scheduled) {
+      const toMs = (v) => (v ? new Date(v).getTime() : NaN)
+      payload.signupStart = toMs(form.signupStart)
+      payload.submissionsOpen = toMs(form.submissionsOpen)
+      payload.votingOpens = toMs(form.votingOpens)
+      payload.votingCloses = toMs(form.votingCloses)
+      if (
+        [payload.signupStart, payload.submissionsOpen, payload.votingOpens, payload.votingCloses].some(
+          (x) => !Number.isFinite(x),
+        )
+      ) {
+        setMsg({ ok: false, text: t('dashboard.schedule.fillAll') })
+        return
+      }
+    }
+    const r = await createBattle(payload)
     if (r.ok) {
       setForm(empty)
       setMsg({
         ok: true,
         text: t('dashboard.msg.created', {
           title: r.battle.title,
-          status: t(`status.${STATUS.ANNOUNCED}`),
+          status: t(`status.${r.battle.status}`),
         }),
       })
     } else {
@@ -291,6 +313,53 @@ export default function Dashboard() {
                   />
                   {t('dashboard.create.revealNow')}
                 </label>
+
+                <label className="flex items-center gap-3 font-mono text-[11px] text-ink">
+                  <input
+                    type="checkbox"
+                    checked={form.blind}
+                    onChange={(e) => setForm({ ...form, blind: e.target.checked })}
+                    className="h-4 w-4 accent-white"
+                  />
+                  {t('dashboard.create.blind')}
+                </label>
+                {form.blind ? (
+                  <p className="-mt-3 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.blindHint')}</p>
+                ) : null}
+
+                <div className="border-t border-line pt-5">
+                  <label className="flex items-center gap-3 font-mono text-[11px] text-ink">
+                    <input
+                      type="checkbox"
+                      checked={form.scheduled}
+                      onChange={(e) => setForm({ ...form, scheduled: e.target.checked })}
+                      className="h-4 w-4 accent-white"
+                    />
+                    {t('dashboard.create.scheduled')}
+                  </label>
+                  {form.scheduled ? (
+                    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {[
+                        ['signupStart', 'dashboard.schedule.signupOpens'],
+                        ['submissionsOpen', 'dashboard.schedule.submissionsOpen'],
+                        ['votingOpens', 'dashboard.schedule.votingOpens'],
+                        ['votingCloses', 'dashboard.schedule.votingCloses'],
+                      ].map(([key, label]) => (
+                        <Field key={key} label={t(label)}>
+                          <input
+                            type="datetime-local"
+                            className={inputCls}
+                            value={form[key]}
+                            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                          />
+                        </Field>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.manualHint')}</p>
+                  )}
+                </div>
+
                 <Btn type="submit" variant="solid" size="lg" full>
                   {t('dashboard.create.submit')}
                 </Btn>

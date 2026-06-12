@@ -41,6 +41,11 @@ export default function BattleCard({ battle }) {
       <div className="relative flex flex-wrap items-center gap-2 px-5 pt-5">
         <StatusBadge status={battle.status} size="sm" />
         <KindBadge kind={battle.kind} size="sm" />
+        {battle.blind ? (
+          <span className="border border-line-bright px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-ink">
+            ◈ {t('battleDetail.blindBadge')}
+          </span>
+        ) : null}
       </div>
 
       {/* title + sample */}

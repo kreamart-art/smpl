@@ -16,7 +16,7 @@ import {
   makeBackupCodes,
   hashBackup,
 } from './auth.js'
-import { STATUS, nextStatus } from '../src/data/status.js'
+import { STATUS, STATUS_INDEX, nextStatus } from '../src/data/status.js'
 
 // In dev, Vite owns 5190 and proxies /api here (5191). Only honour PORT in
 // production, where this server serves everything on one port.
@@ -63,6 +63,31 @@ function voteCountMap() {
   return m
 }
 
+// Derive the phase a scheduled battle should be in at `now`. Never auto-declares
+// a winner — that's the curator's call; voting just closes at voteEnd.
+function scheduledStatus(now, signupStart, signupEnd, submitEnd) {
+  if (now >= submitEnd) return STATUS.VOTING_PHASE
+  if (now >= signupEnd) return STATUS.SUBMISSION_PHASE
+  if (now >= signupStart) return STATUS.OPEN_FOR_SIGNUP
+  return STATUS.ANNOUNCED
+}
+
+// Roll scheduled battles forward to match their timeline (forward-only, runs on
+// an interval). Manual battles (scheduled = 0) are untouched.
+function autoAdvance() {
+  const now = Date.now()
+  const rows = db
+    .prepare('SELECT id, status, signupStart, signupEnd, submitEnd FROM battles WHERE scheduled = 1')
+    .all()
+  for (const b of rows) {
+    if (b.status === STATUS.WINNER_DECLARED) continue
+    const target = scheduledStatus(now, b.signupStart, b.signupEnd, b.submitEnd)
+    if (STATUS_INDEX[target] > STATUS_INDEX[b.status]) {
+      db.prepare('UPDATE battles SET status = ? WHERE id = ?').run(target, b.id)
+    }
+  }
+}
+
 // Serialise a submission with phase-aware anonymity. Identity + tallies are
 // only exposed once the winner is declared; otherwise just a `mine` flag.
 function serSub(s, battle, uid, counts) {
@@ -73,12 +98,14 @@ function serSub(s, battle, uid, counts) {
     createdAt: s.createdAt,
     approved: !!s.approved,
   }
-  // Open voting: names + audio are visible from the voting phase on, so people
-  // can vote for their favourite maker. Live tallies stay hidden until the
-  // winner is declared (avoids bandwagon voting).
-  const reveal =
-    battle && (battle.status === STATUS.VOTING_PHASE || battle.status === STATUS.WINNER_DECLARED)
-  if (reveal) {
+  // Open voting reveals names from the voting phase on (vote for your
+  // favourite). BLIND battles keep names hidden during voting — only the
+  // opaque uploaded audio plays — and reveal everything at the winner.
+  // Live tallies stay hidden until the winner is declared either way.
+  const revealNames =
+    battle &&
+    ((battle.status === STATUS.VOTING_PHASE && !battle.blind) || battle.status === STATUS.WINNER_DECLARED)
+  if (revealNames) {
     return {
       ...base,
       mine: !!uid && s.producerId === uid,
@@ -309,17 +336,41 @@ app.post('/api/battles', requireCurator, (req, res) => {
   const d = req.body || {}
   const t = Date.now()
   const DAY = 86400000
+  // Schedule: either curator-set (auto-runs the phases) or the default manual
+  // timeline (the curator pushes phases forward by hand, as before).
+  let signupStart = t,
+    signupEnd = t + 3 * DAY,
+    submitEnd = t + 7 * DAY,
+    voteEnd = t + 10 * DAY
+  let scheduled = 0
+  if (d.scheduled) {
+    const s = Number(d.signupStart)
+    const so = Number(d.submissionsOpen)
+    const vo = Number(d.votingOpens)
+    const vc = Number(d.votingCloses)
+    if (![s, so, vo, vc].every(Number.isFinite)) return fail(res, 400, 'Fill in the full schedule.')
+    if (!(s < so && so < vo && vo < vc))
+      return fail(res, 400, 'The schedule must run in order: signup → submissions → voting → close.')
+    signupStart = s
+    signupEnd = so
+    submitEnd = vo
+    voteEnd = vc
+    scheduled = 1
+  }
+  const submitStart = signupEnd // phases are contiguous
+  const voteStart = submitEnd
+  const status = scheduled ? scheduledStatus(t, signupStart, signupEnd, submitEnd) : STATUS.ANNOUNCED
   const id = `b_${randomUUID().slice(0, 8)}`
   db.prepare(
-    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id, d.kind === 'VERSES' ? 'VERSES' : 'BEATS',
     String(d.title || '').trim() || 'UNTITLED BATTLE', d.sampleUrl || '',
     String(d.sampleArtist || '').trim() || 'Unknown', String(d.sampleSong || '').trim() || 'Untitled sample',
     10, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
-    Number(d.maxProducers) || 8, t, t + 3 * DAY, t + 3 * DAY, t + 7 * DAY, t + 7 * DAY, t + 10 * DAY,
-    STATUS.ANNOUNCED, '[]', '[]', null,
+    Number(d.maxProducers) || 8, signupStart, signupEnd, submitStart, submitEnd, voteStart, voteEnd,
+    status, '[]', '[]', null, d.blind ? 1 : 0, scheduled,
   )
   return ok(res, { battle: rowToBattle(getBattleRow(id)) })
 })
@@ -415,6 +466,7 @@ app.post('/api/battles/:id/vote', requireAuth, (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
   if (!b) return fail(res, 404, 'Battle not found.')
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Voting is not open.')
+  if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Voting has closed.')
   const already = db
     .prepare('SELECT 1 FROM votes WHERE battleId = ? AND userId = ?')
     .get(b.id, req.user.id)
@@ -706,6 +758,10 @@ if (existsSync(distDir)) {
     res.sendFile(`${distDir}/index.html`)
   })
 }
+
+// Run scheduled battles forward on boot + every minute.
+autoAdvance()
+setInterval(autoAdvance, 60_000)
 
 app.listen(PORT, () => {
   console.log(`[smpl-api] listening on http://localhost:${PORT}${seeded ? ' (seeded fresh db)' : ''}`)

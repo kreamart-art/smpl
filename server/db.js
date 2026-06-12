@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS battles (
   sampleDuration INTEGER, sampleRevealed INTEGER, description TEXT, curatorId TEXT,
   maxProducers INTEGER, signupStart INTEGER, signupEnd INTEGER, submitStart INTEGER,
   submitEnd INTEGER, voteStart INTEGER, voteEnd INTEGER, status TEXT,
-  attendees TEXT, signups TEXT, winnerSubmissionId TEXT
+  attendees TEXT, signups TEXT, winnerSubmissionId TEXT, blind INTEGER, scheduled INTEGER
 );
 CREATE TABLE IF NOT EXISTS submissions (
   id TEXT PRIMARY KEY, battleId TEXT, producerId TEXT, audioUrl TEXT,
@@ -105,6 +105,8 @@ export function rowToBattle(r) {
     ...r,
     kind: r.kind || 'BEATS',
     sampleRevealed: !!r.sampleRevealed,
+    blind: !!r.blind,
+    scheduled: !!r.scheduled,
     attendees: P(r.attendees),
     signups: P(r.signups),
   }
@@ -184,4 +186,7 @@ export function migrate() {
   addColumn('messages', 'battleId', 'TEXT')
   // 2026-06-12: optional public contact email on a profile.
   addColumn('users', 'contactEmail', 'TEXT')
+  // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.
+  addColumn('battles', 'blind', 'INTEGER')
+  addColumn('battles', 'scheduled', 'INTEGER')
 }

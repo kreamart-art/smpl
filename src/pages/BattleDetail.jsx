@@ -219,9 +219,14 @@ export default function BattleDetail() {
       {/* HEADER */}
       <div className="relative mt-6 border border-line bg-panel">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <StatusBadge status={battle.status} size="lg" />
             <KindBadge kind={battle.kind} size="md" />
+            {battle.blind ? (
+              <span className="border border-line-bright px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
+                ◈ {t('battleDetail.blindBadge')}
+              </span>
+            ) : null}
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
@@ -454,7 +459,7 @@ export default function BattleDetail() {
         {battle.status === STATUS.VOTING_PHASE && (
           <PhaseBox
             title={t('battleDetail.voting.title')}
-            sub={t('battleDetail.voting.sub')}
+            sub={t(battle.blind ? 'battleDetail.voting.subBlind' : 'battleDetail.voting.sub')}
           >
             {!currentUser ? (
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
@@ -469,7 +474,7 @@ export default function BattleDetail() {
             <div className="space-y-3">
               {shuffled.map((s, i) => {
                 const index = i + 1
-                const meta = beatMeta(s, index, true)
+                const meta = beatMeta(s, index, !battle.blind)
                 const isOwn = s.mine
                 const votedThis = myVote && myVote.submissionId === s.id
                 let btn
@@ -506,8 +511,8 @@ export default function BattleDetail() {
                     meta={meta}
                     index={index}
                     noun={c.drop.toUpperCase()}
-                    revealed
-                    alias={getUser(s.producerId)?.alias}
+                    revealed={!battle.blind}
+                    alias={battle.blind ? undefined : getUser(s.producerId)?.alias}
                     rightSlot={btn}
                   />
                 )
