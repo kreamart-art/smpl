@@ -94,6 +94,8 @@ export default function BattleDetail() {
   const battle = getBattle(id)
   const [msg, setMsg] = useState(null)
   const [form, setForm] = useState({ audioUrl: '', soundcloudUrl: '', youtubeUrl: '' })
+  const [beatName, setBeatName] = useState('')
+  const [uploadingBeat, setUploadingBeat] = useState(false)
 
   const approvedSubs = useMemo(
     () => (battle ? battleSubmissions(battle.id).filter((s) => s.approved) : []),
@@ -139,6 +141,7 @@ export default function BattleDetail() {
     sub: battle.title,
     duration: s.duration || battle.sampleDuration || 15,
     seed: s.id,
+    src: playableAudio(s.audioUrl) ? s.audioUrl : undefined,
   })
 
   const requireLogin = (action) => {
@@ -166,6 +169,27 @@ export default function BattleDetail() {
         ? { ok: true, text: r.updated ? t('battleDetail.fb.submissionUpdated') : t('battleDetail.fb.beatSubmitted') }
         : { ok: false, text: r.error },
     )
+  }
+
+  const onPickBeat = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 30 * 1024 * 1024) {
+      setMsg({ ok: false, text: t('submit.tooLarge') })
+      e.target.value = ''
+      return
+    }
+    setUploadingBeat(true)
+    const r = await app.uploadAudio(file)
+    setUploadingBeat(false)
+    e.target.value = ''
+    if (r.ok) {
+      setForm((f) => ({ ...f, audioUrl: r.url }))
+      setBeatName(file.name)
+      setMsg({ ok: true, text: t('submit.uploaded', { name: file.name }) })
+    } else {
+      setMsg({ ok: false, text: r.error || 'Upload failed.' })
+    }
   }
 
   const onVote = async (submissionId) => {
@@ -316,14 +340,59 @@ export default function BattleDetail() {
                 <p className="font-mono text-[12px] leading-relaxed text-muted">
                   {t(`battleDetail.submission.brief.${battle.kind}`)}
                 </p>
-                <Field label={t('battleDetail.submission.field.audio')} hint={t('battleDetail.submission.hint.optional')}>
-                  <input
-                    className={inputCls}
-                    placeholder="https://…"
-                    value={form.audioUrl}
-                    onChange={(e) => setForm({ ...form, audioUrl: e.target.value })}
-                  />
-                </Field>
+                <div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Label>{t(`submit.upload.${battle.kind}`)}</Label>
+                    <span className="font-mono text-[10px] text-muted">{t('submit.anonHint')}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <label
+                      className={`cursor-pointer border border-line-bright px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg ${
+                        uploadingBeat ? 'pointer-events-none opacity-40' : ''
+                      }`}
+                    >
+                      {uploadingBeat
+                        ? t('submit.uploading')
+                        : beatName
+                          ? t('submit.replace')
+                          : t(`submit.upload.${battle.kind}`)}
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        className="hidden"
+                        onChange={onPickBeat}
+                        disabled={uploadingBeat}
+                      />
+                    </label>
+                    {beatName ? (
+                      <span className="flex items-center gap-2 font-mono text-[11px] text-ink">
+                        <span className="text-muted">✓</span>
+                        <span className="max-w-[170px] truncate">{beatName}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((f) => ({ ...f, audioUrl: '' }))
+                            setBeatName('')
+                          }}
+                          className="text-muted hover:text-ink"
+                          aria-label={t('submit.remove')}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                {!beatName ? (
+                  <Field label={t('submit.orLink')} hint={t('battleDetail.submission.hint.optional')}>
+                    <input
+                      className={inputCls}
+                      placeholder="https://…"
+                      value={form.audioUrl}
+                      onChange={(e) => setForm({ ...form, audioUrl: e.target.value })}
+                    />
+                  </Field>
+                ) : null}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label={t('battleDetail.submission.field.soundcloud')} hint={t('battleDetail.submission.hint.optional')}>
                     <input

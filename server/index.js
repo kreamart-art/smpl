@@ -73,10 +73,21 @@ function serSub(s, battle, uid, counts) {
     createdAt: s.createdAt,
     approved: !!s.approved,
   }
+  // An uploaded file has an opaque, random URL — safe to play during blind
+  // voting. Link submissions (SoundCloud/YouTube/arbitrary URL) can carry the
+  // producer's identity, so they stay hidden until the winner is declared.
+  const uploaded = s.audioUrl && s.audioUrl.startsWith('/api/uploads/') ? s.audioUrl : null
   if (battle && battle.status === STATUS.WINNER_DECLARED) {
-    return { ...base, producerId: s.producerId, votes: counts[s.id] || 0 }
+    return {
+      ...base,
+      producerId: s.producerId,
+      votes: counts[s.id] || 0,
+      audioUrl: s.audioUrl || '',
+      soundcloudUrl: s.soundcloudUrl || '',
+      youtubeUrl: s.youtubeUrl || '',
+    }
   }
-  return { ...base, mine: !!uid && s.producerId === uid }
+  return { ...base, mine: !!uid && s.producerId === uid, audioUrl: uploaded || undefined }
 }
 
 function buildBootstrap(uid, userRow) {
@@ -621,9 +632,29 @@ const AUDIO_EXT = {
   'audio/ogg': 'ogg', 'audio/webm': 'webm', 'audio/flac': 'flac', 'audio/x-flac': 'flac',
 }
 
+// Strip ID3 tags so an uploaded beat can't carry the producer's name into the
+// anonymous voting phase. Handles ID3v2 (front) + ID3v1 (last 128 bytes), which
+// covers MP3; the magic-byte checks make it a safe no-op for other containers.
+function stripAudioMetadata(buf) {
+  let start = 0
+  let end = buf.length
+  if (buf.length > 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
+    const size =
+      ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f)
+    start = 10 + size + (buf[5] & 0x10 ? 10 : 0) // +10 if a footer is present
+  }
+  if (end - start >= 128 && buf[end - 128] === 0x54 && buf[end - 127] === 0x41 && buf[end - 126] === 0x47) {
+    end -= 128 // trailing 'TAG' (ID3v1)
+  }
+  return start > 0 || end < buf.length ? buf.subarray(start, end) : buf
+}
+
+// Any logged-in user can upload audio: curators (samples) + competitors
+// (beats/verses). Files get an opaque name and stripped tags, so a beat stays
+// anonymous when its URL is exposed during blind voting.
 app.post(
   '/api/uploads/audio',
-  requireCurator,
+  requireAuth,
   express.raw({ type: ['audio/*', 'application/octet-stream'], limit: '30mb' }),
   (req, res) => {
     const buf = req.body
@@ -633,7 +664,7 @@ app.post(
     if (!ext) return fail(res, 415, 'Unsupported audio — use mp3, wav, m4a, aac, ogg or flac.')
     const name = `a_${randomUUID().slice(0, 12)}.${ext}`
     try {
-      writeFileSync(path.join(UPLOAD_DIR, name), buf)
+      writeFileSync(path.join(UPLOAD_DIR, name), stripAudioMetadata(buf))
     } catch {
       return fail(res, 500, 'Could not store the file.')
     }

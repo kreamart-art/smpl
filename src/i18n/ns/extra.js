@@ -15,6 +15,16 @@ export const extra = {
     'share.share': 'Share',
     'share.copied': 'Link copied',
 
+    'submit.upload.BEATS': 'Upload your beat',
+    'submit.upload.VERSES': 'Upload your verse',
+    'submit.uploading': 'Uploading…',
+    'submit.replace': 'Replace file',
+    'submit.anonHint': 'Heard anonymously during voting · mp3/wav/m4a · ≤30MB',
+    'submit.orLink': 'or paste a link instead',
+    'submit.tooLarge': 'That audio is over 30 MB — bounce it smaller.',
+    'submit.uploaded': 'Uploaded {name}',
+    'submit.remove': 'Remove',
+
     'notFound.kicker': 'Error / 404',
     'notFound.title': 'No signal.',
     'notFound.body': 'This page never made it past the noise floor.',
@@ -44,6 +54,16 @@ export const extra = {
 
     'share.share': 'Delen',
     'share.copied': 'Link gekopieerd',
+
+    'submit.upload.BEATS': 'Upload je beat',
+    'submit.upload.VERSES': 'Upload je verse',
+    'submit.uploading': 'Uploaden…',
+    'submit.replace': 'Bestand vervangen',
+    'submit.anonHint': 'Anoniem te horen tijdens stemmen · mp3/wav/m4a · ≤30MB',
+    'submit.orLink': 'of plak in plaats daarvan een link',
+    'submit.tooLarge': 'Die audio is groter dan 30 MB — bounce ’m kleiner.',
+    'submit.uploaded': '{name} geüpload',
+    'submit.remove': 'Verwijderen',
 
     'notFound.kicker': 'Fout / 404',
     'notFound.title': 'Geen signaal.',
