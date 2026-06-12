@@ -88,6 +88,7 @@ export default function Signup() {
     password: '',
   })
   const [error, setError] = useState('')
+  const [agree, setAgree] = useState(false)
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
   const onPickAvatar = (e) => {
     const file = e.target.files?.[0]
@@ -106,7 +107,11 @@ export default function Signup() {
       setError(t('auth.ageTooYoung'))
       return
     }
-    const r = await signup({ ...form, role, lang })
+    if (!agree) {
+      setError(t('auth.signup.mustAgree'))
+      return
+    }
+    const r = await signup({ ...form, role, lang, acceptTerms: true })
     if (!r.ok) {
       setError(r.error)
       return
@@ -277,6 +282,26 @@ export default function Signup() {
           </div>
         </div>
 
+        <label className="flex cursor-pointer items-start gap-3 border border-line bg-panel px-4 py-3.5">
+          <input
+            type="checkbox"
+            checked={agree}
+            onChange={(e) => setAgree(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#f0eee9]"
+          />
+          <span className="font-mono text-[11px] leading-relaxed text-muted">
+            {t('auth.signup.agreePre')}{' '}
+            <Link to="/terms" target="_blank" className="text-ink underline underline-offset-4">
+              {t('common.terms')}
+            </Link>{' '}
+            {t('auth.signup.agreeAnd')}{' '}
+            <Link to="/privacy" target="_blank" className="text-ink underline underline-offset-4">
+              {t('common.privacy')}
+            </Link>
+            .
+          </span>
+        </label>
+
         {error ? (
           <div className="border border-line-bright px-3 py-2 font-mono text-[11px] text-ink">
             ! {error}
@@ -284,7 +309,7 @@ export default function Signup() {
         ) : null}
 
         <div className="flex flex-wrap items-center gap-4">
-          <Btn type="submit" variant="solid" size="lg">
+          <Btn type="submit" variant="solid" size="lg" disabled={!agree}>
             {t('auth.signup.create')}
           </Btn>
           <span className="font-mono text-[11px] text-muted">

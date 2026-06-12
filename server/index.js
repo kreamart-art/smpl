@@ -125,6 +125,7 @@ function serSub(s, battle, uid, counts) {
     duration: s.duration,
     createdAt: s.createdAt,
     approved: !!s.approved,
+    disqualified: !!s.disqualified,
   }
   // Open voting reveals names from the voting phase on (vote for your
   // favourite). BLIND battles keep names hidden during voting — only the
@@ -356,8 +357,9 @@ function sendVerificationEmail(row, lang) {
 }
 
 app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => {
-  const { alias, email, role, name, dob, location, bio, genres, links, avatar, password } =
+  const { alias, email, role, name, dob, location, bio, genres, links, avatar, password, acceptTerms } =
     req.body || {}
+  if (!acceptTerms) return fail(res, 400, 'You must accept the Terms and Privacy Policy to sign up.')
   const cleanAlias = String(alias || '').trim()
   const cleanEmail = String(email || '').trim().toLowerCase()
   if (!cleanAlias || !cleanEmail) return fail(res, 400, 'Alias and email are required.')
@@ -391,14 +393,15 @@ app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => 
     joinedAt: now,
     lastSeenAt: now,
     passwordHash: hashPassword(password),
+    acceptedTerms: now,
   }
   db.prepare(
-    `INSERT INTO users (id,alias,email,role,name,dob,bio,location,links,genres,pastHistory,avatar,joinedAt,lastSeenAt,passwordHash)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO users (id,alias,email,role,name,dob,bio,location,links,genres,pastHistory,avatar,joinedAt,lastSeenAt,passwordHash,acceptedTerms)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     user.id, user.alias, user.email, user.role, user.name, user.dob, user.bio, user.location,
     user.links, user.genres, user.pastHistory, user.avatar, user.joinedAt, user.lastSeenAt,
-    user.passwordHash,
+    user.passwordHash, user.acceptedTerms,
   )
   const row = getUserRow(id)
   // kick off email verification (no-op if SMTP isn't configured yet)
@@ -580,6 +583,7 @@ app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
   if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
   const sub = getSubmissionRow(req.body?.submissionId)
   if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not in this battle.')
+  if (sub.disqualified) return fail(res, 400, 'A disqualified entry can’t win.')
   db.prepare('UPDATE battles SET status = ?, winnerSubmissionId = ? WHERE id = ?').run(
     STATUS.WINNER_DECLARED, sub.id, b.id,
   )
@@ -601,6 +605,7 @@ app.post('/api/battles/:id/attend', requireAuth, (req, res) => {
 app.post('/api/battles/:id/register', requireAuth, (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
   if (!b) return fail(res, 404, 'Battle not found.')
+  if (!req.body?.agreeRules) return fail(res, 400, 'You must accept the battle rules to enter.')
   const need = b.kind === 'VERSES' ? 'artist' : 'producer'
   if (req.user.role !== need)
     return fail(
@@ -654,6 +659,21 @@ app.patch('/api/submissions/:id/approve', requireAuth, (req, res) => {
   return ok(res, {})
 })
 
+// curator/admin disqualifies (or reinstates) an entry that breaks the rules.
+app.post('/api/submissions/:id/disqualify', requireAuth, (req, res) => {
+  const s = getSubmissionRow(req.params.id)
+  if (!s) return fail(res, 404, 'Beat not found.')
+  const b = getBattleRow(s.battleId)
+  if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
+  const next = s.disqualified ? 0 : 1
+  db.prepare('UPDATE submissions SET disqualified = ? WHERE id = ?').run(next, s.id)
+  // a disqualified entry can't stand as the declared winner
+  if (next && b.winnerSubmissionId === s.id) {
+    db.prepare('UPDATE battles SET winnerSubmissionId = NULL WHERE id = ?').run(b.id)
+  }
+  return ok(res, { disqualified: !!next })
+})
+
 // ----- votes -----------------------------------------------------------------
 app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
@@ -666,6 +686,7 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   if (already) return fail(res, 409, 'You already voted in this battle.')
   const sub = getSubmissionRow(req.body?.submissionId)
   if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not found.')
+  if (sub.disqualified) return fail(res, 400, 'That entry was disqualified.')
   if (sub.producerId === req.user.id) return fail(res, 400, 'You cannot vote for your own beat.')
   db.prepare('INSERT INTO votes (id,battleId,submissionId,userId) VALUES (?,?,?,?)').run(
     `v_${randomUUID().slice(0, 8)}`, b.id, sub.id, req.user.id,

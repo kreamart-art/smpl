@@ -8,6 +8,7 @@ import ShareButton from '../components/ShareButton.jsx'
 import ShareToDM from '../components/ShareToDM.jsx'
 import { ReportButton } from '../components/Safety.jsx'
 import CommentThread from '../components/CommentThread.jsx'
+import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
@@ -94,6 +95,8 @@ export default function BattleDetail() {
     rankedSubmissions,
     voteCount,
     mailConfigured,
+    isCurator,
+    disqualifySubmission,
   } = app
 
   const battle = getBattle(id)
@@ -101,6 +104,7 @@ export default function BattleDetail() {
   const [form, setForm] = useState({ audioUrl: '', soundcloudUrl: '', youtubeUrl: '' })
   const [beatName, setBeatName] = useState('')
   const [uploadingBeat, setUploadingBeat] = useState(false)
+  const [rulesOpen, setRulesOpen] = useState(false)
 
   const approvedSubs = useMemo(
     () => (battle ? battleSubmissions(battle.id).filter((s) => s.approved) : []),
@@ -171,9 +175,13 @@ export default function BattleDetail() {
     else setMsg(null)
   }
 
-  const onRegister = async () => {
+  const openRules = () => {
     if (!currentUser) return requireLogin('slot')
+    setRulesOpen(true)
+  }
+  const onRegister = async () => {
     const r = await registerProducer(battle.id)
+    setRulesOpen(false)
     setMsg(r.ok ? { ok: true, text: t('battleDetail.fb.slotClaimed') } : { ok: false, text: r.error })
   }
 
@@ -367,7 +375,7 @@ export default function BattleDetail() {
                 {t('battleDetail.signup.registered')}
               </div>
             ) : (
-              <Btn onClick={onRegister} variant="solid" size="lg">
+              <Btn onClick={openRules} variant="solid" size="lg">
                 {t(`battleDetail.signup.claim.${battle.kind}`)}
               </Btn>
             )}
@@ -378,6 +386,8 @@ export default function BattleDetail() {
             ) : null}
           </PhaseBox>
         )}
+
+        {rulesOpen ? <BattleRulesModal onAgree={onRegister} onClose={() => setRulesOpen(false)} /> : null}
 
         {battle.status === STATUS.SUBMISSION_PHASE && (
           <PhaseBox
@@ -492,7 +502,13 @@ export default function BattleDetail() {
                 const isOwn = s.mine
                 const votedThis = myVote && myVote.submissionId === s.id
                 let btn
-                if (votedThis) {
+                if (s.disqualified) {
+                  btn = (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-verified">
+                      {t('battle.disqualified')}
+                    </span>
+                  )
+                } else if (votedThis) {
                   btn = (
                     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink">
                       {t('common.voted')}
@@ -529,6 +545,16 @@ export default function BattleDetail() {
                       alias={battle.blind ? undefined : getUser(s.producerId)?.alias}
                       rightSlot={btn}
                     />
+                    {isCurator ? (
+                      <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
+                        <button
+                          onClick={() => disqualifySubmission(s.id)}
+                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+                        >
+                          {s.disqualified ? `↩ ${t('battle.reinstate')}` : `⊘ ${t('battle.disqualify')}`}
+                        </button>
+                      </div>
+                    ) : null}
                     {!battle.blind ? <CommentThread submissionId={s.id} producerId={s.producerId} /> : null}
                   </div>
                 )

@@ -184,6 +184,7 @@ export function AppProvider({ children }) {
   const rankedSubmissions = useCallback(
     (battleId) =>
       battleSubmissions(battleId)
+        .filter((s) => !s.disqualified) // disqualified entries are out of the running
         .map((s) => ({ ...s, votes: voteCount(s.id) }))
         .sort((a, b) => b.votes - a.votes),
     [battleSubmissions, voteCount],
@@ -392,7 +393,11 @@ export function AppProvider({ children }) {
     [mutate],
   )
   const registerProducer = useCallback(
-    (battleId) => mutate(() => api.post(`/api/battles/${battleId}/register`)),
+    (battleId) => mutate(() => api.post(`/api/battles/${battleId}/register`, { agreeRules: true })),
+    [mutate],
+  )
+  const disqualifySubmission = useCallback(
+    (submissionId) => mutate(() => api.post(`/api/submissions/${submissionId}/disqualify`)),
     [mutate],
   )
   const submitBeat = useCallback(
@@ -546,6 +551,7 @@ export function AppProvider({ children }) {
     // mutations
     toggleAttendee,
     registerProducer,
+    disqualifySubmission,
     submitBeat,
     castVote,
     toggleFollow,
