@@ -8,6 +8,7 @@ import BottomTabBar from './BottomTabBar.jsx'
 import InstallBanner from './InstallBanner.jsx'
 import VerifyEmailBanner from './VerifyEmailBanner.jsx'
 import PushPrompt from './PushPrompt.jsx'
+import PullToRefresh from './PullToRefresh.jsx'
 import { Grain, Vignette } from './Atmosphere.jsx'
 import { usePlayback } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
@@ -36,9 +37,11 @@ export default function Layout() {
           className="relative flex-1"
           style={{ paddingBottom: `calc(${pad}px + env(safe-area-inset-bottom))` }}
         >
-          <div key={pathname} className="fadein">
-            <Outlet />
-          </div>
+          <PullToRefresh>
+            <div key={pathname} className="fadein">
+              <Outlet />
+            </div>
+          </PullToRefresh>
         </main>
         <TransportBar />
         <BottomTabBar />

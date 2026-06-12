@@ -101,6 +101,13 @@ export default function Feed() {
     }
   }, [fetchFeed])
 
+  // pull-to-refresh (app shell) re-fetches the feed
+  useEffect(() => {
+    const reload = () => fetchFeed().then((r) => r.ok && setItems(r.feed || []))
+    window.addEventListener('smpl:refresh', reload)
+    return () => window.removeEventListener('smpl:refresh', reload)
+  }, [fetchFeed])
+
   const shown = useMemo(() => {
     if (!items) return []
     const f = items.filter((i) => !(i.type === 'placement' && i.position === 1))

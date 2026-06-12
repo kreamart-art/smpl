@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from './Avatar.jsx'
 import Portal from './Portal.jsx'
+import VerifiedBadge from './VerifiedBadge.jsx'
 import { roleLabel } from '../data/kind.js'
 
 // Modal listing a user's followers / following, with follow-back buttons.
@@ -67,7 +68,10 @@ export default function FollowList({ userId, initialTab = 'followers', onClose }
                   >
                     <Avatar alias={u.alias} src={u.avatar} size={40} />
                     <div className="min-w-0">
-                      <div className="truncate font-mono text-[12px] text-ink">@{u.alias}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate font-mono text-[12px] text-ink">@{u.alias}</span>
+                        {u.verified ? <VerifiedBadge size={13} /> : null}
+                      </div>
                       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{roleLabel(u.role)}</div>
                     </div>
                   </Link>

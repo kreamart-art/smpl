@@ -27,6 +27,8 @@ const APP_URL = (
   process.env.SMPL_APP_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://smpl.artnomad.nl' : 'http://localhost:5190')
 ).replace(/\/$/, '')
+// Where the contact form lands.
+const CONTACT_TO = process.env.SMPL_CONTACT_EMAIL || 'info@artnomad.nl'
 
 // In dev, Vite owns 5190 and proxies /api here (5191). Only honour PORT in
 // production, where this server serves everything on one port.
@@ -745,6 +747,15 @@ app.post('/api/admin/users/:id/role', requireAuth, requireAdmin, (req, res) => {
   return ok(res, { user: pubUser(getUserRow(target.id)) })
 })
 
+// toggle (or set) the verified badge on a user
+app.post('/api/admin/users/:id/verify', requireAuth, requireAdmin, (req, res) => {
+  const target = getUserRow(req.params.id)
+  if (!target) return fail(res, 404, 'User not found.')
+  const next = req.body?.verified === undefined ? !target.verified : !!req.body.verified
+  db.prepare('UPDATE users SET verified = ? WHERE id = ?').run(next ? 1 : 0, target.id)
+  return ok(res, { user: pubUser(getUserRow(target.id)) })
+})
+
 // ----- web push notifications ------------------------------------------------
 app.get('/api/push/key', (req, res) => ok(res, { key: vapidPublicKey, configured: pushConfigured }))
 app.post('/api/push/subscribe', requireAuth, (req, res) => {
@@ -756,6 +767,25 @@ app.post('/api/push/subscribe', requireAuth, (req, res) => {
 app.post('/api/push/unsubscribe', requireAuth, (req, res) => {
   removeSubscription(req.body?.endpoint)
   return ok(res, {})
+})
+
+// ----- contact form (public) -------------------------------------------------
+app.post('/api/contact', rateLimit('contact', 5, 30 * 60_000), async (req, res) => {
+  const from = String(req.body?.email || '').trim()
+  const msg = String(req.body?.message || '').trim()
+  const topic = String(req.body?.topic || '').trim().slice(0, 40)
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(from)) return fail(res, 400, 'Enter a valid email so we can reply.')
+  if (msg.length < 5) return fail(res, 400, 'Write a short message first.')
+  if (msg.length > 5000) return fail(res, 400, 'That message is too long.')
+  if (!mailConfigured) return fail(res, 503, 'Contact isn’t set up yet — email us directly.')
+  const r = await sendEmail({
+    to: CONTACT_TO,
+    replyTo: from,
+    subject: `SMPL contact${topic ? ` · ${topic}` : ''} — ${from}`,
+    text: `From: ${from}\nTopic: ${topic || '—'}\n\n${msg}`,
+  })
+  if (!r.ok) return fail(res, 502, 'Could not send — try again or email us directly.')
+  return ok(res, { sent: true })
 })
 
 // ----- profile editing -------------------------------------------------------

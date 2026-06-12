@@ -12,8 +12,9 @@ import AvatarCropper from '../components/AvatarCropper.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
 import LangToggle from '../components/LangToggle.jsx'
 import FollowList from '../components/FollowList.jsx'
+import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
-import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconPoster, IconBell } from '../components/icons.jsx'
+import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconPoster, IconBell, IconUser } from '../components/icons.jsx'
 import { pushSupported, pushPermission, isPushSubscribed, enablePush, disablePush } from '../lib/push.js'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
@@ -257,6 +258,32 @@ function NotificationsRow() {
   )
 }
 
+function PersonalDataPanel({ user, onBack }) {
+  const t = useT()
+  const age = ageFrom(user.dob, Date.now())
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <span>⌧</span> {t('settings.personalData')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
+        <PrivateCell label={t('profile.legalName')} value={user.name} />
+        <PrivateCell
+          label={t('profile.dob')}
+          value={user.dob ? (age != null ? t('profile.dobYears', { dob: user.dob, age }) : user.dob) : ''}
+        />
+        <PrivateCell label={t('profile.email')} value={user.email} />
+      </div>
+      <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">{t('profile.privateFootnote')}</div>
+    </div>
+  )
+}
+
 function SettingsPanel({ user, onEdit, onClose }) {
   const { logout } = useApp()
   const { standalone } = usePWA()
@@ -270,6 +297,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
 
   if (view === '2fa') return <TwoFactorPanel onBack={() => setView('menu')} />
   if (view === 'delete') return <DeleteAccountPanel onBack={() => setView('menu')} />
+  if (view === 'private') return <PersonalDataPanel user={user} onBack={() => setView('menu')} />
 
   const Item = ({ icon, label, onClick, danger, right }) => (
     <button
@@ -305,6 +333,9 @@ function SettingsPanel({ user, onEdit, onClose }) {
           </span>
         </div>
         <NotificationsRow />
+        {user.name || user.dob || user.email ? (
+          <Item icon={<IconUser size={18} />} label={t('settings.personalData')} onClick={() => setView('private')} />
+        ) : null}
         <Item
           icon={<IconShield size={18} />}
           label={t('profile.twoFactorAuth')}
@@ -330,7 +361,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified } =
     useApp()
   const base = getUserByAlias(alias)
   const [editing, setEditing] = useState(false)
@@ -385,8 +416,9 @@ export default function Profile() {
                 <span className="text-faint">/</span>
                 <span>{t('profile.memberSince', { month: fmtMonthYear(user.joinedAt) })}</span>
               </div>
-              <h1 className="mt-2 font-sans text-[clamp(2.4rem,8vw,4.5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
+              <h1 className="mt-2 flex flex-wrap items-center gap-3 font-sans text-[clamp(2.4rem,8vw,4.5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
                 {user.alias}
+                {user.verified ? <VerifiedBadge size={26} title={t('profile.verified')} /> : null}
               </h1>
               <div className="mt-3 inline-flex items-center gap-2 border border-line px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
                 {isCuratorProfile ? (
@@ -477,12 +509,22 @@ export default function Profile() {
                   </button>
                   <UserSafetyMenu user={user} />
                   {isAdmin && user.role !== 'admin' ? (
-                    <button
-                      onClick={() => setUserRole(user.id, user.role === 'curator' ? 'producer' : 'curator')}
-                      className="h-12 border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
-                    >
-                      {user.role === 'curator' ? t('admin.removeCurator') : t('admin.makeCurator')}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setUserRole(user.id, user.role === 'curator' ? 'producer' : 'curator')}
+                        className="h-12 border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
+                      >
+                        {user.role === 'curator' ? t('admin.removeCurator') : t('admin.makeCurator')}
+                      </button>
+                      <button
+                        onClick={() => toggleVerified(user.id)}
+                        className={`h-12 border px-4 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
+                          user.verified ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+                        }`}
+                      >
+                        {user.verified ? t('admin.unverify') : t('admin.verify')}
+                      </button>
+                    </>
                   ) : null}
                 </>
               )}

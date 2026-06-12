@@ -24,13 +24,13 @@ if (mailConfigured) {
 }
 
 // Send an email if SMTP is configured; otherwise log + report it was skipped.
-export async function sendEmail({ to, subject, text, html }) {
+export async function sendEmail({ to, subject, text, html, replyTo }) {
   if (!transport) {
     console.warn(`[email] SMTP not configured — skipped "${subject}" → ${to}`)
     return { ok: false, skipped: true }
   }
   try {
-    await transport.sendMail({ from: FROM, to, subject, text, html })
+    await transport.sendMail({ from: FROM, to, subject, text, html, replyTo })
     return { ok: true }
   } catch (e) {
     console.error('[email] send failed:', e.message)

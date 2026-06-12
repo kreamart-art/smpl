@@ -93,6 +93,7 @@ export function pubUser(r) {
     avatar: r.avatar || '',
     joinedAt: r.joinedAt,
     contactEmail: r.contactEmail || '', // optional, public — distinct from the private login email
+    verified: !!r.verified, // admin-granted badge
   }
 }
 
@@ -205,6 +206,8 @@ export function migrate() {
   addColumn('battles', 'genre', 'TEXT')
   // 2026-06-12: email verification flag.
   addColumn('users', 'emailVerified', 'INTEGER')
+  // 2026-06-12: admin-granted verified badge.
+  addColumn('users', 'verified', 'INTEGER')
   // 2026-06-12: the founder account is the platform ADMIN (a tier above curator).
   // Override the email with SMPL_ADMIN_EMAIL if it ever changes.
   const adminEmail = (process.env.SMPL_ADMIN_EMAIL || 'info.kreamix@gmail.com').toLowerCase()

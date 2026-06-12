@@ -94,6 +94,17 @@ export default function Notifications() {
     }
   }, [currentUser, fetchNotifications, markNotificationsSeen])
 
+  // pull-to-refresh (app shell) re-fetches notifications
+  useEffect(() => {
+    if (!currentUser) return undefined
+    const reload = () =>
+      fetchNotifications().then(
+        (r) => r.ok && setItems((r.notifications || []).filter((i) => !(i.type === 'placement' && i.position === 1))),
+      )
+    window.addEventListener('smpl:refresh', reload)
+    return () => window.removeEventListener('smpl:refresh', reload)
+  }, [currentUser, fetchNotifications])
+
   return (
     <div className="mx-auto max-w-[680px] px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex items-baseline gap-4 border-b border-line pb-5 sm:gap-6">

@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Handle from '../components/Handle.jsx'
+import VerifiedBadge from '../components/VerifiedBadge.jsx'
 
 const TABS = [
   { key: 'all', labelKey: 'social.people.filterAll' },
@@ -28,6 +29,7 @@ function PersonCard({ user }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Handle alias={user.alias} className="font-sans text-lg font-bold uppercase tracking-tight text-ink" />
+            {user.verified ? <VerifiedBadge size={15} /> : null}
           </div>
           <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
             {t('role.' + user.role)}

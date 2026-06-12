@@ -295,6 +295,8 @@ export default function BattleDetail() {
               <a
                 href={battle.sampleUrl}
                 download={`SMPL-${(battle.title || 'source').replace(/[^\w]+/g, '_')}.${sourceExt}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
               >
                 ↓ {t(`battleDetail.downloadSource.${battle.kind}`)}

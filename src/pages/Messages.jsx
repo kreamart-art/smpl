@@ -53,8 +53,11 @@ function Inbox() {
     fetchThreads().then((r) => {
       if (alive && r.ok) setThreads(r.threads || [])
     })
+    const reload = () => fetchThreads().then((r) => r.ok && setThreads(r.threads || []))
+    window.addEventListener('smpl:refresh', reload)
     return () => {
       alive = false
+      window.removeEventListener('smpl:refresh', reload)
     }
   }, [fetchThreads])
 
@@ -208,8 +211,18 @@ function Thread({ alias }) {
 
   const u = data?.user
   return (
-    <div className="mx-auto max-w-[760px] px-4 sm:px-6">
-      <div className="sticky top-0 z-10 -mx-4 flex items-center gap-3 border-b border-line bg-black/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+    // Full-height column so the composer is always pinned to the bottom, even
+    // with only a couple of messages (it used to float up near the top).
+    <div
+      className="mx-auto flex w-full max-w-[760px] flex-col px-4 sm:px-6"
+      style={{
+        height: standalone
+          ? 'calc(100dvh - 134px - env(safe-area-inset-top) - env(safe-area-inset-bottom))'
+          : undefined,
+        minHeight: standalone ? undefined : 'calc(100dvh - 140px)',
+      }}
+    >
+      <div className="flex shrink-0 items-center gap-3 border-b border-line py-3">
         <Link to="/messages" className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
           ◂ {t('messages.inbox')}
         </Link>
@@ -224,46 +237,45 @@ function Thread({ alias }) {
         ) : null}
       </div>
 
-      <div className="space-y-2 py-5">
-        {data && data.messages.length ? (
-          data.messages.map((m) => (
-            <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-[80%] space-y-1.5">
-                {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
-                {m.body ? (
-                  <div
-                    className={`border px-3 py-2 ${
-                      m.mine ? 'border-ink bg-ink text-bg' : 'border-line bg-panel text-ink'
-                    }`}
-                  >
-                    <div className="font-sans text-[14px] leading-snug">{m.body}</div>
-                    <div className={`mt-1 font-mono text-[9px] ${m.mine ? 'text-bg/60' : 'text-faint'}`}>
+      {/* messages grow + scroll; with few messages they sit just above the composer */}
+      <div className="-mx-4 flex-1 overflow-y-auto px-4 sm:-mx-6 sm:px-6">
+        <div className="flex min-h-full flex-col justify-end gap-2 py-4">
+          {data && data.messages.length ? (
+            data.messages.map((m) => (
+              <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
+                <div className="max-w-[80%] space-y-1.5">
+                  {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
+                  {m.body ? (
+                    <div
+                      className={`border px-3 py-2 ${
+                        m.mine ? 'border-ink bg-ink text-bg' : 'border-line bg-panel text-ink'
+                      }`}
+                    >
+                      <div className="font-sans text-[14px] leading-snug">{m.body}</div>
+                      <div className={`mt-1 font-mono text-[9px] ${m.mine ? 'text-bg/60' : 'text-faint'}`}>
+                        {clock(m.createdAt)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`font-mono text-[9px] text-faint ${m.mine ? 'text-right' : ''}`}>
                       {clock(m.createdAt)}
                     </div>
-                  </div>
-                ) : (
-                  <div className={`font-mono text-[9px] text-faint ${m.mine ? 'text-right' : ''}`}>
-                    {clock(m.createdAt)}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p className="py-12 text-center font-mono text-[12px] text-muted">{t('messages.threadEmpty')}</p>
-        )}
-        <div ref={endRef} />
+            ))
+          ) : (
+            <p className="py-12 text-center font-mono text-[12px] text-muted">{t('messages.threadEmpty')}</p>
+          )}
+          <div ref={endRef} />
+        </div>
       </div>
 
       {err ? (
-        <div className="mb-2 border border-line-bright px-3 py-2 font-mono text-[11px] text-ink">! {err}</div>
+        <div className="mt-2 shrink-0 border border-line-bright px-3 py-2 font-mono text-[11px] text-ink">! {err}</div>
       ) : null}
 
-      <form
-        onSubmit={onSend}
-        className="sticky -mx-4 flex gap-2 border-t border-line bg-black/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6"
-        style={{ bottom: standalone ? 'calc(env(safe-area-inset-bottom) + 90px)' : 0 }}
-      >
+      <form onSubmit={onSend} className="flex shrink-0 gap-2 border-t border-line py-3">
         <input
           className={`${inputCls} flex-1`}
           placeholder={t('messages.placeholder')}

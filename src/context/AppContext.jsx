@@ -230,6 +230,10 @@ export function AppProvider({ children }) {
     [refresh],
   )
   const resendVerification = useCallback((lang) => api.post('/api/auth/resend-verification', { lang }), [])
+  const sendContact = useCallback(
+    (email, message, topic) => api.post('/api/contact', { email, message, topic }),
+    [],
+  )
 
   // --- account security + deletion -----------------------------------------
   const setup2fa = useCallback(() => api.post('/api/me/2fa/setup'), [])
@@ -312,6 +316,10 @@ export function AppProvider({ children }) {
   const triggerBackup = useCallback(() => api.post('/api/admin/backup'), [])
   const setUserRole = useCallback(
     (userId, role) => mutate(() => api.post(`/api/admin/users/${userId}/role`, { role })),
+    [mutate],
+  )
+  const toggleVerified = useCallback(
+    (userId) => mutate(() => api.post(`/api/admin/users/${userId}/verify`)),
     [mutate],
   )
   const createBattle = useCallback(
@@ -397,6 +405,7 @@ export function AppProvider({ children }) {
     resetPassword,
     verifyEmailToken,
     resendVerification,
+    sendContact,
     setup2fa,
     enable2fa,
     disable2fa,
@@ -414,6 +423,7 @@ export function AppProvider({ children }) {
     fetchBackups,
     triggerBackup,
     setUserRole,
+    toggleVerified,
     createBattle,
     advanceStatus,
     declareWinner,
