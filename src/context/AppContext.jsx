@@ -288,7 +288,10 @@ export function AppProvider({ children }) {
   // --- direct messages -----------------------------------------------------
   const fetchThreads = useCallback(() => api.get('/api/threads'), [])
   const fetchThread = useCallback((alias) => api.get(`/api/threads/${encodeURIComponent(alias)}`), [])
-  const sendMessage = useCallback((toAlias, body) => api.post('/api/messages', { toAlias, body }), [])
+  const sendMessage = useCallback(
+    (toAlias, body, battleId) => api.post('/api/messages', { toAlias, body, battleId }),
+    [],
+  )
   const markNotificationsSeen = useCallback(async () => {
     await api.post('/api/notifications/seen')
     await refresh()

@@ -578,7 +578,12 @@ app.get('/api/threads', requireAuth, (req, res) => {
       if (!u) return null
       return {
         user: u,
-        last: { body: t.last.body, createdAt: t.last.createdAt, mine: t.last.fromId === uid },
+        last: {
+          body: t.last.body,
+          createdAt: t.last.createdAt,
+          mine: t.last.fromId === uid,
+          battleId: t.last.battleId || null,
+        },
         unread: t.unread,
         isRequest: !t.sentByMe && !followees.has(t.partner),
       }
@@ -603,21 +608,32 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
   )
   return ok(res, {
     user: pubUser(other),
-    messages: msgs.map((m) => ({ id: m.id, body: m.body, createdAt: m.createdAt, mine: m.fromId === uid })),
+    messages: msgs.map((m) => ({
+      id: m.id,
+      body: m.body,
+      createdAt: m.createdAt,
+      mine: m.fromId === uid,
+      battleId: m.battleId || null,
+    })),
   })
 })
 
 app.post('/api/messages', requireAuth, (req, res) => {
-  const { toAlias, body } = req.body || {}
+  const { toAlias, body, battleId } = req.body || {}
   const text = String(body || '').trim()
-  if (!text) return fail(res, 400, 'Write something first.')
+  let bId = null
+  if (battleId) {
+    if (!getBattleRow(battleId)) return fail(res, 404, 'Battle not found.')
+    bId = battleId
+  }
+  if (!text && !bId) return fail(res, 400, 'Write something first.')
   if (text.length > 2000) return fail(res, 400, 'That message is too long.')
   const other = getUserByAliasRow(toAlias)
   if (!other) return fail(res, 404, 'User not found.')
   if (other.id === req.user.id) return fail(res, 400, 'You cannot message yourself.')
   db.prepare(
-    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt) VALUES (?,?,?,?,?,NULL)',
-  ).run(`m_${randomUUID().slice(0, 10)}`, req.user.id, other.id, text, Date.now())
+    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId) VALUES (?,?,?,?,?,NULL,?)',
+  ).run(`m_${randomUUID().slice(0, 10)}`, req.user.id, other.id, text, Date.now(), bId)
   return ok(res, {})
 })
 

@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS follows (
   followerId TEXT, followeeId TEXT, PRIMARY KEY (followerId, followeeId)
 );
 CREATE TABLE IF NOT EXISTS messages (
-  id TEXT PRIMARY KEY, fromId TEXT, toId TEXT, body TEXT, createdAt INTEGER, readAt INTEGER
+  id TEXT PRIMARY KEY, fromId TEXT, toId TEXT, body TEXT, createdAt INTEGER, readAt INTEGER, battleId TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages (fromId, toId);
 CREATE INDEX IF NOT EXISTS idx_messages_to ON messages (toId, readAt);
@@ -178,4 +178,6 @@ export function migrate() {
   addColumn('users', 'totpSecret', 'TEXT')
   addColumn('users', 'totpEnabled', 'INTEGER')
   addColumn('users', 'backupCodes', 'TEXT')
+  // 2026-06-12: a DM can reference a shared battle.
+  addColumn('messages', 'battleId', 'TEXT')
 }

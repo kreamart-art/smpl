@@ -108,7 +108,7 @@ function Inbox() {
                 <div className="mt-0.5 flex items-center gap-2">
                   <span className={`truncate font-mono text-[11px] ${th.unread ? 'text-ink' : 'text-muted'}`}>
                     {th.last.mine ? t('messages.you') : ''}
-                    {th.last.body}
+                    {th.last.battleId && !th.last.body ? `↗ ${t('messages.sharedBattle')}` : th.last.body}
                   </span>
                   {th.unread > 0 ? <span className="ml-auto block h-2 w-2 shrink-0 bg-ink" /> : null}
                 </div>
@@ -131,6 +131,28 @@ function Inbox() {
 }
 
 // ----- one conversation ------------------------------------------------------
+function BattlePreview({ battleId }) {
+  const { getBattle } = useApp()
+  const t = useT()
+  const b = getBattle(battleId)
+  if (!b) {
+    return <span className="font-mono text-[11px] text-muted">↗ {t('messages.sharedBattle')}</span>
+  }
+  return (
+    <Link
+      to={`/battles/${b.id}`}
+      className="block border border-line-bright bg-bg px-3 py-2.5 transition-colors hover:border-ink"
+    >
+      <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-faint">
+        {t(`kind.${b.kind}`)} · {t(`status.${b.status}`)}
+      </div>
+      <div className="mt-1 font-sans text-[14px] font-bold uppercase leading-tight tracking-tight text-ink">
+        {b.title}
+      </div>
+    </Link>
+  )
+}
+
 function Thread({ alias }) {
   const { fetchThread, sendMessage, refresh, currentUser } = useApp()
   const { standalone } = usePWA()
@@ -202,13 +224,24 @@ function Thread({ alias }) {
         {data && data.messages.length ? (
           data.messages.map((m) => (
             <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[78%] border px-3 py-2 ${
-                  m.mine ? 'border-ink bg-ink text-bg' : 'border-line bg-panel text-ink'
-                }`}
-              >
-                <div className="font-sans text-[14px] leading-snug">{m.body}</div>
-                <div className={`mt-1 font-mono text-[9px] ${m.mine ? 'text-bg/60' : 'text-faint'}`}>{clock(m.createdAt)}</div>
+              <div className="max-w-[80%] space-y-1.5">
+                {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
+                {m.body ? (
+                  <div
+                    className={`border px-3 py-2 ${
+                      m.mine ? 'border-ink bg-ink text-bg' : 'border-line bg-panel text-ink'
+                    }`}
+                  >
+                    <div className="font-sans text-[14px] leading-snug">{m.body}</div>
+                    <div className={`mt-1 font-mono text-[9px] ${m.mine ? 'text-bg/60' : 'text-faint'}`}>
+                      {clock(m.createdAt)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`font-mono text-[9px] text-faint ${m.mine ? 'text-right' : ''}`}>
+                    {clock(m.createdAt)}
+                  </div>
+                )}
               </div>
             </div>
           ))
