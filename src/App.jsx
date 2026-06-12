@@ -11,6 +11,7 @@ import Signup from './pages/Signup.jsx'
 import Feed from './pages/Feed.jsx'
 import People from './pages/People.jsx'
 import Notifications from './pages/Notifications.jsx'
+import Messages from './pages/Messages.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 function BootScreen({ error }) {
@@ -53,6 +54,8 @@ export default function App() {
         <Route path="/profile/:alias" element={<Profile />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/messages/:alias" element={<Messages />} />
         <Route path="/people" element={<People />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />

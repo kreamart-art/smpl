@@ -98,9 +98,13 @@ function buildBootstrap(uid, userRow) {
   if (uid) for (const v of voteRows) if (v.userId === uid) myVotes[v.battleId] = v.submissionId
 
   let unread = 0
+  let unreadMessages = 0
   if (userRow) {
     const personal = personalize(activityItems().items, userRow.id).filter((i) => i.personal)
     unread = personal.filter((i) => i.ts > (userRow.lastSeenAt || 0)).length
+    unreadMessages = db
+      .prepare('SELECT COUNT(*) AS c FROM messages WHERE toId = ? AND readAt IS NULL')
+      .get(userRow.id).c
   }
 
   return {
@@ -112,6 +116,7 @@ function buildBootstrap(uid, userRow) {
     myVotes,
     follows: allFollows(),
     unread,
+    unreadMessages,
   }
 }
 
@@ -534,6 +539,74 @@ app.get('/api/notifications', requireAuth, (req, res) => {
 
 app.post('/api/notifications/seen', requireAuth, (req, res) => {
   db.prepare('UPDATE users SET lastSeenAt = ? WHERE id = ?').run(Date.now(), req.user.id)
+  return ok(res, {})
+})
+
+// ----- direct messages -------------------------------------------------------
+// 1:1 DMs with an Instagram-style "requests" split: a thread from someone you
+// don't follow and haven't replied to lands in Requests, not your main inbox.
+app.get('/api/threads', requireAuth, (req, res) => {
+  const uid = req.user.id
+  const rows = db
+    .prepare('SELECT * FROM messages WHERE fromId = ? OR toId = ? ORDER BY createdAt ASC')
+    .all(uid, uid)
+  const followees = new Set(
+    db.prepare('SELECT followeeId FROM follows WHERE followerId = ?').all(uid).map((r) => r.followeeId),
+  )
+  const byPartner = {}
+  for (const m of rows) {
+    const partner = m.fromId === uid ? m.toId : m.fromId
+    const t = (byPartner[partner] ||= { partner, last: null, unread: 0, sentByMe: false })
+    t.last = m // rows are ascending, so the final assignment is the newest
+    if (m.fromId === uid) t.sentByMe = true
+    if (m.toId === uid && !m.readAt) t.unread++
+  }
+  const threads = Object.values(byPartner)
+    .map((t) => {
+      const u = pubUser(getUserRow(t.partner))
+      if (!u) return null
+      return {
+        user: u,
+        last: { body: t.last.body, createdAt: t.last.createdAt, mine: t.last.fromId === uid },
+        unread: t.unread,
+        isRequest: !t.sentByMe && !followees.has(t.partner),
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.last.createdAt - a.last.createdAt)
+  return ok(res, { threads })
+})
+
+app.get('/api/threads/:alias', requireAuth, (req, res) => {
+  const other = getUserByAliasRow(req.params.alias)
+  if (!other) return fail(res, 404, 'User not found.')
+  const uid = req.user.id
+  if (other.id === uid) return fail(res, 400, 'That conversation is with yourself.')
+  const msgs = db
+    .prepare(
+      'SELECT * FROM messages WHERE (fromId = ? AND toId = ?) OR (fromId = ? AND toId = ?) ORDER BY createdAt ASC',
+    )
+    .all(uid, other.id, other.id, uid)
+  db.prepare('UPDATE messages SET readAt = ? WHERE toId = ? AND fromId = ? AND readAt IS NULL').run(
+    Date.now(), uid, other.id,
+  )
+  return ok(res, {
+    user: pubUser(other),
+    messages: msgs.map((m) => ({ id: m.id, body: m.body, createdAt: m.createdAt, mine: m.fromId === uid })),
+  })
+})
+
+app.post('/api/messages', requireAuth, (req, res) => {
+  const { toAlias, body } = req.body || {}
+  const text = String(body || '').trim()
+  if (!text) return fail(res, 400, 'Write something first.')
+  if (text.length > 2000) return fail(res, 400, 'That message is too long.')
+  const other = getUserByAliasRow(toAlias)
+  if (!other) return fail(res, 404, 'User not found.')
+  if (other.id === req.user.id) return fail(res, 400, 'You cannot message yourself.')
+  db.prepare(
+    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt) VALUES (?,?,?,?,?,NULL)',
+  ).run(`m_${randomUUID().slice(0, 10)}`, req.user.id, other.id, text, Date.now())
   return ok(res, {})
 })
 

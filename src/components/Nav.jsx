@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext.jsx'
 import { STATUS } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
 import NotificationsBell from './NotificationsBell.jsx'
+import MessagesLink from './MessagesLink.jsx'
 import Avatar from './Avatar.jsx'
 
 function navClass({ isActive }) {
@@ -63,6 +64,7 @@ export default function Nav() {
 
           {currentUser ? (
             <div className="flex items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
+              <MessagesLink />
               <NotificationsBell />
               <Link
                 to={`/profile/${encodeURIComponent(currentUser.alias)}`}

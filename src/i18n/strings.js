@@ -10,8 +10,9 @@ import { profile } from './ns/profile.js'
 import { dashboard } from './ns/dashboard.js'
 import { social } from './ns/social.js'
 import { extra } from './ns/extra.js'
+import { messages } from './ns/messages.js'
 
-const parts = [common, chrome, landing, battles, battleDetail, auth, profile, dashboard, social, extra]
+const parts = [common, chrome, landing, battles, battleDetail, auth, profile, dashboard, social, extra, messages]
 
 export const strings = {
   en: Object.assign({}, ...parts.map((p) => p.en)),

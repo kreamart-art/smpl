@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { STATUS } from '../data/status.js'
+import MessagesLink from './MessagesLink.jsx'
 
 // Minimal app header (standalone mode): just the wordmark + a quiet live count.
 // No login/logout chrome — that lives under Profile.
@@ -16,7 +17,9 @@ export default function AppTopBar() {
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex h-12 items-center justify-between px-4">
-        <span className="w-12" aria-hidden="true" />
+        <span className="flex w-12 items-center">
+          <MessagesLink />
+        </span>
         <Link to="/battles" aria-label="SMPL — home">
           <img src="/logo.png" alt="SMPL" className="h-5 w-auto" />
         </Link>

@@ -29,6 +29,7 @@ export function AppProvider({ children }) {
   const [myVotes, setMyVotes] = useState({})
   const [currentUser, setCurrentUser] = useState(null)
   const [unread, setUnread] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -41,6 +42,7 @@ export function AppProvider({ children }) {
     setMyVotes(d.myVotes || {})
     setCurrentUser(d.me || null)
     setUnread(d.unread || 0)
+    setUnreadMessages(d.unreadMessages || 0)
   }, [])
 
   const refresh = useCallback(async () => {
@@ -282,6 +284,11 @@ export function AppProvider({ children }) {
   const updateProfile = useCallback((payload) => mutate(() => api.patch('/api/me', payload)), [mutate])
   const fetchFeed = useCallback(() => api.get('/api/feed'), [])
   const fetchNotifications = useCallback(() => api.get('/api/notifications'), [])
+
+  // --- direct messages -----------------------------------------------------
+  const fetchThreads = useCallback(() => api.get('/api/threads'), [])
+  const fetchThread = useCallback((alias) => api.get(`/api/threads/${encodeURIComponent(alias)}`), [])
+  const sendMessage = useCallback((toAlias, body) => api.post('/api/messages', { toAlias, body }), [])
   const markNotificationsSeen = useCallback(async () => {
     await api.post('/api/notifications/seen')
     await refresh()
@@ -300,6 +307,7 @@ export function AppProvider({ children }) {
     loading,
     error,
     unread,
+    unreadMessages,
     refresh,
     // selectors
     getBattle,
@@ -337,6 +345,9 @@ export function AppProvider({ children }) {
     fetchFeed,
     fetchNotifications,
     markNotificationsSeen,
+    fetchThreads,
+    fetchThread,
+    sendMessage,
   }
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>

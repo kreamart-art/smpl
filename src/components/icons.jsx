@@ -95,6 +95,16 @@ export function IconShare(props) {
   )
 }
 
+export function IconMessage(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 5h16v11H9l-4 4v-4H4z" />
+      <line x1="8" y1="9" x2="16" y2="9" />
+      <line x1="8" y1="12.5" x2="13" y2="12.5" />
+    </Svg>
+  )
+}
+
 export function IconGlobe(props) {
   return (
     <Svg {...props}>

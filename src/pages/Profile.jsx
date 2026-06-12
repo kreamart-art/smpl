@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 import Avatar from '../components/Avatar.jsx'
@@ -359,14 +359,24 @@ export default function Profile() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => toggleFollow(user.id)}
-                className={`h-12 border px-6 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
-                  following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
-                }`}
-              >
-                {following ? t('common.followingState') : t('common.follow')}
-              </button>
+              <div className="flex items-center gap-2">
+                {currentUser ? (
+                  <Link
+                    to={`/messages/${encodeURIComponent(user.alias)}`}
+                    className="flex h-12 items-center border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
+                  >
+                    {t('messages.message')}
+                  </Link>
+                ) : null}
+                <button
+                  onClick={() => toggleFollow(user.id)}
+                  className={`h-12 border px-6 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
+                    following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+                  }`}
+                >
+                  {following ? t('common.followingState') : t('common.follow')}
+                </button>
+              </div>
             )}
           </div>
         </div>

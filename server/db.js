@@ -50,6 +50,11 @@ CREATE TABLE IF NOT EXISTS votes (
 CREATE TABLE IF NOT EXISTS follows (
   followerId TEXT, followeeId TEXT, PRIMARY KEY (followerId, followeeId)
 );
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY, fromId TEXT, toId TEXT, body TEXT, createdAt INTEGER, readAt INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages (fromId, toId);
+CREATE INDEX IF NOT EXISTS idx_messages_to ON messages (toId, readAt);
 `)
 
 const J = (v) => JSON.stringify(v ?? [])
