@@ -79,9 +79,17 @@ export function pubUser(r) {
 }
 
 // Full record incl. private fields — only ever returned to the owner.
+// Exposes whether 2FA is on, never the secret or backup codes.
 export function meUser(r) {
   if (!r) return null
-  return { ...pubUser(r), name: r.name || '', dob: r.dob || '', email: r.email, lastSeenAt: r.lastSeenAt || 0 }
+  return {
+    ...pubUser(r),
+    name: r.name || '',
+    dob: r.dob || '',
+    email: r.email,
+    lastSeenAt: r.lastSeenAt || 0,
+    twoFactor: !!r.totpEnabled,
+  }
 }
 
 export function rowToBattle(r) {
@@ -152,8 +160,17 @@ export function seedIfEmpty() {
   return true
 }
 
+function addColumn(table, col, decl) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
+  if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`)
+}
+
 // Idempotent migrations applied on every boot (safe to re-run on an existing db).
 export function migrate() {
   // 2026-06-12: the verses-competitor role "vocalist" was renamed to "artist".
   db.exec("UPDATE users SET role = 'artist' WHERE role = 'vocalist'")
+  // 2026-06-12: opt-in TOTP two-factor auth.
+  addColumn('users', 'totpSecret', 'TEXT')
+  addColumn('users', 'totpEnabled', 'INTEGER')
+  addColumn('users', 'backupCodes', 'TEXT')
 }

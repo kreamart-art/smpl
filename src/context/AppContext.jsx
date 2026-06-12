@@ -157,7 +157,20 @@ export function AppProvider({ children }) {
   const login = useCallback(
     async (email, password) => {
       const r = await api.post('/api/auth/login', { email, password })
-      if (r.ok) {
+      // r.needs2fa → hold here; the caller collects a code and calls verify2fa.
+      if (r.ok && r.token) {
+        setToken(r.token)
+        await refresh()
+      }
+      return r
+    },
+    [refresh],
+  )
+
+  const verify2fa = useCallback(
+    async (ticket, code) => {
+      const r = await api.post('/api/auth/2fa', { ticket, code })
+      if (r.ok && r.token) {
         setToken(r.token)
         await refresh()
       }
@@ -182,6 +195,36 @@ export function AppProvider({ children }) {
     setToken(null)
     await refresh()
   }, [refresh])
+
+  // --- account security + deletion -----------------------------------------
+  const setup2fa = useCallback(() => api.post('/api/me/2fa/setup'), [])
+  const enable2fa = useCallback(
+    async (code) => {
+      const r = await api.post('/api/me/2fa/enable', { code })
+      if (r.ok) await refresh()
+      return r
+    },
+    [refresh],
+  )
+  const disable2fa = useCallback(
+    async (password) => {
+      const r = await api.post('/api/me/2fa/disable', { password })
+      if (r.ok) await refresh()
+      return r
+    },
+    [refresh],
+  )
+  const deleteAccount = useCallback(
+    async (password) => {
+      const r = await api.post('/api/me/delete', { password })
+      if (r.ok) {
+        setToken(null)
+        await refresh()
+      }
+      return r
+    },
+    [refresh],
+  )
 
   // --- mutations (persisted, then re-sync) ---------------------------------
   const mutate = useCallback(
@@ -269,8 +312,13 @@ export function AppProvider({ children }) {
     curatorStats,
     // auth
     login,
+    verify2fa,
     signup,
     logout,
+    setup2fa,
+    enable2fa,
+    disable2fa,
+    deleteAccount,
     // mutations
     toggleAttendee,
     registerProducer,

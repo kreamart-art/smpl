@@ -94,3 +94,22 @@ export function IconShare(props) {
     </Svg>
   )
 }
+
+export function IconShield(props) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
+      <path d="M9 12l2 2 4-4" />
+    </Svg>
+  )
+}
+
+export function IconTrash(props) {
+  return (
+    <Svg {...props}>
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <path d="M7 7l1 13h8l1-13" />
+      <path d="M10 7V4h4v3" />
+    </Svg>
+  )
+}

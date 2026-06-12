@@ -4,7 +4,17 @@ import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission } from './db.js'
-import { hashPassword, verifyPassword, signToken, verifyToken } from './auth.js'
+import {
+  hashPassword,
+  verifyPassword,
+  signToken,
+  verifyToken,
+  randomBase32,
+  verifyTotp,
+  otpauthURL,
+  makeBackupCodes,
+  hashBackup,
+} from './auth.js'
 import { STATUS, nextStatus } from '../src/data/status.js'
 
 // In dev, Vite owns 5190 and proxies /api here (5191). Only honour PORT in
@@ -157,7 +167,9 @@ app.use((req, _res, next) => {
   const h = req.headers.authorization || ''
   const token = h.startsWith('Bearer ') ? h.slice(7) : null
   const payload = token ? verifyToken(token) : null
-  req.uid = payload?.uid || null
+  // A half-issued 2FA ticket (twofa:true) is NOT a logged-in session — it only
+  // works at /api/auth/2fa, read explicitly from the body there.
+  req.uid = payload && !payload.twofa ? payload.uid || null : null
   req.user = req.uid ? getUserRow(req.uid) : null
   next()
 })
@@ -220,6 +232,32 @@ app.post('/api/auth/login', (req, res) => {
   if (!row) return fail(res, 404, 'No account for that email. Try a quick-login chip or sign up.')
   if (!password) return fail(res, 400, 'Password required.')
   if (!verifyPassword(password, row.passwordHash)) return fail(res, 401, 'Wrong password.')
+  if (row.totpEnabled) {
+    // Hold the session — issue a short-lived ticket and ask for the 2FA code.
+    return ok(res, { needs2fa: true, ticket: signToken({ uid: row.id, twofa: true }, 10 * 60 * 1000) })
+  }
+  return ok(res, { token: signToken({ uid: row.id }), me: meUser(row) })
+})
+
+// Step 2 of a 2FA login: redeem the ticket + a TOTP or backup code for a token.
+app.post('/api/auth/2fa', (req, res) => {
+  const { ticket, code } = req.body || {}
+  const p = verifyToken(ticket)
+  if (!p || !p.twofa || !p.uid) return fail(res, 401, 'Your 2FA session expired — log in again.')
+  const row = getUserRow(p.uid)
+  if (!row || !row.totpEnabled) return fail(res, 400, '2FA is not active on this account.')
+  let valid = verifyTotp(row.totpSecret, code)
+  if (!valid) {
+    // fall back to a one-time backup code
+    const stored = JSON.parse(row.backupCodes || '[]')
+    const idx = stored.indexOf(hashBackup(code))
+    if (idx !== -1) {
+      valid = true
+      stored.splice(idx, 1)
+      db.prepare('UPDATE users SET backupCodes = ? WHERE id = ?').run(JSON.stringify(stored), row.id)
+    }
+  }
+  if (!valid) return fail(res, 401, 'Invalid code. Use your authenticator app or a backup code.')
   return ok(res, { token: signToken({ uid: row.id }), me: meUser(row) })
 })
 
@@ -411,6 +449,64 @@ app.patch('/api/me', requireAuth, (req, res) => {
     db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...vals)
   }
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
+})
+
+// ----- two-factor auth (TOTP) ------------------------------------------------
+app.post('/api/me/2fa/setup', requireAuth, (req, res) => {
+  if (req.user.totpEnabled) return fail(res, 400, '2FA is already on. Turn it off first to re-enrol.')
+  const secret = randomBase32(20)
+  db.prepare('UPDATE users SET totpSecret = ? WHERE id = ?').run(secret, req.user.id)
+  return ok(res, { secret, otpauth: otpauthURL(secret, req.user.email || req.user.alias) })
+})
+
+app.post('/api/me/2fa/enable', requireAuth, (req, res) => {
+  if (req.user.totpEnabled) return fail(res, 400, '2FA is already on.')
+  if (!req.user.totpSecret) return fail(res, 400, 'Start setup first.')
+  if (!verifyTotp(req.user.totpSecret, req.body?.code))
+    return fail(res, 401, 'That code is not right — check your authenticator and try again.')
+  const codes = makeBackupCodes(8)
+  db.prepare('UPDATE users SET totpEnabled = 1, backupCodes = ? WHERE id = ?').run(
+    JSON.stringify(codes.map(hashBackup)), req.user.id,
+  )
+  return ok(res, { backupCodes: codes })
+})
+
+app.post('/api/me/2fa/disable', requireAuth, (req, res) => {
+  if (!verifyPassword(req.body?.password, req.user.passwordHash)) return fail(res, 401, 'Wrong password.')
+  db.prepare('UPDATE users SET totpEnabled = 0, totpSecret = NULL, backupCodes = NULL WHERE id = ?').run(
+    req.user.id,
+  )
+  return ok(res, { disabled: true })
+})
+
+// ----- delete account --------------------------------------------------------
+// Re-auth with the password, then sever the person from the platform while
+// keeping battle integrity: vote tallies + submissions stay (anonymised), any
+// curated battles fall back to the house account, social edges are dropped.
+app.post('/api/me/delete', requireAuth, (req, res) => {
+  if (req.user.id === 'curator') return fail(res, 403, 'The house curator account cannot be deleted.')
+  if (!verifyPassword(req.body?.password, req.user.passwordHash)) return fail(res, 401, 'Wrong password.')
+  const uid = req.user.id
+  try {
+    db.exec('BEGIN')
+    db.prepare("UPDATE votes SET userId = '__deleted__' WHERE userId = ?").run(uid)
+    db.prepare("UPDATE submissions SET producerId = '__deleted__' WHERE producerId = ?").run(uid)
+    db.prepare("UPDATE battles SET curatorId = 'curator' WHERE curatorId = ?").run(uid)
+    for (const b of db.prepare('SELECT id, attendees, signups FROM battles').all()) {
+      const att = JSON.parse(b.attendees || '[]').filter((x) => x !== uid)
+      const sig = JSON.parse(b.signups || '[]').filter((x) => x !== uid)
+      db.prepare('UPDATE battles SET attendees = ?, signups = ? WHERE id = ?').run(
+        JSON.stringify(att), JSON.stringify(sig), b.id,
+      )
+    }
+    db.prepare('DELETE FROM follows WHERE followerId = ? OR followeeId = ?').run(uid, uid)
+    db.prepare('DELETE FROM users WHERE id = ?').run(uid)
+    db.exec('COMMIT')
+  } catch {
+    db.exec('ROLLBACK')
+    return fail(res, 500, 'Could not delete the account. Nothing was changed.')
+  }
+  return ok(res, { deleted: true })
 })
 
 // ----- feed / notifications --------------------------------------------------

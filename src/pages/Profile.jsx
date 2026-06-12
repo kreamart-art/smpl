@@ -7,7 +7,9 @@ import Waveform from '../components/Waveform.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
 import BattleCard from '../components/BattleCard.jsx'
-import { IconSettings, IconLogout } from '../components/icons.jsx'
+import ShareButton from '../components/ShareButton.jsx'
+import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
+import { IconSettings, IconLogout, IconShield, IconTrash } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -179,11 +181,16 @@ function SettingsPanel({ user, onEdit, onClose }) {
   const { logout } = useApp()
   const { standalone } = usePWA()
   const navigate = useNavigate()
+  const [view, setView] = useState('menu')
   const out = async () => {
     await logout()
     navigate(standalone ? '/login' : '/')
   }
-  const Item = ({ icon, label, onClick, danger }) => (
+
+  if (view === '2fa') return <TwoFactorPanel onBack={() => setView('menu')} />
+  if (view === 'delete') return <DeleteAccountPanel onBack={() => setView('menu')} />
+
+  const Item = ({ icon, label, onClick, danger, right }) => (
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-3 px-5 py-4 text-left font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-bg ${
@@ -192,9 +199,13 @@ function SettingsPanel({ user, onEdit, onClose }) {
     >
       {icon}
       <span>{label}</span>
-      <span className="ml-auto text-muted">▸</span>
+      <span className="ml-auto flex items-center gap-2 text-muted">
+        {right}
+        <span>▸</span>
+      </span>
     </button>
   )
+  const canDelete = user.id !== 'curator'
   return (
     <div className="border border-line-bright bg-panel">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
@@ -205,10 +216,23 @@ function SettingsPanel({ user, onEdit, onClose }) {
       </div>
       <div className="divide-y divide-line">
         <Item icon={<IconSettings size={18} />} label="Edit profile" onClick={() => { onClose(); onEdit() }} />
-        <Item icon={<IconLogout size={18} />} label="Log out" onClick={out} danger />
+        <Item
+          icon={<IconShield size={18} />}
+          label="Two-factor auth"
+          onClick={() => setView('2fa')}
+          right={
+            <span className={`font-mono text-[10px] ${user.twoFactor ? 'text-ink' : 'text-faint'}`}>
+              {user.twoFactor ? 'On' : 'Off'}
+            </span>
+          }
+        />
+        <Item icon={<IconLogout size={18} />} label="Log out" onClick={out} />
+        {canDelete ? (
+          <Item icon={<IconTrash size={18} />} label="Delete account" onClick={() => setView('delete')} danger />
+        ) : null}
       </div>
       <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">
-        Signed in as {user.email || user.alias} · SMPL v1.2
+        Signed in as {user.email || user.alias} · SMPL v1.3
       </div>
     </div>
   )
@@ -294,6 +318,12 @@ export default function Profile() {
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Following</div>
               <div className="font-mono text-2xl tnum leading-none">{followingCount}</div>
             </div>
+            <ShareButton
+              iconOnly
+              className="h-12 w-12"
+              title={`@${user.alias} on SMPL`}
+              text={`@${user.alias} · ${roleLabel(user.role)} on SMPL — same sample, different soul.`}
+            />
             {isSelf ? (
               <div className="flex items-center gap-2">
                 <button

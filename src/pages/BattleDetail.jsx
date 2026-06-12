@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.jsx'
 import AudioPlayer from '../components/AudioPlayer.jsx'
 import BeatPlayer from '../components/BeatPlayer.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
+import ShareButton from '../components/ShareButton.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
 import { STATUS, STATUS_ORDER, STATUS_LABEL, STATUS_INDEX, countdownTarget } from '../data/status.js'
@@ -181,6 +182,12 @@ export default function BattleDetail() {
             >
               {attending ? '✓ Ik ben erbij' : 'Ik ben erbij'}
             </button>
+            <ShareButton
+              iconOnly
+              className="h-10 w-10"
+              title={`SMPL — ${battle.title}`}
+              text={`${battle.title} · same sample, different soul. Battle on SMPL.`}
+            />
           </div>
         </div>
 
