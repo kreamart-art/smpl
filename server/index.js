@@ -649,6 +649,61 @@ app.post('/api/battles/:id/email-source', rateLimit('emailsrc', 12, 30 * 60_000)
   return ok(res, { sent: true, to: req.user.email })
 })
 
+// ----- comments on battle beats ----------------------------------------------
+// Comments open once the maker behind a beat is revealed (open battle: voting
+// phase; blind battle: after the winner is declared) — same gate as identity.
+const commentsOpen = (b) =>
+  !!b && ((b.status === STATUS.VOTING_PHASE && !b.blind) || b.status === STATUS.WINNER_DECLARED)
+
+const serComment = (c) => ({ id: c.id, body: c.body, createdAt: c.createdAt, user: pubUser(getUserRow(c.userId)) })
+
+app.get('/api/submissions/:id/comments', (req, res) => {
+  const sub = getSubmissionRow(req.params.id)
+  if (!sub) return fail(res, 404, 'Beat not found.')
+  const battle = rowToBattle(getBattleRow(sub.battleId))
+  if (!commentsOpen(battle)) return ok(res, { comments: [], open: false })
+  const rows = db.prepare('SELECT * FROM comments WHERE submissionId = ? ORDER BY createdAt ASC LIMIT 500').all(sub.id)
+  return ok(res, { comments: rows.map(serComment), open: true })
+})
+
+app.post('/api/submissions/:id/comments', rateLimit('comment', 30, 60_000), requireAuth, (req, res) => {
+  const sub = getSubmissionRow(req.params.id)
+  if (!sub) return fail(res, 404, 'Beat not found.')
+  const battle = rowToBattle(getBattleRow(sub.battleId))
+  if (!commentsOpen(battle)) return fail(res, 400, 'Comments aren’t open on this beat yet.')
+  const body = String(req.body?.body || '').trim()
+  if (!body) return fail(res, 400, 'Write a comment first.')
+  if (body.length > 1000) return fail(res, 400, 'That comment is too long.')
+  if (isBlocked(req.user.id, sub.producerId)) return fail(res, 403, 'You can’t comment here.')
+  const id = `c_${randomUUID().slice(0, 10)}`
+  const createdAt = Date.now()
+  db.prepare('INSERT INTO comments (id, submissionId, battleId, userId, body, createdAt) VALUES (?,?,?,?,?,?)').run(
+    id, sub.id, sub.battleId, req.user.id, body, createdAt,
+  )
+  // ping the producer (unless they're commenting on their own beat)
+  if (sub.producerId !== req.user.id) {
+    sendPush(sub.producerId, {
+      title: `@${req.user.alias} commented on your beat`,
+      body: body.slice(0, 120),
+      tag: `comment-${sub.id}`,
+      url: `/battles/${sub.battleId}`,
+    }).catch(() => {})
+  }
+  return ok(res, { comment: { id, body, createdAt, user: pubUser(req.user) } })
+})
+
+app.delete('/api/comments/:id', requireAuth, (req, res) => {
+  const c = db.prepare('SELECT * FROM comments WHERE id = ?').get(req.params.id)
+  if (!c) return fail(res, 404, 'Comment not found.')
+  const sub = getSubmissionRow(c.submissionId)
+  const battle = sub ? getBattleRow(sub.battleId) : null
+  // the author, the beat's maker, or the battle's staff can remove it
+  const allowed = c.userId === req.user.id || (sub && sub.producerId === req.user.id) || canManageBattle(req.user, battle)
+  if (!allowed) return fail(res, 403, 'You can’t remove this comment.')
+  db.prepare('DELETE FROM comments WHERE id = ?').run(c.id)
+  return ok(res, {})
+})
+
 // ----- profiles / social -----------------------------------------------------
 app.get('/api/profiles/:alias', (req, res) => {
   const row = getUserByAliasRow(req.params.alias)

@@ -67,6 +67,10 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   endpoint TEXT PRIMARY KEY, userId TEXT, p256dh TEXT, auth TEXT, createdAt INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (userId);
+CREATE TABLE IF NOT EXISTS comments (
+  id TEXT PRIMARY KEY, submissionId TEXT, battleId TEXT, userId TEXT, body TEXT, createdAt INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_comments_sub ON comments (submissionId, createdAt);
 `)
 
 const J = (v) => JSON.stringify(v ?? [])

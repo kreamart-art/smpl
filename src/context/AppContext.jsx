@@ -344,6 +344,10 @@ export function AppProvider({ children }) {
   const uploadAudio = useCallback((file) => api.upload('/api/uploads/audio', file), [])
   // Email the current user a download link to a battle's source (needs SMTP).
   const emailSource = useCallback((battleId, lang) => api.post(`/api/battles/${battleId}/email-source`, { lang }), [])
+  // --- comments on battle beats --------------------------------------------
+  const fetchComments = useCallback((subId) => api.get(`/api/submissions/${subId}/comments`), [])
+  const postComment = useCallback((subId, body) => api.post(`/api/submissions/${subId}/comments`, { body }), [])
+  const deleteComment = useCallback((id) => api.del(`/api/comments/${id}`), [])
 
   // --- profile + social ----------------------------------------------------
   const updateProfile = useCallback((payload) => mutate(() => api.patch('/api/me', payload)), [mutate])
@@ -430,6 +434,9 @@ export function AppProvider({ children }) {
     approveSubmission,
     uploadAudio,
     emailSource,
+    fetchComments,
+    postComment,
+    deleteComment,
     updateProfile,
     fetchFeed,
     fetchNotifications,

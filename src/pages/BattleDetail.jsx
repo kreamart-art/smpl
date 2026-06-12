@@ -7,6 +7,7 @@ import StatusBadge from '../components/StatusBadge.jsx'
 import ShareButton from '../components/ShareButton.jsx'
 import ShareToDM from '../components/ShareToDM.jsx'
 import { ReportButton } from '../components/Safety.jsx'
+import CommentThread from '../components/CommentThread.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
@@ -519,15 +520,17 @@ export default function BattleDetail() {
                   )
                 }
                 return (
-                  <BeatPlayer
-                    key={s.id}
-                    meta={meta}
-                    index={index}
-                    noun={c.drop.toUpperCase()}
-                    revealed={!battle.blind}
-                    alias={battle.blind ? undefined : getUser(s.producerId)?.alias}
-                    rightSlot={btn}
-                  />
+                  <div key={s.id}>
+                    <BeatPlayer
+                      meta={meta}
+                      index={index}
+                      noun={c.drop.toUpperCase()}
+                      revealed={!battle.blind}
+                      alias={battle.blind ? undefined : getUser(s.producerId)?.alias}
+                      rightSlot={btn}
+                    />
+                    {!battle.blind ? <CommentThread submissionId={s.id} producerId={s.producerId} /> : null}
+                  </div>
                 )
               })}
               {!shuffled.length ? (
@@ -547,18 +550,20 @@ export default function BattleDetail() {
                   ? s.id === battle.winnerSubmissionId
                   : rank === 1
                 return (
-                  <BeatPlayer
-                    key={s.id}
-                    meta={meta}
-                    index={rank}
-                    noun={c.drop.toUpperCase()}
-                    rank={rank}
-                    revealed
-                    alias={getUser(s.producerId)?.alias}
-                    votes={voteCount(s.id)}
-                    showVotes
-                    isWinner={isWinner}
-                  />
+                  <div key={s.id}>
+                    <BeatPlayer
+                      meta={meta}
+                      index={rank}
+                      noun={c.drop.toUpperCase()}
+                      rank={rank}
+                      revealed
+                      alias={getUser(s.producerId)?.alias}
+                      votes={voteCount(s.id)}
+                      showVotes
+                      isWinner={isWinner}
+                    />
+                    <CommentThread submissionId={s.id} producerId={s.producerId} />
+                  </div>
                 )
               })}
             </div>
