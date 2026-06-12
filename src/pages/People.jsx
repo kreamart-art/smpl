@@ -94,9 +94,7 @@ export default function People() {
     const query = q.trim().toLowerCase()
     return users
       .filter((u) => !isBlocked(u.id))
-      // makers, plus the official @SMPL + any verified account
-      .filter((u) => u.role === 'producer' || u.role === 'artist' || u.verified || u.alias === 'SMPL')
-      // role tabs narrow makers; @SMPL stays visible in every tab
+      // every account is followable — listeners + curators included
       .filter((u) => tab === 'all' || u.role === tab || u.alias === 'SMPL')
       .filter(
         (u) =>

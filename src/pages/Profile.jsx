@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
-import { usePWA } from '../context/PWAContext.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Waveform from '../components/Waveform.jsx'
 import Reveal from '../components/Reveal.jsx'
@@ -9,16 +8,12 @@ import { Mentions } from '../components/Handle.jsx'
 import BattleCard from '../components/BattleCard.jsx'
 import ShareButton from '../components/ShareButton.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
-import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
-import LangToggle from '../components/LangToggle.jsx'
-import ThemeToggle from '../components/ThemeToggle.jsx'
 import FollowList from '../components/FollowList.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
-import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconPoster, IconBell, IconUser } from '../components/icons.jsx'
-import { pushSupported, pushPermission, isPushSubscribed, enablePush, disablePush } from '../lib/push.js'
+import { IconSettings, IconPoster } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
-import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
+import { fmtDate, fmtMonthYear } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
 import { useT } from '../i18n/index.jsx'
 
@@ -66,15 +61,6 @@ function StatCell({ label, value, sub }) {
       <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{label}</div>
       <div className="mt-3 font-mono text-[2.5rem] leading-[0.9] tnum text-ink">{value}</div>
       {sub ? <div className="mt-2 font-mono text-[10px] text-muted">{sub}</div> : null}
-    </div>
-  )
-}
-
-function PrivateCell({ label, value }) {
-  return (
-    <div className="bg-bg px-5 py-4">
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">{label}</div>
-      <div className="mt-1.5 font-mono text-sm text-ink">{value || '—'}</div>
     </div>
   )
 }
@@ -209,172 +195,24 @@ function Editor({ user, onClose }) {
   )
 }
 
-function NotificationsRow() {
-  const { pushConfigured } = useApp()
-  const t = useT()
-  const [on, setOn] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [perm, setPerm] = useState('default')
-
-  useEffect(() => {
-    setPerm(pushPermission())
-    isPushSubscribed().then(setOn)
-  }, [])
-
-  if (!pushConfigured || !pushSupported()) return null
-
-  const toggle = async () => {
-    setBusy(true)
-    if (on) {
-      await disablePush()
-      setOn(false)
-    } else {
-      const r = await enablePush()
-      setOn(!!r.ok)
-    }
-    setPerm(pushPermission())
-    setBusy(false)
-  }
-
-  return (
-    <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
-      <IconBell size={18} />
-      <span>{t('push.settings')}</span>
-      <span className="ml-auto">
-        {perm === 'denied' ? (
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{t('push.blockedShort')}</span>
-        ) : (
-          <button
-            onClick={toggle}
-            disabled={busy}
-            className={`border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
-              on ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
-            }`}
-          >
-            {on ? t('push.on') : t('push.off')}
-          </button>
-        )}
-      </span>
-    </div>
-  )
-}
-
-function PersonalDataPanel({ user, onBack }) {
-  const t = useT()
-  const age = ageFrom(user.dob, Date.now())
-  return (
-    <div className="border border-line-bright bg-panel">
-      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
-          <span>⌧</span> {t('settings.personalData')}
-        </span>
-        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
-          ◂ {t('common.back')}
-        </button>
-      </div>
-      <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
-        <PrivateCell label={t('profile.legalName')} value={user.name} />
-        <PrivateCell
-          label={t('profile.dob')}
-          value={user.dob ? (age != null ? t('profile.dobYears', { dob: user.dob, age }) : user.dob) : ''}
-        />
-        <PrivateCell label={t('profile.email')} value={user.email} />
-      </div>
-      <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">{t('profile.privateFootnote')}</div>
-    </div>
-  )
-}
-
-function SettingsPanel({ user, onEdit, onClose }) {
-  const { logout } = useApp()
-  const { standalone } = usePWA()
-  const navigate = useNavigate()
-  const t = useT()
-  const [view, setView] = useState('menu')
-  const out = async () => {
-    await logout()
-    navigate(standalone ? '/login' : '/')
-  }
-
-  if (view === '2fa') return <TwoFactorPanel onBack={() => setView('menu')} />
-  if (view === 'delete') return <DeleteAccountPanel onBack={() => setView('menu')} />
-  if (view === 'private') return <PersonalDataPanel user={user} onBack={() => setView('menu')} />
-
-  const Item = ({ icon, label, onClick, danger, right }) => (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center gap-3 px-5 py-4 text-left font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-bg ${
-        danger ? 'text-ink' : 'text-ink-dim'
-      }`}
-    >
-      {icon}
-      <span>{label}</span>
-      <span className="ml-auto flex items-center gap-2 text-muted">
-        {right}
-        <span>▸</span>
-      </span>
-    </button>
-  )
-  const canDelete = user.id !== 'curator'
-  return (
-    <div className="border border-line-bright bg-panel">
-      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('common.settings')}</span>
-        <button onClick={onClose} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
-          {t('profile.closeX')}
-        </button>
-      </div>
-      <div className="divide-y divide-line">
-        <Item icon={<IconSettings size={18} />} label={t('profile.editProfile')} onClick={() => { onClose(); onEdit() }} />
-        <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
-          <IconGlobe size={18} />
-          <span>{t('common.language')}</span>
-          <span className="ml-auto">
-            <LangToggle />
-          </span>
-        </div>
-        <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
-          <span className="flex w-[18px] justify-center text-[15px] leading-none">◐</span>
-          <span>{t('settings.theme')}</span>
-          <span className="ml-auto">
-            <ThemeToggle />
-          </span>
-        </div>
-        <NotificationsRow />
-        {user.name || user.dob || user.email ? (
-          <Item icon={<IconUser size={18} />} label={t('settings.personalData')} onClick={() => setView('private')} />
-        ) : null}
-        <Item
-          icon={<IconShield size={18} />}
-          label={t('profile.twoFactorAuth')}
-          onClick={() => setView('2fa')}
-          right={
-            <span className={`font-mono text-[10px] ${user.twoFactor ? 'text-ink' : 'text-faint'}`}>
-              {user.twoFactor ? t('profile.on') : t('profile.off')}
-            </span>
-          }
-        />
-        <Item icon={<IconLogout size={18} />} label={t('common.logout')} onClick={out} />
-        {canDelete ? (
-          <Item icon={<IconTrash size={18} />} label={t('profile.deleteAccount')} onClick={() => setView('delete')} danger />
-        ) : null}
-      </div>
-      <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">
-        {t('profile.signedInAs', { who: user.email || user.alias })}
-      </div>
-    </div>
-  )
-}
-
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
   const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified } =
     useApp()
   const base = getUserByAlias(alias)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [editing, setEditing] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [followView, setFollowView] = useState(null) // null | 'followers' | 'following'
+
+  // arriving from Settings → "Edit profile" opens the inline editor once
+  useEffect(() => {
+    if (base && currentUser?.id === base.id && searchParams.get('edit') === '1') {
+      setEditing(true)
+      searchParams.delete('edit')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [base, currentUser, searchParams, setSearchParams])
 
   if (!base) {
     return (
@@ -395,8 +233,6 @@ export default function Profile() {
   const followers = followerCount(user.id)
   const followingCount = follows.filter((f) => f.followerId === user.id).length
   const following = isFollowing(user.id)
-  const age = ageFrom(user.dob, Date.now())
-  const hasPrivate = user.name || user.dob || user.email
   // admin runs battles like a curator → show the curator/host file for both.
   const isCuratorProfile = user.role === 'curator' || user.role === 'admin'
   const cstats = isCuratorProfile ? curatorStats(user.id) : null
@@ -480,16 +316,13 @@ export default function Profile() {
                   >
                     {editing ? t('common.close') : t('common.edit')}
                   </button>
-                  <button
-                    onClick={() => {
-                      setEditing(false)
-                      setSettingsOpen((v) => !v)
-                    }}
+                  <Link
+                    to="/settings"
                     aria-label={t('common.settings')}
                     className="flex h-12 w-12 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
                   >
                     <IconSettings size={18} />
-                  </button>
+                  </Link>
                 </>
               ) : (
                 <>
@@ -533,62 +366,10 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </div>
 
-      {followView ? (
-        <FollowList userId={user.id} initialTab={followView} onClose={() => setFollowView(null)} />
-      ) : null}
-
-      {/* blocked note (other user) */}
-      {!isSelf && isBlocked(user.id) ? (
-        <div className="mt-4 border border-line bg-panel px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
-          {t('safety.blockedNote', { alias: user.alias })}
-        </div>
-      ) : null}
-
-      {/* EDITOR (self) */}
-      {isSelf && editing ? (
-        <div className="mt-6">
-          <Editor user={user} onClose={() => setEditing(false)} />
-        </div>
-      ) : null}
-
-      {/* SETTINGS (self) */}
-      {isSelf && settingsOpen ? (
-        <div className="mt-6">
-          <SettingsPanel user={user} onEdit={() => setEditing(true)} onClose={() => setSettingsOpen(false)} />
-        </div>
-      ) : null}
-
-      {/* PRIVATE FILE (self only) */}
-      {isSelf && hasPrivate ? (
-        <Reveal className="mt-6">
-          <div className="border border-line-bright bg-panel">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5">
-              <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
-                <span>⌧</span> {t('profile.privateFile')}
-              </div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{t('profile.visibleOnlyToYou')}</span>
-            </div>
-            <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
-              <PrivateCell label={t('profile.legalName')} value={user.name} />
-              <PrivateCell
-                label={t('profile.dob')}
-                value={user.dob ? (age != null ? t('profile.dobYears', { dob: user.dob, age }) : user.dob) : ''}
-              />
-              <PrivateCell label={t('profile.email')} value={user.email} />
-            </div>
-            <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">
-              {t('profile.privateFootnote')}
-            </div>
-          </div>
-        </Reveal>
-      ) : null}
-
-      {/* BIO + LINKS */}
-      <Reveal className="mt-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="border border-line bg-panel p-6 lg:col-span-2">
+        {/* BIO + LINKS — folded into the same file card */}
+        <div className="relative grid grid-cols-1 border-t border-line lg:grid-cols-3">
+          <div className="p-6 lg:col-span-2 lg:border-r lg:border-line">
             <Label>{t('profile.bio')}</Label>
             <p className="mt-4 font-sans text-[15px] leading-relaxed text-ink-dim">
               {user.bio ? <Mentions text={user.bio} /> : t('profile.noBio')}
@@ -606,7 +387,7 @@ export default function Profile() {
               </div>
             ) : null}
           </div>
-          <div className="border border-line bg-panel p-6">
+          <div className="border-t border-line p-6 lg:border-t-0">
             <Label>{t('profile.links')}</Label>
             <div className="mt-4 flex flex-col gap-2">
               {user.contactEmail ? (
@@ -636,7 +417,25 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </Reveal>
+      </div>
+
+      {followView ? (
+        <FollowList userId={user.id} initialTab={followView} onClose={() => setFollowView(null)} />
+      ) : null}
+
+      {/* blocked note (other user) */}
+      {!isSelf && isBlocked(user.id) ? (
+        <div className="mt-4 border border-line bg-panel px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+          {t('safety.blockedNote', { alias: user.alias })}
+        </div>
+      ) : null}
+
+      {/* EDITOR (self) */}
+      {isSelf && editing ? (
+        <div className="mt-6">
+          <Editor user={user} onClose={() => setEditing(false)} />
+        </div>
+      ) : null}
 
       {/* STATS */}
       <Reveal className="mt-14">

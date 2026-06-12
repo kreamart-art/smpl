@@ -256,6 +256,10 @@ const requireCurator = (req, res, next) =>
 const requireAdmin = (req, res, next) =>
   req.user?.role === 'admin' ? next() : fail(res, 403, 'Admin only.')
 
+// "House" accounts (the founder's admin + the official @SMPL) can hop between
+// each other without re-login. Restricted so ordinary users can't farm accounts.
+const isHouse = (u) => !!u && (u.role === 'admin' || u.alias === 'SMPL')
+
 // Staff manage any battle; the battle's own curator manages theirs.
 const canManageBattle = (user, battle) =>
   !!user && (isStaff(user) || (battle && battle.curatorId === user.id))
@@ -809,6 +813,29 @@ app.post('/api/admin/users/:id/verify', requireAuth, requireAdmin, (req, res) =>
   const next = req.body?.verified === undefined ? !target.verified : !!req.body.verified
   db.prepare('UPDATE users SET verified = ? WHERE id = ?').run(next ? 1 : 0, target.id)
   return ok(res, { user: pubUser(getUserRow(target.id)) })
+})
+
+// ----- house-account switcher (admin-only mint) ------------------------------
+// Lets the founder hop between the admin account + the official @SMPL without a
+// re-login. Minting a house token requires admin; switching BACK to an account
+// you already authenticated as is done client-side with a stored token, so a
+// leaked @SMPL token can never call this to escalate up to the admin account.
+app.get('/api/admin/accounts', requireAuth, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM users WHERE role = 'admin' OR alias = 'SMPL' ORDER BY alias").all()
+  const accounts = rows.map((u) => ({
+    id: u.id,
+    alias: u.alias,
+    avatar: u.avatar || '',
+    verified: !!u.verified,
+    current: u.id === req.user.id,
+  }))
+  return ok(res, { accounts })
+})
+
+app.post('/api/admin/switch', requireAuth, requireAdmin, (req, res) => {
+  const target = getUserRow(req.body?.userId)
+  if (!isHouse(target)) return fail(res, 400, 'Not a switchable account.')
+  return ok(res, { token: signToken({ uid: target.id }), me: meUser(target) })
 })
 
 // ----- web push notifications ------------------------------------------------

@@ -88,7 +88,8 @@ export function pubUser(r) {
   return {
     id: r.id,
     alias: r.alias,
-    role: r.role,
+    // the public never sees the "admin" tier — admins read as curators
+    role: r.role === 'admin' ? 'curator' : r.role,
     bio: r.bio || '',
     location: r.location || '',
     links: P(r.links),
@@ -107,6 +108,7 @@ export function meUser(r) {
   if (!r) return null
   return {
     ...pubUser(r),
+    role: r.role, // the owner sees their real role (incl. admin) for gating
     name: r.name || '',
     dob: r.dob || '',
     email: r.email,
@@ -216,4 +218,7 @@ export function migrate() {
   // Override the email with SMPL_ADMIN_EMAIL if it ever changes.
   const adminEmail = (process.env.SMPL_ADMIN_EMAIL || 'info.kreamix@gmail.com').toLowerCase()
   db.prepare("UPDATE users SET role = 'admin' WHERE lower(email) = ?").run(adminEmail)
+  // admins are masked as curators publicly, so give them the verified badge
+  // explicitly (the badge now keys off `verified`, not the hidden role).
+  db.prepare("UPDATE users SET verified = 1 WHERE role = 'admin'").run()
 }

@@ -32,6 +32,12 @@ body,
 
 html {
   scroll-behavior: smooth;
+  /* kill the rubber-band/bounce so the fixed top bar doesn't drift and our own
+     pull-to-refresh isn't eaten by the native overscroll. */
+  overscroll-behavior: none;
+}
+body {
+  overscroll-behavior: none;
 }
 
 body {
@@ -222,6 +228,17 @@ body {
 }
 .group:hover .hover-bloom {
   opacity: 1;
+}
+
+/* pull-to-refresh spinner */
+@keyframes smpl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ptr-spin {
+  display: inline-block;
+  animation: smpl-spin 0.7s linear infinite;
 }
 
 /* === LIGHT THEME (toggle via data-theme on <html>) ======================== */

@@ -40,8 +40,11 @@ export default function PullToRefresh({ children }) {
       setBusy(true)
       setPull(THRESHOLD)
       try {
-        await refresh()
-        window.dispatchEvent(new CustomEvent('smpl:refresh'))
+        // keep the spinner visible long enough to read, even if data is cached
+        await Promise.all([
+          refresh().then(() => window.dispatchEvent(new CustomEvent('smpl:refresh'))),
+          new Promise((r) => setTimeout(r, 650)),
+        ])
       } catch {
         /* ignore */
       }
@@ -57,10 +60,10 @@ export default function PullToRefresh({ children }) {
         style={{ height: busy ? THRESHOLD : pull }}
       >
         <span
-          className={`pb-2 font-mono text-[14px] text-muted ${busy ? 'pulse-dot' : ''}`}
-          style={{ transform: !busy ? `rotate(${Math.min(180, (pull / THRESHOLD) * 180)}deg)` : 'none' }}
+          className={`pb-2 font-mono text-[18px] leading-none ${busy ? 'ptr-spin text-ink' : 'text-muted'}`}
+          style={{ transform: !busy ? `rotate(${Math.min(180, (pull / THRESHOLD) * 180)}deg)` : undefined }}
         >
-          {busy ? '↻' : '↓'}
+          ↻
         </span>
       </div>
       {children}

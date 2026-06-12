@@ -10,6 +10,7 @@ import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Feed from './pages/Feed.jsx'
 import People from './pages/People.jsx'
+import Settings from './pages/Settings.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Messages from './pages/Messages.jsx'
 import SharePage from './pages/SharePage.jsx'
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:alias" element={<Messages />} />
         <Route path="/people" element={<People />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

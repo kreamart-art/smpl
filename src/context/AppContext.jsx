@@ -8,7 +8,26 @@ import {
   useMemo,
 } from 'react'
 import { STATUS } from '../data/status.js'
-import { api, setToken } from '../api.js'
+import { api, setToken, getToken } from '../api.js'
+
+// Locally-stored set of authenticated sessions, so house accounts (admin +
+// @SMPL) can switch back and forth without re-login. Each entry carries its own
+// bearer token; switching is just swapping the active token + re-bootstrapping.
+const SESSIONS_KEY = 'smpl_sessions'
+const readSessions = () => {
+  try {
+    return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+const writeSessions = (list) => {
+  try {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(list))
+  } catch {
+    /* ignore */
+  }
+}
 
 // ===========================================================================
 // APP CONTEXT — now backed by the Express + SQLite API. The client holds a
@@ -28,6 +47,7 @@ export function AppProvider({ children }) {
   const [follows, setFollows] = useState([])
   const [myVotes, setMyVotes] = useState({})
   const [currentUser, setCurrentUser] = useState(null)
+  const [accountSessions, setAccountSessions] = useState(readSessions)
   const [unread, setUnread] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [blocked, setBlocked] = useState([])
@@ -70,6 +90,26 @@ export function AppProvider({ children }) {
       alive = false
     }
   }, [applyBootstrap])
+
+  // Keep the active account's session (with its live token) in the local store,
+  // so we can hop back to it later without a password.
+  useEffect(() => {
+    if (!currentUser) return
+    const token = getToken()
+    if (!token) return
+    setAccountSessions((prev) => {
+      const entry = {
+        id: currentUser.id,
+        alias: currentUser.alias,
+        avatar: currentUser.avatar || '',
+        role: currentUser.role,
+        token,
+      }
+      const next = [entry, ...prev.filter((s) => s.id !== currentUser.id)]
+      writeSessions(next)
+      return next
+    })
+  }, [currentUser])
 
   // --- selectors -----------------------------------------------------------
   const getBattle = useCallback((id) => battles.find((b) => b.id === id) || null, [battles])
@@ -202,8 +242,41 @@ export function AppProvider({ children }) {
 
   const logout = useCallback(async () => {
     setToken(null)
+    writeSessions([])
+    setAccountSessions([])
     await refresh()
   }, [refresh])
+
+  // --- house-account switcher ----------------------------------------------
+  const fetchHouseAccounts = useCallback(() => api.get('/api/admin/accounts'), [])
+  // Switch the active account. If we already hold a token for it (a prior
+  // session), swap client-side; otherwise mint one via the admin endpoint.
+  const switchAccount = useCallback(
+    async (userId) => {
+      if (currentUser?.id === userId) return { ok: true }
+      const sess = readSessions().find((s) => s.id === userId)
+      if (sess?.token) {
+        setToken(sess.token)
+        const r = await refresh()
+        return r.ok ? { ok: true } : r
+      }
+      const r = await api.post('/api/admin/switch', { userId })
+      if (r.ok && r.token) {
+        setToken(r.token)
+        await refresh()
+        return { ok: true }
+      }
+      return r
+    },
+    [currentUser, refresh],
+  )
+  const removeSession = useCallback((userId) => {
+    setAccountSessions((prev) => {
+      const next = prev.filter((s) => s.id !== userId)
+      writeSessions(next)
+      return next
+    })
+  }, [])
 
   // --- password reset + email verification ---------------------------------
   const requestPasswordReset = useCallback(
@@ -379,6 +452,9 @@ export function AppProvider({ children }) {
     // moderate" (curator OR admin); `isAdmin` gates admin-only powers.
     isCurator: currentUser?.role === 'curator' || currentUser?.role === 'admin',
     isAdmin: currentUser?.role === 'admin',
+    // house accounts (admin + the official @SMPL) may use the account switcher
+    isHouse: currentUser?.role === 'admin' || currentUser?.alias === 'SMPL',
+    accountSessions,
     loading,
     error,
     unread,
@@ -428,6 +504,9 @@ export function AppProvider({ children }) {
     triggerBackup,
     setUserRole,
     toggleVerified,
+    fetchHouseAccounts,
+    switchAccount,
+    removeSession,
     createBattle,
     advanceStatus,
     declareWinner,

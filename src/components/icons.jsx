@@ -26,6 +26,17 @@ export function IconBattles(props) {
   )
 }
 
+export function IconPeople(props) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="8" r="3.1" />
+      <path d="M3 19c0-3 2.6-4.8 6-4.8s6 1.8 6 4.8" />
+      <path d="M16 5.1a3.1 3.1 0 0 1 0 5.8" />
+      <path d="M17.6 14.4c2.2.5 3.8 1.9 3.8 4.5" />
+    </Svg>
+  )
+}
+
 export function IconFeed(props) {
   return (
     <Svg {...props}>
