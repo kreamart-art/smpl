@@ -9,7 +9,8 @@ import { Mentions } from '../components/Handle.jsx'
 import BattleCard from '../components/BattleCard.jsx'
 import ShareButton from '../components/ShareButton.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
-import { IconSettings, IconLogout, IconShield, IconTrash } from '../components/icons.jsx'
+import LangToggle from '../components/LangToggle.jsx'
+import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -219,6 +220,13 @@ function SettingsPanel({ user, onEdit, onClose }) {
       </div>
       <div className="divide-y divide-line">
         <Item icon={<IconSettings size={18} />} label={t('profile.editProfile')} onClick={() => { onClose(); onEdit() }} />
+        <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
+          <IconGlobe size={18} />
+          <span>{t('common.language')}</span>
+          <span className="ml-auto">
+            <LangToggle />
+          </span>
+        </div>
         <Item
           icon={<IconShield size={18} />}
           label={t('profile.twoFactorAuth')}

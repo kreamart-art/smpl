@@ -4,7 +4,6 @@ import { STATUS } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
 import NotificationsBell from './NotificationsBell.jsx'
 import Avatar from './Avatar.jsx'
-import LangToggle from './LangToggle.jsx'
 
 function navClass({ isActive }) {
   return [
@@ -61,8 +60,6 @@ export default function Nav() {
               {t('common.dashboard')}
             </NavLink>
           ) : null}
-
-          <LangToggle className="ml-1 hidden sm:inline-flex" />
 
           {currentUser ? (
             <div className="flex items-center gap-2 pl-1 sm:gap-3 sm:pl-2">

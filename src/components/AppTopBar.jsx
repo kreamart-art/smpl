@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { STATUS } from '../data/status.js'
-import LangToggle from './LangToggle.jsx'
 
 // Minimal app header (standalone mode): just the wordmark + a quiet live count.
 // No login/logout chrome — that lives under Profile.
@@ -17,7 +16,7 @@ export default function AppTopBar() {
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex h-12 items-center justify-between px-4">
-        <LangToggle />
+        <span className="w-12" aria-hidden="true" />
         <Link to="/battles" aria-label="SMPL — home">
           <img src="/logo.png" alt="SMPL" className="h-5 w-auto" />
         </Link>

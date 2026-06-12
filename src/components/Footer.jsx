@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n/index.jsx'
+import LangToggle from './LangToggle.jsx'
 
 const PHASES = [
   'status.ANNOUNCED',
@@ -58,6 +59,10 @@ export default function Footer() {
               {t('chrome.footer.colophonPalette')}
             </div>
           </div>
+        </div>
+        <div className="mt-10 flex items-center gap-3 border-t border-line pt-6">
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('common.language')}</span>
+          <LangToggle />
         </div>
       </div>
     </footer>
