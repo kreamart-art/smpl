@@ -460,6 +460,11 @@ app.patch('/api/me', requireAuth, (req, res) => {
   }
   if (typeof b.bio === 'string') set('bio', b.bio.trim())
   if (typeof b.location === 'string') set('location', b.location.trim())
+  if (typeof b.contactEmail === 'string') {
+    const ce = b.contactEmail.trim()
+    if (ce && !/^\S+@\S+\.\S+$/.test(ce)) return fail(res, 400, 'That contact email doesn’t look right.')
+    set('contactEmail', ce)
+  }
   if (typeof b.name === 'string') set('name', b.name.trim())
   if (typeof b.dob === 'string') set('dob', b.dob.trim())
   if (typeof b.avatar === 'string') set('avatar', b.avatar)

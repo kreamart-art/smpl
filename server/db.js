@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
   avatar TEXT,
   joinedAt INTEGER,
   lastSeenAt INTEGER,
-  passwordHash TEXT
+  passwordHash TEXT,
+  contactEmail TEXT
 );
 CREATE TABLE IF NOT EXISTS battles (
   id TEXT PRIMARY KEY,
@@ -80,6 +81,7 @@ export function pubUser(r) {
     pastHistory: P(r.pastHistory),
     avatar: r.avatar || '',
     joinedAt: r.joinedAt,
+    contactEmail: r.contactEmail || '', // optional, public — distinct from the private login email
   }
 }
 
@@ -180,4 +182,6 @@ export function migrate() {
   addColumn('users', 'backupCodes', 'TEXT')
   // 2026-06-12: a DM can reference a shared battle.
   addColumn('messages', 'battleId', 'TEXT')
+  // 2026-06-12: optional public contact email on a profile.
+  addColumn('users', 'contactEmail', 'TEXT')
 }

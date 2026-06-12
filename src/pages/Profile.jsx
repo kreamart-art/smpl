@@ -80,6 +80,7 @@ function Editor({ user, onClose }) {
     avatar: user.avatar || '',
     bio: user.bio || '',
     location: user.location || '',
+    contactEmail: user.contactEmail || '',
     genres: (user.genres || []).join(', '),
     links: (user.links || []).map((l) => `${l.label}, ${l.url}`).join('\n'),
   })
@@ -106,6 +107,7 @@ function Editor({ user, onClose }) {
       avatar: form.avatar,
       bio: form.bio,
       location: form.location,
+      contactEmail: form.contactEmail,
       genres: form.genres,
       links,
     })
@@ -157,6 +159,15 @@ function Editor({ user, onClose }) {
             <input className={inputCls} value={form.genres} onChange={(e) => setForm({ ...form, genres: e.target.value })} />
           </Field>
         </div>
+        <Field label={t('profile.contactEmail')} hint={t('profile.contactHint')}>
+          <input
+            type="email"
+            className={inputCls}
+            placeholder="you@example.com"
+            value={form.contactEmail}
+            onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+          />
+        </Field>
         <Field label={t('profile.field.links')} hint={t('profile.field.linksHint')}>
           <textarea
             rows={3}
@@ -321,63 +332,75 @@ export default function Profile() {
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-5">
-            <div className="text-right">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.followers')}</div>
-              <div className="font-mono text-2xl tnum leading-none">{followers}</div>
-            </div>
-            <div className="text-right">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.following')}</div>
-              <div className="font-mono text-2xl tnum leading-none">{followingCount}</div>
-            </div>
-            <ShareButton
-              iconOnly
-              className="h-12 w-12"
-              title={t('profile.share.title', { alias: user.alias })}
-              text={t('profile.share.text', { alias: user.alias, role: roleLabel(user.role) })}
-            />
-            {isSelf ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setSettingsOpen(false)
-                    setEditing((v) => !v)
-                  }}
-                  className="h-12 border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
-                >
-                  {editing ? t('common.close') : t('common.edit')}
-                </button>
-                <button
-                  onClick={() => {
-                    setEditing(false)
-                    setSettingsOpen((v) => !v)
-                  }}
-                  aria-label={t('common.settings')}
-                  className="flex h-12 w-12 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
-                >
-                  <IconSettings size={18} />
-                </button>
+          <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-5">
+              <div className="text-right">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.followers')}</div>
+                <div className="font-mono text-2xl tnum leading-none">{followers}</div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                {currentUser ? (
-                  <Link
-                    to={`/messages/${encodeURIComponent(user.alias)}`}
-                    className="flex h-12 items-center border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
+              <div className="text-right">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.following')}</div>
+                <div className="font-mono text-2xl tnum leading-none">{followingCount}</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <ShareButton
+                iconOnly
+                className="h-12 w-12"
+                title={t('profile.share.title', { alias: user.alias })}
+                text={t('profile.share.text', { alias: user.alias, role: roleLabel(user.role) })}
+              />
+              {isSelf ? (
+                <>
+                  {isCuratorProfile ? (
+                    <Link
+                      to="/dashboard"
+                      className="flex h-12 items-center border border-ink bg-ink px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors duration-300 hover:bg-bright"
+                    >
+                      {t('common.dashboard')}
+                    </Link>
+                  ) : null}
+                  <button
+                    onClick={() => {
+                      setSettingsOpen(false)
+                      setEditing((v) => !v)
+                    }}
+                    className="h-12 border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
                   >
-                    {t('messages.message')}
-                  </Link>
-                ) : null}
-                <button
-                  onClick={() => toggleFollow(user.id)}
-                  className={`h-12 border px-6 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
-                    following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
-                  }`}
-                >
-                  {following ? t('common.followingState') : t('common.follow')}
-                </button>
-              </div>
-            )}
+                    {editing ? t('common.close') : t('common.edit')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditing(false)
+                      setSettingsOpen((v) => !v)
+                    }}
+                    aria-label={t('common.settings')}
+                    className="flex h-12 w-12 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
+                  >
+                    <IconSettings size={18} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  {currentUser ? (
+                    <Link
+                      to={`/messages/${encodeURIComponent(user.alias)}`}
+                      className="flex h-12 items-center border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
+                    >
+                      {t('messages.message')}
+                    </Link>
+                  ) : null}
+                  <button
+                    onClick={() => toggleFollow(user.id)}
+                    className={`h-12 border px-6 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
+                      following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+                    }`}
+                  >
+                    {following ? t('common.followingState') : t('common.follow')}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -445,20 +468,30 @@ export default function Profile() {
           <div className="border border-line bg-panel p-6">
             <Label>{t('profile.links')}</Label>
             <div className="mt-4 flex flex-col gap-2">
-              {user.links?.length ? (
-                user.links.map((l) => (
-                  <a
-                    key={l.label}
-                    href={l.url}
-                    className="flex items-center justify-between border border-line px-3 py-2.5 font-mono text-[11px] text-ink transition-colors duration-300 hover:border-line-bright"
-                  >
-                    <span className="uppercase tracking-[0.12em]">{l.label}</span>
-                    <span className="text-muted">↗</span>
-                  </a>
-                ))
-              ) : (
+              {user.contactEmail ? (
+                <a
+                  href={`mailto:${user.contactEmail}`}
+                  className="flex items-center justify-between gap-2 border border-line-bright px-3 py-2.5 font-mono text-[11px] text-ink transition-colors duration-300 hover:border-ink"
+                >
+                  <span className="uppercase tracking-[0.12em]">{t('profile.contactLabel')}</span>
+                  <span className="truncate text-muted">{user.contactEmail}</span>
+                </a>
+              ) : null}
+              {user.links?.length
+                ? user.links.map((l) => (
+                    <a
+                      key={l.label}
+                      href={l.url}
+                      className="flex items-center justify-between border border-line px-3 py-2.5 font-mono text-[11px] text-ink transition-colors duration-300 hover:border-line-bright"
+                    >
+                      <span className="uppercase tracking-[0.12em]">{l.label}</span>
+                      <span className="text-muted">↗</span>
+                    </a>
+                  ))
+                : null}
+              {!user.links?.length && !user.contactEmail ? (
                 <span className="font-mono text-[11px] text-muted">{t('profile.noLinks')}</span>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

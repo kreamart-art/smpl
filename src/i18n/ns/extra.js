@@ -25,6 +25,10 @@ export const extra = {
     'submit.uploaded': 'Uploaded {name}',
     'submit.remove': 'Remove',
 
+    'profile.contactEmail': 'Contact email',
+    'profile.contactHint': 'optional · shown publicly',
+    'profile.contactLabel': 'Contact',
+
     'notFound.kicker': 'Error / 404',
     'notFound.title': 'No signal.',
     'notFound.body': 'This page never made it past the noise floor.',
@@ -64,6 +68,10 @@ export const extra = {
     'submit.tooLarge': 'Die audio is groter dan 30 MB — bounce ’m kleiner.',
     'submit.uploaded': '{name} geüpload',
     'submit.remove': 'Verwijderen',
+
+    'profile.contactEmail': 'Contact-e-mail',
+    'profile.contactHint': 'optioneel · openbaar zichtbaar',
+    'profile.contactLabel': 'Contact',
 
     'notFound.kicker': 'Fout / 404',
     'notFound.title': 'Geen signaal.',
