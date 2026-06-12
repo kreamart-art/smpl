@@ -6,12 +6,21 @@ import { db } from './db.js'
 // nothing set, push degrades to a no-op (subscriptions just never fire).
 const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env
 
-export const pushConfigured = !!(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY)
-export const vapidPublicKey = VAPID_PUBLIC_KEY || null
-
-if (pushConfigured) {
-  webpush.setVapidDetails(VAPID_SUBJECT || 'mailto:info@artnomad.nl', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+// Only enable push if the VAPID keys are VALID. setVapidDetails throws on a
+// malformed/truncated key — never let that crash the whole server; just log it
+// and run with push disabled.
+let ready = false
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT || 'mailto:info@artnomad.nl', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+    ready = true
+  } catch (e) {
+    console.error('[push] invalid VAPID config — push disabled:', e.message)
+  }
 }
+
+export const pushConfigured = ready
+export const vapidPublicKey = ready ? VAPID_PUBLIC_KEY : null
 
 export function saveSubscription(userId, sub) {
   if (!sub?.endpoint) return
