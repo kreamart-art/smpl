@@ -7,15 +7,17 @@ import Reveal from '../components/Reveal.jsx'
 import { DustField } from '../components/Atmosphere.jsx'
 import { Btn } from '../components/ui.jsx'
 import { STATUS_GROUP } from '../data/status.js'
+import { useT } from '../i18n/index.jsx'
 
 function Marquee() {
+  const t = useT()
   const items = [
-    'ONE SOURCE',
-    'INFINITE INTERPRETATIONS',
-    'BEATS & VERSES',
-    'ANONYMOUS VOTES',
-    'NO NAMES TILL THE END',
-    'SAME SAMPLE. DIFFERENT SOUL.',
+    t('landing.marquee.oneSource'),
+    t('landing.marquee.infinite'),
+    t('landing.marquee.beatsVerses'),
+    t('landing.marquee.anonVotes'),
+    t('landing.marquee.noNames'),
+    t('landing.marquee.sameSample'),
   ]
   const line = items.join('   ·   ') + '   ·   '
   return (
@@ -48,15 +50,16 @@ function EditorialHead({ index, kicker, title, live, right }) {
   )
 }
 
-const HOW = [
-  ['01', 'ANNOUNCED', 'A curator picks one source — a sample to flip or a beat to rhyme over.'],
-  ['02', 'SIGNUP', 'Producers or artists claim a slot. Limited seats per battle.'],
-  ['03', 'SUBMISSION', 'Everyone interprets the same source. Links go in.'],
-  ['04', 'VOTING', 'Drops play anonymously. One vote each. No names.'],
-  ['05', 'WINNER', 'The room decides. Names revealed. Soul wins.'],
+const buildHow = (t) => [
+  ['01', t('landing.how.1.title'), t('landing.how.1.body')],
+  ['02', t('landing.how.2.title'), t('landing.how.2.body')],
+  ['03', t('landing.how.3.title'), t('landing.how.3.body')],
+  ['04', t('landing.how.4.title'), t('landing.how.4.body')],
+  ['05', t('landing.how.5.title'), t('landing.how.5.body')],
 ]
 
 export default function Landing() {
+  const t = useT()
   const { battles } = useApp()
   const active = battles.filter((b) => STATUS_GROUP[b.status] === 'active')
   const upcoming = battles.filter((b) => STATUS_GROUP[b.status] === 'upcoming')
@@ -75,34 +78,33 @@ export default function Landing() {
           <div className="flex items-start justify-between font-mono text-[10px] uppercase tracking-[0.26em] text-faint">
             <div className="flex items-center gap-2.5">
               <span className="block h-1.5 w-1.5 bg-ink pulse-dot" />
-              <span className="text-muted">Beats &amp; verses · anonymous battles</span>
+              <span className="text-muted">{t('landing.hero.slug')}</span>
             </div>
             <div className="hidden text-right leading-relaxed sm:block">
-              Vol. 001
+              {t('landing.hero.vol')}
               <br />
-              Est. MMXXVI
+              {t('landing.hero.est')}
             </div>
           </div>
 
           {/* slogan — the major visual moment */}
           <div className="py-12">
             <h1 className="font-sans font-bold uppercase tracking-tighter text-[clamp(3rem,13.5vw,12.5rem)] leading-[0.8]">
-              <span className="block">Same sample.</span>
-              <span className="block text-ink-dim">Different soul.</span>
+              <span className="block">{t('landing.hero.headline1')}</span>
+              <span className="block text-ink-dim">{t('landing.hero.headline2')}</span>
             </h1>
             <p className="mt-9 max-w-xl font-mono text-[13px] leading-relaxed text-muted">
-              Curators drop one source — a sample to flip, or a beat to rhyme over. Producers and
-              artists interpret it; the room votes blind. No names, no clout — just the work.
+              {t('landing.hero.sub')}
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Btn to="/signup" variant="solid" size="lg">
-                Join SMPL
+                {t('landing.hero.join')}
               </Btn>
               <Btn to="/signup?role=listener" variant="ghost" size="lg">
-                Listen + vote
+                {t('landing.hero.listenVote')}
               </Btn>
               <Btn to="/battles" variant="dim" size="lg">
-                Browse battles ▸
+                {t('landing.hero.browse')}
               </Btn>
             </div>
           </div>
@@ -111,9 +113,9 @@ export default function Landing() {
           <div>
             <Waveform seed="hero-smpl-2026" bars={120} height={56} animated baseClass="bg-line-bright" />
             <div className="mt-4 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.24em] text-faint">
-              <span className="hidden sm:block">SMPL — the beat stands alone</span>
+              <span className="hidden sm:block">{t('landing.hero.standsAlone')}</span>
               <span className="sm:hidden">SMPL</span>
-              <span>Scroll ▾</span>
+              <span>{t('landing.hero.scroll')}</span>
             </div>
           </div>
         </div>
@@ -125,15 +127,15 @@ export default function Landing() {
       <section className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-28">
         <EditorialHead
           index="01"
-          kicker="Live now"
-          title="In session"
+          kicker={t('landing.active.kicker')}
+          title={t('landing.active.title')}
           live
           right={
             <Link
               to="/battles"
               className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:text-ink"
             >
-              All battles ▸
+              {t('landing.active.all')}
             </Link>
           }
         />
@@ -153,14 +155,14 @@ export default function Landing() {
             ) : null}
           </>
         ) : (
-          <p className="mt-10 font-mono text-sm text-muted">No battles in session right now.</p>
+          <p className="mt-10 font-mono text-sm text-muted">{t('landing.active.empty')}</p>
         )}
       </section>
 
       {/* ============================ UPCOMING ============================ */}
       {upcoming.length ? (
         <section className="mx-auto max-w-[1500px] px-4 pb-20 sm:px-6 sm:pb-28">
-          <EditorialHead index="02" kicker="On the horizon" title="Upcoming" />
+          <EditorialHead index="02" kicker={t('landing.upcoming.kicker')} title={t('landing.upcoming.title')} />
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {upcoming.map((b, i) => (
               <Reveal key={b.id} delay={i * 70}>
@@ -174,13 +176,13 @@ export default function Landing() {
       {/* ============================ HOW IT WORKS ============================ */}
       <section className="border-t border-line bg-panel">
         <div className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-28">
-          <EditorialHead index="03" kicker="The format" title="How a battle runs" />
+          <EditorialHead index="03" kicker={t('landing.how.kicker')} title={t('landing.how.title')} />
           <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
-            {HOW.map(([n, t, d], i) => (
+            {buildHow(t).map(([n, head, d], i) => (
               <Reveal key={n} delay={i * 70}>
                 <div className="h-full bg-bg p-6 transition-colors duration-500 hover:bg-panel-2">
                   <div className="font-mono text-[12px] text-faint tnum">{n}</div>
-                  <div className="mt-6 font-sans text-xl font-bold uppercase tracking-tight">{t}</div>
+                  <div className="mt-6 font-sans text-xl font-bold uppercase tracking-tight">{head}</div>
                   <div className="mt-3 font-mono text-[11px] leading-relaxed text-muted">{d}</div>
                 </div>
               </Reveal>

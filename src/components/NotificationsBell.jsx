@@ -1,18 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { useT } from '../i18n/index.jsx'
 import Handle from './Handle.jsx'
 
-function ago(ts) {
+function ago(ts, t) {
   const d = Date.now() - ts
-  if (d < 0) return 'soon'
+  if (d < 0) return t('nbell.soon')
   const m = Math.floor(d / 60000)
   const h = Math.floor(m / 60)
   const day = Math.floor(h / 24)
   if (day > 0) return `${day}d`
   if (h > 0) return `${h}h`
   if (m > 0) return `${m}m`
-  return 'now'
+  return t('nbell.now')
 }
 
 function Bell() {
@@ -24,18 +25,20 @@ function Bell() {
   )
 }
 
-function line(it, getUser) {
+function line(it, getUser, t) {
   const alias = it.userId ? getUser(it.userId)?.alias : null
-  if (it.type === 'winner') return { lead: alias, rest: ` won ${it.title}` }
-  if (it.type === 'placement') return { lead: alias, rest: ` placed #${it.position} in ${it.title}` }
-  if (it.type === 'voting') return { rest: `Voting open — ${it.title}` }
-  if (it.type === 'signup') return { rest: `Signups open — ${it.title}` }
-  if (it.type === 'submission') return { rest: `Submissions open — ${it.title}` }
-  return { rest: `${it.title} announced` }
+  if (it.type === 'winner') return { lead: alias, rest: t('nbell.won', { title: it.title }) }
+  if (it.type === 'placement')
+    return { lead: alias, rest: t('nbell.placed', { position: it.position, title: it.title }) }
+  if (it.type === 'voting') return { rest: t('nbell.voting', { title: it.title }) }
+  if (it.type === 'signup') return { rest: t('nbell.signup', { title: it.title }) }
+  if (it.type === 'submission') return { rest: t('nbell.submission', { title: it.title }) }
+  return { rest: t('nbell.announced', { title: it.title }) }
 }
 
 export default function NotificationsBell() {
   const { currentUser, unread, fetchNotifications, markNotificationsSeen, getUser } = useApp()
+  const t = useT()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const ref = useRef(null)
@@ -78,24 +81,24 @@ export default function NotificationsBell() {
       {open ? (
         <div className="absolute right-0 z-50 mt-2 w-80 border border-line-bright bg-black">
           <div className="flex items-center justify-between border-b border-line px-3 py-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">Notifications</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{t('nbell.title')}</span>
             <Link
               to="/feed"
               onClick={() => setOpen(false)}
               className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink hover:underline"
             >
-              Feed ▸
+              {t('common.feed')} ▸
             </Link>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length ? (
               items.map((it) => {
-                const t = line(it, getUser)
+                const ln = line(it, getUser, t)
                 return (
                   <div key={it.id} className="border-b border-line px-3 py-2.5 font-mono text-[11px] leading-relaxed">
                     <div className="text-ink-dim">
-                      {t.lead ? <Handle alias={t.lead} className="text-ink" /> : null}
-                      {t.rest}
+                      {ln.lead ? <Handle alias={ln.lead} className="text-ink" /> : null}
+                      {ln.rest}
                     </div>
                     <div className="mt-1 flex items-center justify-between">
                       <Link
@@ -105,14 +108,14 @@ export default function NotificationsBell() {
                       >
                         {it.kind === 'VERSES' ? 'verses' : 'beats'} ▸
                       </Link>
-                      <span className="text-faint">{ago(it.ts)}</span>
+                      <span className="text-faint">{ago(it.ts, t)}</span>
                     </div>
                   </div>
                 )
               })
             ) : (
               <div className="px-3 py-6 text-center font-mono text-[11px] text-muted">
-                Nothing yet. Follow makers to fill this.
+                {t('nbell.empty')}
               </div>
             )}
           </div>

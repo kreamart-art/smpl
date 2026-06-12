@@ -13,6 +13,7 @@ import { IconSettings, IconLogout, IconShield, IconTrash } from '../components/i
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
+import { useT } from '../i18n/index.jsx'
 
 // Downscale a picked image to a small square-ish JPEG data URL.
 function fileToAvatar(file, cb) {
@@ -73,6 +74,7 @@ function PrivateCell({ label, value }) {
 
 function Editor({ user, onClose }) {
   const { updateProfile } = useApp()
+  const t = useT()
   const [form, setForm] = useState({
     avatar: user.avatar || '',
     bio: user.bio || '',
@@ -108,15 +110,15 @@ function Editor({ user, onClose }) {
     })
     setBusy(false)
     if (r.ok) onClose()
-    else setErr(r.error || 'Could not save.')
+    else setErr(r.error || t('profile.saveError'))
   }
 
   return (
     <div className="border border-line-bright bg-panel">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Edit profile</span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('profile.editProfile')}</span>
         <button onClick={onClose} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
-          Close ✕
+          {t('profile.closeX')}
         </button>
       </div>
       <div className="space-y-5 p-5">
@@ -124,7 +126,7 @@ function Editor({ user, onClose }) {
           <Avatar alias={user.alias} src={form.avatar} size={64} />
           <div className="flex flex-col items-start gap-2">
             <label className="cursor-pointer border border-line-bright px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg">
-              Upload photo
+              {t('profile.uploadPhoto')}
               <input type="file" accept="image/*" className="hidden" onChange={onPick} />
             </label>
             {form.avatar ? (
@@ -133,12 +135,12 @@ function Editor({ user, onClose }) {
                 onClick={() => setForm({ ...form, avatar: '' })}
                 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted hover:text-ink"
               >
-                Remove
+                {t('profile.removePhoto')}
               </button>
             ) : null}
           </div>
         </div>
-        <Field label="Bio" hint="@mentions link">
+        <Field label={t('profile.field.bio')} hint={t('profile.field.bioHint')}>
           <textarea
             rows={3}
             className={textareaCls}
@@ -147,18 +149,18 @@ function Editor({ user, onClose }) {
           />
         </Field>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Location">
+          <Field label={t('profile.field.location')}>
             <input className={inputCls} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
           </Field>
-          <Field label="Genres" hint="comma separated">
+          <Field label={t('profile.field.genres')} hint={t('profile.field.genresHint')}>
             <input className={inputCls} value={form.genres} onChange={(e) => setForm({ ...form, genres: e.target.value })} />
           </Field>
         </div>
-        <Field label="Links" hint="one per line: label, url">
+        <Field label={t('profile.field.links')} hint={t('profile.field.linksHint')}>
           <textarea
             rows={3}
             className={textareaCls}
-            placeholder={'soundcloud, https://…\nbandcamp, https://…'}
+            placeholder={t('profile.linksPlaceholder')}
             value={form.links}
             onChange={(e) => setForm({ ...form, links: e.target.value })}
           />
@@ -166,10 +168,10 @@ function Editor({ user, onClose }) {
         {err ? <div className="border border-line-bright px-3 py-2 font-mono text-[11px] text-ink">! {err}</div> : null}
         <div className="flex gap-3">
           <Btn onClick={save} variant="solid" disabled={busy}>
-            {busy ? 'Saving…' : 'Save profile'}
+            {busy ? t('profile.saving') : t('profile.saveProfile')}
           </Btn>
           <Btn onClick={onClose} variant="ghost">
-            Cancel
+            {t('common.cancel')}
           </Btn>
         </div>
       </div>
@@ -181,6 +183,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
   const { logout } = useApp()
   const { standalone } = usePWA()
   const navigate = useNavigate()
+  const t = useT()
   const [view, setView] = useState('menu')
   const out = async () => {
     await logout()
@@ -209,30 +212,30 @@ function SettingsPanel({ user, onEdit, onClose }) {
   return (
     <div className="border border-line-bright bg-panel">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Settings</span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('common.settings')}</span>
         <button onClick={onClose} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
-          Close ✕
+          {t('profile.closeX')}
         </button>
       </div>
       <div className="divide-y divide-line">
-        <Item icon={<IconSettings size={18} />} label="Edit profile" onClick={() => { onClose(); onEdit() }} />
+        <Item icon={<IconSettings size={18} />} label={t('profile.editProfile')} onClick={() => { onClose(); onEdit() }} />
         <Item
           icon={<IconShield size={18} />}
-          label="Two-factor auth"
+          label={t('profile.twoFactorAuth')}
           onClick={() => setView('2fa')}
           right={
             <span className={`font-mono text-[10px] ${user.twoFactor ? 'text-ink' : 'text-faint'}`}>
-              {user.twoFactor ? 'On' : 'Off'}
+              {user.twoFactor ? t('profile.on') : t('profile.off')}
             </span>
           }
         />
-        <Item icon={<IconLogout size={18} />} label="Log out" onClick={out} />
+        <Item icon={<IconLogout size={18} />} label={t('common.logout')} onClick={out} />
         {canDelete ? (
-          <Item icon={<IconTrash size={18} />} label="Delete account" onClick={() => setView('delete')} danger />
+          <Item icon={<IconTrash size={18} />} label={t('profile.deleteAccount')} onClick={() => setView('delete')} danger />
         ) : null}
       </div>
       <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">
-        Signed in as {user.email || user.alias} · SMPL v1.3
+        {t('profile.signedInAs', { who: user.email || user.alias })}
       </div>
     </div>
   )
@@ -240,6 +243,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
 
 export default function Profile() {
   const { alias } = useParams()
+  const t = useT()
   const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows } =
     useApp()
   const base = getUserByAlias(alias)
@@ -249,10 +253,10 @@ export default function Profile() {
   if (!base) {
     return (
       <div className="mx-auto max-w-[1100px] px-4 py-24 text-center sm:px-6">
-        <div className="font-mono text-sm text-muted">PRODUCER NOT FOUND · {alias}</div>
+        <div className="font-mono text-sm text-muted">{t('profile.notFound', { alias })}</div>
         <div className="mt-6">
           <Btn to="/battles" variant="ghost">
-            Back to battles
+            {t('profile.backToBattles')}
           </Btn>
         </div>
       </div>
@@ -276,7 +280,7 @@ export default function Profile() {
       <div className="relative isolate overflow-hidden border border-line bg-panel">
         <span className="hero-bloom" aria-hidden="true" />
         <div className="relative flex items-center justify-between px-6 pt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-faint sm:px-8">
-          <span>{isCuratorProfile ? 'SMPL Curator File' : 'SMPL Artist File'}</span>
+          <span>{isCuratorProfile ? t('profile.curatorFile') : t('profile.artistFile')}</span>
           <span>{roleLabel(user.role)}</span>
         </div>
         <div className="relative px-6 pt-6 sm:px-8">
@@ -291,7 +295,7 @@ export default function Profile() {
                 {user.location ? <span className="text-faint">/</span> : null}
                 {user.location ? <span>◍ {user.location}</span> : null}
                 <span className="text-faint">/</span>
-                <span>Member since {fmtMonthYear(user.joinedAt)}</span>
+                <span>{t('profile.memberSince', { month: fmtMonthYear(user.joinedAt) })}</span>
               </div>
               <h1 className="mt-2 font-sans text-[clamp(2.4rem,8vw,4.5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
                 {user.alias}
@@ -299,11 +303,11 @@ export default function Profile() {
               <div className="mt-3 inline-flex items-center gap-2 border border-line px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
                 {isCuratorProfile ? (
                   <>
-                    <span className="text-ink">✓</span> Curator · curates the room
+                    <span className="text-ink">✓</span> {t('profile.badge.curator')}
                   </>
                 ) : (
                   <>
-                    <span className="text-ink">◆</span> Identity on file — kept anonymous
+                    <span className="text-ink">◆</span> {t('profile.badge.anon')}
                   </>
                 )}
               </div>
@@ -311,18 +315,18 @@ export default function Profile() {
           </div>
           <div className="flex shrink-0 items-center gap-5">
             <div className="text-right">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Followers</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.followers')}</div>
               <div className="font-mono text-2xl tnum leading-none">{followers}</div>
             </div>
             <div className="text-right">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Following</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.following')}</div>
               <div className="font-mono text-2xl tnum leading-none">{followingCount}</div>
             </div>
             <ShareButton
               iconOnly
               className="h-12 w-12"
-              title={`@${user.alias} on SMPL`}
-              text={`@${user.alias} · ${roleLabel(user.role)} on SMPL — same sample, different soul.`}
+              title={t('profile.share.title', { alias: user.alias })}
+              text={t('profile.share.text', { alias: user.alias, role: roleLabel(user.role) })}
             />
             {isSelf ? (
               <div className="flex items-center gap-2">
@@ -333,14 +337,14 @@ export default function Profile() {
                   }}
                   className="h-12 border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
                 >
-                  {editing ? 'Close' : 'Edit'}
+                  {editing ? t('common.close') : t('common.edit')}
                 </button>
                 <button
                   onClick={() => {
                     setEditing(false)
                     setSettingsOpen((v) => !v)
                   }}
-                  aria-label="settings"
+                  aria-label={t('common.settings')}
                   className="flex h-12 w-12 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
                 >
                   <IconSettings size={18} />
@@ -353,7 +357,7 @@ export default function Profile() {
                   following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
                 }`}
               >
-                {following ? '✓ Following' : '+ Follow'}
+                {following ? t('common.followingState') : t('common.follow')}
               </button>
             )}
           </div>
@@ -380,20 +384,20 @@ export default function Profile() {
           <div className="border border-line-bright bg-panel">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5">
               <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
-                <span>⌧</span> Private file
+                <span>⌧</span> {t('profile.privateFile')}
               </div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">Visible only to you</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{t('profile.visibleOnlyToYou')}</span>
             </div>
             <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
-              <PrivateCell label="Legal name" value={user.name} />
+              <PrivateCell label={t('profile.legalName')} value={user.name} />
               <PrivateCell
-                label="Date of birth"
-                value={user.dob ? `${user.dob}${age != null ? ` · ${age} yrs` : ''}` : ''}
+                label={t('profile.dob')}
+                value={user.dob ? (age != null ? t('profile.dobYears', { dob: user.dob, age }) : user.dob) : ''}
               />
-              <PrivateCell label="Email" value={user.email} />
+              <PrivateCell label={t('profile.email')} value={user.email} />
             </div>
             <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">
-              Never shown publicly. SMPL verifies your identity and keeps you anonymous to the room.
+              {t('profile.privateFootnote')}
             </div>
           </div>
         </Reveal>
@@ -403,9 +407,9 @@ export default function Profile() {
       <Reveal className="mt-6">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="border border-line bg-panel p-6 lg:col-span-2">
-            <Label>Bio</Label>
+            <Label>{t('profile.bio')}</Label>
             <p className="mt-4 font-sans text-[15px] leading-relaxed text-ink-dim">
-              {user.bio ? <Mentions text={user.bio} /> : 'No bio yet.'}
+              {user.bio ? <Mentions text={user.bio} /> : t('profile.noBio')}
             </p>
             {user.genres?.length ? (
               <div className="mt-6 flex flex-wrap gap-2">
@@ -421,7 +425,7 @@ export default function Profile() {
             ) : null}
           </div>
           <div className="border border-line bg-panel p-6">
-            <Label>Links</Label>
+            <Label>{t('profile.links')}</Label>
             <div className="mt-4 flex flex-col gap-2">
               {user.links?.length ? (
                 user.links.map((l) => (
@@ -435,7 +439,7 @@ export default function Profile() {
                   </a>
                 ))
               ) : (
-                <span className="font-mono text-[11px] text-muted">No links.</span>
+                <span className="font-mono text-[11px] text-muted">{t('profile.noLinks')}</span>
               )}
             </div>
           </div>
@@ -444,21 +448,25 @@ export default function Profile() {
 
       {/* STATS */}
       <Reveal className="mt-14">
-        <SectionHead index="F1" kicker={isCuratorProfile ? 'Curation figures' : 'Career figures'} title="Statistics" />
+        <SectionHead
+          index="F1"
+          kicker={isCuratorProfile ? t('profile.stats.kickerCurator') : t('profile.stats.kickerCareer')}
+          title={t('profile.stats.title')}
+        />
         <div className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
           {isCuratorProfile ? (
             <>
-              <StatCell label="Battles" value={cstats.count} sub="curated" />
-              <StatCell label="Creators" value={cstats.creators} sub="hosted" />
-              <StatCell label="Drops" value={cstats.drops} sub="submitted" />
-              <StatCell label="Winners" value={cstats.winners} sub="crowned" />
+              <StatCell label={t('profile.cstats.battles')} value={cstats.count} sub={t('profile.cstats.battlesSub')} />
+              <StatCell label={t('profile.cstats.creators')} value={cstats.creators} sub={t('profile.cstats.creatorsSub')} />
+              <StatCell label={t('profile.cstats.drops')} value={cstats.drops} sub={t('profile.cstats.dropsSub')} />
+              <StatCell label={t('profile.cstats.winners')} value={cstats.winners} sub={t('profile.cstats.winnersSub')} />
             </>
           ) : (
             <>
-              <StatCell label="Battles" value={stats.played} sub="played" />
-              <StatCell label="Won" value={stats.won} sub="first place" />
-              <StatCell label="Win ratio" value={`${stats.winRatio}%`} sub={`${stats.won}/${stats.played}`} />
-              <StatCell label="Total votes" value={stats.totalVotes} sub="career" />
+              <StatCell label={t('profile.stats.battles')} value={stats.played} sub={t('profile.stats.battlesSub')} />
+              <StatCell label={t('profile.stats.won')} value={stats.won} sub={t('profile.stats.wonSub')} />
+              <StatCell label={t('profile.stats.winRatio')} value={`${stats.winRatio}%`} sub={`${stats.won}/${stats.played}`} />
+              <StatCell label={t('profile.stats.totalVotes')} value={stats.totalVotes} sub={t('profile.stats.totalVotesSub')} />
             </>
           )}
         </div>
@@ -467,7 +475,7 @@ export default function Profile() {
       {/* CURATED BATTLES (curator) */}
       {isCuratorProfile ? (
         <Reveal className="mt-14">
-          <SectionHead index="F2" kicker="The catalogue" title="Curated battles" />
+          <SectionHead index="F2" kicker={t('profile.curated.kicker')} title={t('profile.curated.title')} />
           {cstats.curated.length ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {cstats.curated.map((b) => (
@@ -476,24 +484,24 @@ export default function Profile() {
             </div>
           ) : (
             <p className="border border-line bg-panel px-5 py-6 font-mono text-[12px] text-muted">
-              No battles curated yet.
+              {t('profile.curated.empty')}
             </p>
           )}
         </Reveal>
       ) : (
         /* HISTORY (competitor) */
         <Reveal className="mt-14">
-          <SectionHead index="F2" kicker="The record" title="Battle history" />
+          <SectionHead index="F2" kicker={t('profile.history.kicker')} title={t('profile.history.title')} />
           <div className="border border-line bg-panel">
             {stats.history.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse">
                 <thead>
                   <tr className="border-b border-line font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-                    <th className="px-5 py-3.5 text-left font-normal">Battle</th>
-                    <th className="px-5 py-3.5 text-right font-normal">Position</th>
-                    <th className="px-5 py-3.5 text-right font-normal">Votes</th>
-                    <th className="px-5 py-3.5 text-right font-normal">Date</th>
+                    <th className="px-5 py-3.5 text-left font-normal">{t('profile.history.col.battle')}</th>
+                    <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.position')}</th>
+                    <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.votes')}</th>
+                    <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.date')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -504,7 +512,7 @@ export default function Profile() {
                         <td className="px-5 py-4">
                           <span className="font-sans text-[15px] uppercase tracking-tight">{h.battle}</span>
                           {h.live ? (
-                            <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-faint">on smpl</span>
+                            <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-faint">{t('profile.history.onSmpl')}</span>
                           ) : null}
                         </td>
                         <td className="px-5 py-4 text-right">
@@ -525,7 +533,7 @@ export default function Profile() {
               </table>
             </div>
             ) : (
-              <p className="px-5 py-6 font-mono text-[12px] text-muted">No battles played yet.</p>
+              <p className="px-5 py-6 font-mono text-[12px] text-muted">{t('profile.history.empty')}</p>
             )}
           </div>
         </Reveal>

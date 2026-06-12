@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { useT } from '../i18n/index.jsx'
 import { Btn, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import Avatar from '../components/Avatar.jsx'
 
@@ -27,18 +28,18 @@ function fileToAvatar(file, cb) {
 const ROLES = [
   {
     key: 'producer',
-    title: 'Producer',
-    blurb: 'Flip the sample, submit beats, build a battle record.',
+    titleKey: 'role.producer',
+    blurbKey: 'auth.signup.roleProducerBlurb',
   },
   {
     key: 'artist',
-    title: 'Artist',
-    blurb: 'Drop verses or vocals on the beat. Rap, sing, spoken word — one take, judged blind.',
+    titleKey: 'role.artist',
+    blurbKey: 'auth.signup.roleArtistBlurb',
   },
   {
     key: 'listener',
-    title: 'Listener',
-    blurb: 'Attend, play the room, cast anonymous votes. No drops needed.',
+    titleKey: 'role.listener',
+    blurbKey: 'auth.signup.roleListenerBlurb',
   },
 ]
 
@@ -58,6 +59,7 @@ function SectionLabel({ index, title, note }) {
 
 export default function Signup() {
   const { signup } = useApp()
+  const t = useT()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const initialRole = ['artist', 'listener'].includes(params.get('role'))
@@ -97,21 +99,20 @@ export default function Signup() {
   return (
     <div className="mx-auto max-w-[840px] px-4 py-12 sm:px-6 sm:py-16">
       <div className="font-mono text-[10px] uppercase tracking-[0.26em] text-faint">
-        SMPL — enrolment
+        {t('auth.signup.eyebrow')}
       </div>
       <h1 className="mt-3 font-sans text-[clamp(2.6rem,10vw,5.5rem)] font-bold uppercase leading-[0.82] tracking-tighter">
-        Sign up
+        {t('common.signup')}
       </h1>
       <p className="mt-6 max-w-xl font-mono text-[12px] leading-relaxed text-muted">
-        Two layers: a <span className="text-ink-dim">public file</span> the room sees, and a{' '}
-        <span className="text-ink-dim">private identity</span> only you see. In battle you are only
-        your alias — never your name.
+        {t('auth.signup.intro1')} <span className="text-ink-dim">{t('auth.signup.introPublic')}</span> {t('auth.signup.intro2')}{' '}
+        <span className="text-ink-dim">{t('auth.signup.introPrivate')}</span> {t('auth.signup.intro3')}
       </p>
 
       <form onSubmit={submit} className="mt-12 space-y-12">
         {/* 01 — ROLE */}
         <div>
-          <SectionLabel index="01" title="Choose a role" />
+          <SectionLabel index="01" title={t('auth.signup.roleTitle')} />
           <div className="grid gap-3 sm:grid-cols-3">
             {ROLES.map((r) => {
               const active = role === r.key
@@ -129,7 +130,7 @@ export default function Signup() {
                   {!active ? <span className="hover-bloom" aria-hidden="true" /> : null}
                   <div className="relative flex items-center justify-between">
                     <span className="font-sans text-xl font-bold uppercase tracking-tight">
-                      {r.title}
+                      {t(r.titleKey)}
                     </span>
                     <span
                       className={`block h-3 w-3 border ${active ? 'border-bg bg-bg' : 'border-line-bright'}`}
@@ -140,7 +141,7 @@ export default function Signup() {
                       active ? 'text-bg/80' : 'text-muted'
                     }`}
                   >
-                    {r.blurb}
+                    {t(r.blurbKey)}
                   </p>
                 </button>
               )
@@ -150,12 +151,12 @@ export default function Signup() {
 
         {/* 02 — PUBLIC */}
         <div>
-          <SectionLabel index="02" title="Public profile" note="Shown on your page" />
+          <SectionLabel index="02" title={t('auth.signup.publicTitle')} note={t('auth.signup.publicNote')} />
           <div className="space-y-5">
             <div className="flex items-center gap-4">
               <Avatar alias={form.alias || '?'} src={form.avatar} size={56} />
               <label className="cursor-pointer border border-line-bright px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg">
-                Upload photo
+                {t('auth.signup.uploadPhoto')}
                 <input type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
               </label>
               {form.avatar ? (
@@ -164,41 +165,41 @@ export default function Signup() {
                   onClick={() => setForm({ ...form, avatar: '' })}
                   className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted hover:text-ink"
                 >
-                  Remove
+                  {t('auth.signup.removePhoto')}
                 </button>
               ) : null}
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="Alias" hint="your @handle">
+              <Field label={t('auth.field.alias')} hint={t('auth.field.aliasHint')}>
                 <input
                   className={inputCls}
-                  placeholder="e.g. null.set"
+                  placeholder={t('auth.field.aliasPlaceholder')}
                   value={form.alias}
                   onChange={set('alias')}
                 />
               </Field>
-              <Field label="Location" hint="city, country">
+              <Field label={t('auth.field.location')} hint={t('auth.field.locationHint')}>
                 <input
                   className={inputCls}
-                  placeholder="Rotterdam, NL"
+                  placeholder={t('auth.field.locationPlaceholder')}
                   value={form.location}
                   onChange={set('location')}
                 />
               </Field>
             </div>
-            <Field label="Genres" hint="comma separated">
+            <Field label={t('auth.field.genres')} hint={t('auth.field.genresHint')}>
               <input
                 className={inputCls}
-                placeholder="boom bap, glitch, lo-fi"
+                placeholder={t('auth.field.genresPlaceholder')}
                 value={form.genres}
                 onChange={set('genres')}
               />
             </Field>
-            <Field label="Bio" hint="optional">
+            <Field label={t('auth.field.bio')} hint={t('auth.field.bioHint')}>
               <textarea
                 rows={3}
                 className={textareaCls}
-                placeholder="What do you make, and on what?"
+                placeholder={t('auth.field.bioPlaceholder')}
                 value={form.bio}
                 onChange={set('bio')}
               />
@@ -208,24 +209,23 @@ export default function Signup() {
 
         {/* 03 — PRIVATE */}
         <div>
-          <SectionLabel index="03" title="Private identity" note="Never shown publicly" />
+          <SectionLabel index="03" title={t('auth.signup.privateTitle')} note={t('auth.signup.privateNote')} />
           <div className="border border-line-bright bg-panel">
             <div className="flex items-center gap-2 border-b border-line px-5 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
               <span className="text-ink">⌧</span>
-              Verified on file · kept anonymous — legal name, date of birth & email never reach the
-              room.
+              {t('auth.signup.privateBanner')}
             </div>
             <div className="space-y-5 p-5">
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <Field label="Legal name" hint="private">
+                <Field label={t('auth.field.legalName')} hint={t('auth.field.legalNameHint')}>
                   <input
                     className={inputCls}
-                    placeholder="Your real name"
+                    placeholder={t('auth.field.legalNamePlaceholder')}
                     value={form.name}
                     onChange={set('name')}
                   />
                 </Field>
-                <Field label="Date of birth" hint="private">
+                <Field label={t('auth.field.dob')} hint={t('auth.field.dobHint')}>
                   <input
                     type="date"
                     className={`${inputCls} [color-scheme:dark]`}
@@ -235,20 +235,20 @@ export default function Signup() {
                 </Field>
               </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <Field label="Email" hint="private">
+                <Field label={t('auth.field.email')} hint={t('auth.field.emailPrivateHint')}>
                   <input
                     type="email"
                     className={inputCls}
-                    placeholder="you@mail.com"
+                    placeholder={t('auth.field.emailPrivatePlaceholder')}
                     value={form.email}
                     onChange={set('email')}
                   />
                 </Field>
-                <Field label="Password" hint="required · min 4">
+                <Field label={t('auth.field.password')} hint={t('auth.field.passwordSignupHint')}>
                   <input
                     type="password"
                     className={inputCls}
-                    placeholder="••••••••"
+                    placeholder={t('auth.field.passwordPlaceholder')}
                     value={form.password}
                     onChange={set('password')}
                   />
@@ -266,12 +266,12 @@ export default function Signup() {
 
         <div className="flex flex-wrap items-center gap-4">
           <Btn type="submit" variant="solid" size="lg">
-            Create account
+            {t('auth.signup.create')}
           </Btn>
           <span className="font-mono text-[11px] text-muted">
-            Already here?{' '}
+            {t('auth.signup.already')}{' '}
             <Link to="/login" className="text-ink underline underline-offset-4">
-              Login ▸
+              {t('auth.loginArrow')}
             </Link>
           </span>
         </div>

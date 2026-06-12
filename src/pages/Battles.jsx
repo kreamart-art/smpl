@@ -3,18 +3,20 @@ import { useApp } from '../context/AppContext.jsx'
 import BattleCard from '../components/BattleCard.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { STATUS_GROUP, STATUS_INDEX } from '../data/status.js'
+import { useT } from '../i18n/index.jsx'
 
 const FILTERS = [
-  { key: 'all', label: 'ALL' },
-  { key: 'active', label: 'ACTIVE' },
-  { key: 'upcoming', label: 'UPCOMING' },
-  { key: 'past', label: 'PAST' },
+  { key: 'all', labelKey: 'battles.filter.all' },
+  { key: 'active', labelKey: 'battles.filter.active' },
+  { key: 'upcoming', labelKey: 'battles.filter.upcoming' },
+  { key: 'past', labelKey: 'battles.filter.past' },
 ]
 
 // Active battles first, then upcoming, then past.
 const GROUP_RANK = { active: 0, upcoming: 1, past: 2 }
 
 export default function Battles() {
+  const t = useT()
   const { battles } = useApp()
   const [filter, setFilter] = useState('all')
   const [kind, setKind] = useState('all')
@@ -47,10 +49,10 @@ export default function Battles() {
           <span className="font-mono text-[13px] text-faint tnum">A1</span>
           <div>
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
-              The archive
+              {t('battles.eyebrow')}
             </div>
             <h1 className="font-sans text-[clamp(2.4rem,6vw,4.5rem)] font-bold uppercase leading-none tracking-tighter">
-              Battles
+              {t('battles.title')}
             </h1>
           </div>
         </div>
@@ -63,7 +65,7 @@ export default function Battles() {
                 filter === f.key ? 'bg-ink text-bg' : 'text-muted hover:text-ink'
               }`}
             >
-              {f.label}
+              {t(f.labelKey)}
               <span className="ml-1.5 opacity-50 tnum">{counts[f.key]}</span>
             </button>
           ))}
@@ -71,22 +73,22 @@ export default function Battles() {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.22em] text-faint">Type</span>
+        <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('battles.type')}</span>
         {[
-          { k: 'all', label: 'ALL' },
-          { k: 'BEATS', label: '≋ BEATS' },
-          { k: 'VERSES', label: '✎ VERSES' },
-        ].map((t) => (
+          { k: 'all', labelKey: 'battles.type.all' },
+          { k: 'BEATS', labelKey: 'battles.type.beats' },
+          { k: 'VERSES', labelKey: 'battles.type.verses' },
+        ].map((tf) => (
           <button
-            key={t.k}
-            onClick={() => setKind(t.k)}
+            key={tf.k}
+            onClick={() => setKind(tf.k)}
             className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors ${
-              kind === t.k
+              kind === tf.k
                 ? 'border-ink bg-ink text-bg'
                 : 'border-line text-muted hover:border-line-bright hover:text-ink'
             }`}
           >
-            {t.label}
+            {t(tf.labelKey)}
           </button>
         ))}
       </div>
@@ -100,7 +102,7 @@ export default function Battles() {
           ))}
         </div>
       ) : (
-        <p className="mt-12 font-mono text-sm text-muted">Nothing in this bucket yet.</p>
+        <p className="mt-12 font-mono text-sm text-muted">{t('battles.empty')}</p>
       )}
     </div>
   )

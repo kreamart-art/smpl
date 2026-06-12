@@ -1,8 +1,10 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { STATUS } from '../data/status.js'
+import { useT } from '../i18n/index.jsx'
 import NotificationsBell from './NotificationsBell.jsx'
 import Avatar from './Avatar.jsx'
+import LangToggle from './LangToggle.jsx'
 
 function navClass({ isActive }) {
   return [
@@ -13,6 +15,7 @@ function navClass({ isActive }) {
 
 export default function Nav() {
   const { currentUser, isCurator, logout, battles } = useApp()
+  const t = useT()
   const navigate = useNavigate()
   const liveCount = battles.filter(
     (b) => b.status === STATUS.VOTING_PHASE || b.status === STATUS.SUBMISSION_PHASE,
@@ -30,34 +33,36 @@ export default function Nav() {
           <Link to="/" className="group flex items-center gap-3" aria-label="SMPL — home">
             <img src="/logo.png" alt="SMPL" className="h-6 w-auto sm:h-7" />
             <span className="hidden font-mono text-[9px] uppercase leading-relaxed tracking-[0.2em] text-faint sm:block">
-              same sample.
+              {t('chrome.tagline1')}
               <br />
-              different soul.
+              {t('chrome.tagline2')}
             </span>
           </Link>
           <span className="hidden items-center gap-2 border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted md:flex">
             <span className="block h-1.5 w-1.5 bg-ink pulse-dot" />
-            {liveCount} live
+            {t('chrome.livePill', { n: liveCount })}
           </span>
         </div>
 
         <nav className="flex items-center gap-1 sm:gap-2">
           <NavLink to="/battles" className={navClass}>
-            Battles
+            {t('common.battles')}
           </NavLink>
           <NavLink to="/people" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
-            People
+            {t('common.people')}
           </NavLink>
           {currentUser ? (
             <NavLink to="/feed" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
-              Feed
+              {t('common.feed')}
             </NavLink>
           ) : null}
           {isCurator ? (
             <NavLink to="/dashboard" className={navClass}>
-              Dashboard
+              {t('common.dashboard')}
             </NavLink>
           ) : null}
+
+          <LangToggle className="ml-1 hidden sm:inline-flex" />
 
           {currentUser ? (
             <div className="flex items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
@@ -65,12 +70,12 @@ export default function Nav() {
               <Link
                 to={`/profile/${encodeURIComponent(currentUser.alias)}`}
                 className="flex items-center gap-2 text-right"
-                title="Your profile"
+                title={t('chrome.yourProfile')}
               >
                 <div className="hidden sm:block">
                   <div className="font-mono text-[11px] leading-tight text-ink">@{currentUser.alias}</div>
                   <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-faint">
-                    {currentUser.role}
+                    {t(`role.${currentUser.role}`)}
                   </div>
                 </div>
                 <Avatar alias={currentUser.alias} src={currentUser.avatar} size={32} />
@@ -79,19 +84,19 @@ export default function Nav() {
                 onClick={onLogout}
                 className="border border-line px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted transition-colors duration-300 hover:border-line-bright hover:text-ink"
               >
-                Logout
+                {t('common.logout')}
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-1 sm:gap-2">
               <NavLink to="/login" className={navClass}>
-                Login
+                {t('common.login')}
               </NavLink>
               <Link
                 to="/signup"
                 className="whitespace-nowrap border border-ink bg-ink px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-bg transition-colors duration-300 hover:bg-bright"
               >
-                Sign up
+                {t('common.signup')}
               </Link>
             </div>
           )}

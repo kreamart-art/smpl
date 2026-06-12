@@ -1,22 +1,48 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { useT } from '../i18n/index.jsx'
 import Handle from '../components/Handle.jsx'
 import KindBadge from '../components/KindBadge.jsx'
 
-function ago(ts) {
+function ago(ts, t) {
   const d = Date.now() - ts
-  if (d < 0) return 'soon'
+  if (d < 0) return t('social.time.soon')
   const m = Math.floor(d / 60000)
   const h = Math.floor(m / 60)
   const day = Math.floor(h / 24)
   if (day > 0) return `${day}d ago`
   if (h > 0) return `${h}h ago`
   if (m > 0) return `${m}m ago`
-  return 'just now'
+  return t('social.time.justNow')
+}
+
+// Render an activity phrase, substituting {handle}/{title} slots with JSX nodes
+// (so the @handle link + the styled title keep their markup) and plain {vars}
+// (position) inline. Splits the translated string on each placeholder in turn.
+function phrase(t, key, vars, nodes) {
+  let segs = [t(key, vars)]
+  for (const name in nodes) {
+    const tok = `{${name}}`
+    const next = []
+    for (const s of segs) {
+      if (typeof s !== 'string') {
+        next.push(s)
+        continue
+      }
+      const bits = s.split(tok)
+      bits.forEach((b, i) => {
+        if (b) next.push(b)
+        if (i < bits.length - 1) next.push(nodes[name])
+      })
+    }
+    segs = next
+  }
+  return segs.map((s, i) => <span key={i}>{s}</span>)
 }
 
 function FeedRow({ it, getUser }) {
+  const t = useT()
   const navigate = useNavigate()
   const alias = it.userId ? getUser(it.userId)?.alias : null
   const stop = (e) => e.stopPropagation()
@@ -26,44 +52,21 @@ function FeedRow({ it, getUser }) {
       <Handle alias={alias} className="text-ink" />
     </span>
   ) : null
+  const TITLE = <span className="text-ink">{it.title}</span>
   let body
   if (it.type === 'winner')
     body = (
       <>
-        {H} won <span className="text-ink">{it.title}</span>{' '}
-        <span className="text-faint">· {it.votes} votes</span>
+        {phrase(t, 'social.act.winner', { position: it.position }, { handle: H, title: TITLE })}{' '}
+        <span className="text-faint">{t('social.act.votesSuffix', { votes: it.votes })}</span>
       </>
     )
   else if (it.type === 'placement')
-    body = (
-      <>
-        {H} placed #{it.position} in <span className="text-ink">{it.title}</span>
-      </>
-    )
-  else if (it.type === 'voting')
-    body = (
-      <>
-        <span className="text-ink">{it.title}</span> is open for voting — judge it blind
-      </>
-    )
-  else if (it.type === 'signup')
-    body = (
-      <>
-        <span className="text-ink">{it.title}</span> opened for signup
-      </>
-    )
-  else if (it.type === 'submission')
-    body = (
-      <>
-        <span className="text-ink">{it.title}</span> — submissions are open
-      </>
-    )
-  else
-    body = (
-      <>
-        New battle announced — <span className="text-ink">{it.title}</span>
-      </>
-    )
+    body = phrase(t, 'social.act.placement', { position: it.position }, { handle: H, title: TITLE })
+  else if (it.type === 'voting') body = phrase(t, 'social.act.votingBlind', {}, { title: TITLE })
+  else if (it.type === 'signup') body = phrase(t, 'social.act.signup', {}, { title: TITLE })
+  else if (it.type === 'submission') body = phrase(t, 'social.act.submissionLong', {}, { title: TITLE })
+  else body = phrase(t, 'social.act.announcedLong', {}, { title: TITLE })
 
   return (
     <div
@@ -75,14 +78,15 @@ function FeedRow({ it, getUser }) {
         <div className="font-mono text-[13px] leading-relaxed text-ink-dim">{body}</div>
       </div>
       <div className="shrink-0 pt-0.5 text-right font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
-        {ago(it.ts)}
-        <div className="mt-1 text-muted transition-colors group-hover:text-ink">open ▸</div>
+        {ago(it.ts, t)}
+        <div className="mt-1 text-muted transition-colors group-hover:text-ink">{t('social.row.open')}</div>
       </div>
     </div>
   )
 }
 
 export default function Feed() {
+  const t = useT()
   const { currentUser, fetchFeed, getUser } = useApp()
   const [items, setItems] = useState(null)
   const [tab, setTab] = useState(currentUser ? 'following' : 'all')
@@ -109,22 +113,22 @@ export default function Feed() {
         <div className="flex items-baseline gap-4 sm:gap-6">
           <span className="font-mono text-[13px] text-faint tnum">F0</span>
           <div>
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">The wire</div>
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">{t('social.feed.eyebrow')}</div>
             <h1 className="font-sans text-[clamp(2.4rem,6vw,4rem)] font-bold uppercase leading-none tracking-tighter">
-              Feed
+              {t('common.feed')}
             </h1>
           </div>
         </div>
         <div className="flex items-stretch border border-line">
-          {['following', 'all'].map((t) => (
+          {['following', 'all'].map((tabKey) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               className={`px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${
-                tab === t ? 'bg-ink text-bg' : 'text-muted hover:text-ink'
+                tab === tabKey ? 'bg-ink text-bg' : 'text-muted hover:text-ink'
               }`}
             >
-              {t}
+              {tabKey === 'following' ? t('social.feed.tabFollowing') : t('social.feed.tabAll')}
             </button>
           ))}
         </div>
@@ -132,21 +136,21 @@ export default function Feed() {
 
       <div className="mt-8 border border-line bg-bg">
         {items === null ? (
-          <div className="px-5 py-10 text-center font-mono text-[12px] text-muted">Loading…</div>
+          <div className="px-5 py-10 text-center font-mono text-[12px] text-muted">{t('common.loading')}</div>
         ) : shown.length ? (
           shown.map((it) => <FeedRow key={it.id} it={it} getUser={getUser} />)
         ) : (
           <div className="px-5 py-12 text-center font-mono text-[12px] leading-relaxed text-muted">
             {tab === 'following' ? (
               <>
-                Quiet here. Follow makers on{' '}
+                {t('social.feed.emptyFollowingPre')}{' '}
                 <Link to="/people" className="text-ink underline underline-offset-4">
-                  People
+                  {t('common.people')}
                 </Link>{' '}
-                to fill your wire.
+                {t('social.feed.emptyFollowingPost')}
               </>
             ) : (
-              'No activity yet.'
+              t('social.feed.emptyAll')
             )}
           </div>
         )}

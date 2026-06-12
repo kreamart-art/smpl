@@ -6,14 +6,29 @@ import { CountdownInline } from './Countdown.jsx'
 import { STATUS, countdownTarget } from '../data/status.js'
 import { kindCopy } from '../data/kind.js'
 import KindBadge from './KindBadge.jsx'
+import { useT } from '../i18n/index.jsx'
+
+// Map a status to its countdown-caption key (countdownTarget() returns English).
+const CD_KEY = {
+  [STATUS.ANNOUNCED]: 'battles.card.cd.signupOpens',
+  [STATUS.OPEN_FOR_SIGNUP]: 'battles.card.cd.signupCloses',
+  [STATUS.SUBMISSION_PHASE]: 'battles.card.cd.submissionsClose',
+  [STATUS.VOTING_PHASE]: 'battles.card.cd.votingCloses',
+  [STATUS.WINNER_DECLARED]: 'battles.card.cd.closed',
+}
 
 export default function BattleCard({ battle }) {
+  const t = useT()
   const { battleSubmissions } = useApp()
-  const { ts, label } = countdownTarget(battle)
+  const { ts } = countdownTarget(battle)
   const subs = battleSubmissions(battle.id).length
   const attendees = battle.attendees.length
   const live = battle.status === STATUS.VOTING_PHASE
   const c = kindCopy(battle.kind)
+  const isVerses = battle.kind === 'VERSES'
+  const cdLabel = t(CD_KEY[battle.status] || 'battles.card.cd.closed')
+  const sourceLabel = t(isVerses ? 'battles.card.beat' : 'battles.card.sample')
+  const competitorTitle = t(isVerses ? 'battles.card.artists' : 'battles.card.producers')
 
   return (
     <Link
@@ -34,13 +49,13 @@ export default function BattleCard({ battle }) {
           {battle.title}
         </h3>
         <div className="mt-3 truncate font-mono text-[11px] tracking-[0.04em] text-muted">
-          <span className="text-faint">{c.sourceLabel} —</span>{' '}
+          <span className="text-faint">{sourceLabel} —</span>{' '}
           {battle.sampleRevealed ? (
             <span className="text-ink-dim">
               {battle.sampleArtist} / {battle.sampleSong}
             </span>
           ) : (
-            <span className="text-ink-dim">[ SEALED ]</span>
+            <span className="text-ink-dim">{t('battles.card.sealed')}</span>
           )}
         </div>
       </div>
@@ -60,13 +75,13 @@ export default function BattleCard({ battle }) {
       {/* meta grid (preserved): countdown + producers */}
       <div className="relative mt-5 grid grid-cols-2 border-t border-line">
         <div className="border-r border-line px-5 py-4">
-          <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">{label}</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">{cdLabel}</div>
           <div className="mt-1.5 font-mono text-[15px] text-ink">
             <CountdownInline to={ts} />
           </div>
         </div>
         <div className="px-5 py-4">
-          <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">{c.competitorTitle}</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">{competitorTitle}</div>
           <div className="mt-1.5 font-mono text-[15px] text-ink tnum">
             {battle.signups.length}
             <span className="text-faint">/{battle.maxProducers}</span>
@@ -78,10 +93,10 @@ export default function BattleCard({ battle }) {
       {/* footer */}
       <div className="relative flex items-center justify-between border-t border-line px-5 py-3.5">
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-          {attendees} in the room
+          {t('battles.card.inRoom', { n: attendees })}
         </span>
         <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted transition-all duration-500 group-hover:tracking-[0.32em] group-hover:text-ink">
-          Enter ▸
+          {t('battles.card.enter')}
         </span>
       </div>
     </Link>

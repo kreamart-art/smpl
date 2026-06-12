@@ -1,6 +1,7 @@
 import { usePlayback } from '../context/AppContext.jsx'
 import Waveform from './Waveform.jsx'
 import { fmtTime } from '../utils/wave.js'
+import { useT } from '../i18n/index.jsx'
 
 // PlayGlyph / PauseGlyph — sharp, square, no rounded edges.
 function Glyph({ playing }) {
@@ -20,6 +21,7 @@ function Glyph({ playing }) {
 // The always-visible sample player on the battle detail page.
 export default function AudioPlayer({ meta, sealed = false }) {
   const { track, playing, elapsed, duration, toggle, playAt } = usePlayback()
+  const t = useT()
   const isCurrent = track?.id === meta.id
   const isPlaying = isCurrent && playing
   const dur = (isCurrent && duration) || meta.duration
@@ -29,7 +31,7 @@ export default function AudioPlayer({ meta, sealed = false }) {
     <div className="border border-line bg-panel">
       <div className="flex items-center justify-between border-b border-line px-4 py-2">
         <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-          {sealed ? 'SAMPLE / SEALED' : 'SAMPLE'}
+          {sealed ? t('audio.sealed') : t('audio.sample')}
         </div>
         <div className="font-mono text-[10px] text-muted tnum">
           {fmtTime(isCurrent ? elapsed : 0)} / {fmtTime(dur)}
@@ -51,7 +53,7 @@ export default function AudioPlayer({ meta, sealed = false }) {
         <div className="min-w-0 flex-1 px-4 py-3">
           {sealed ? (
             <div className="flex h-12 items-center font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
-              [ revealed when signups open ]
+              {t('audio.revealedWhen')}
             </div>
           ) : (
             <Waveform

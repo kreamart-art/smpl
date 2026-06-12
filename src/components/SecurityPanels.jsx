@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 import { Btn, Field, inputCls, Label } from './ui.jsx'
+import { useT } from '../i18n/index.jsx'
 
 const codeInputCls =
   'w-full bg-black border border-line text-ink font-mono text-lg tracking-[0.4em] text-center px-3 h-12 outline-none focus:border-ink placeholder:text-muted'
@@ -12,6 +13,7 @@ const codeInputCls =
 // ---------------------------------------------------------------------------
 export function TwoFactorPanel({ onBack }) {
   const { currentUser, setup2fa, enable2fa, disable2fa } = useApp()
+  const t = useT()
   const enabled = !!currentUser?.twoFactor
   const [stage, setStage] = useState('idle') // idle | setup | codes | disable
   const [secret, setSecret] = useState('')
@@ -50,7 +52,7 @@ export function TwoFactorPanel({ onBack }) {
       setSecret(r.secret)
       setOtpauth(r.otpauth)
       setStage('setup')
-    } else setErr(r.error || 'Could not start setup.')
+    } else setErr(r.error || t('profile.tfa.startError'))
   }
 
   const confirmEnable = async () => {
@@ -62,7 +64,7 @@ export function TwoFactorPanel({ onBack }) {
       setCodes(r.backupCodes || [])
       setCode('')
       setStage('codes')
-    } else setErr(r.error || 'Wrong code.')
+    } else setErr(r.error || t('profile.tfa.wrongCode'))
   }
 
   const confirmDisable = async () => {
@@ -73,7 +75,7 @@ export function TwoFactorPanel({ onBack }) {
     if (r.ok) {
       setPw('')
       setStage('idle')
-    } else setErr(r.error || 'Wrong password.')
+    } else setErr(r.error || t('profile.tfa.wrongPassword'))
   }
 
   const copyCodes = () => {
@@ -85,26 +87,24 @@ export function TwoFactorPanel({ onBack }) {
   }
 
   return (
-    <Shell title="Two-factor auth" onBack={onBack}>
+    <Shell title={t('profile.twoFactorAuth')} onBack={onBack}>
       {stage === 'idle' && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em]">
             <span className={`block h-1.5 w-1.5 ${enabled ? 'bg-ink' : 'bg-faint'}`} />
-            <span className={enabled ? 'text-ink' : 'text-muted'}>{enabled ? '2FA is ON' : '2FA is OFF'}</span>
+            <span className={enabled ? 'text-ink' : 'text-muted'}>{enabled ? t('profile.tfa.onLabel') : t('profile.tfa.offLabel')}</span>
           </div>
           <p className="font-mono text-[11px] leading-relaxed text-muted">
-            {enabled
-              ? 'Your account asks for a 6-digit code from your authenticator app at every login.'
-              : 'Protect your account with an authenticator app (Google Authenticator, Authy, 1Password…). You’ll add a 6-digit code when you log in.'}
+            {enabled ? t('profile.tfa.onExplain') : t('profile.tfa.offExplain')}
           </p>
           {err ? <ErrLine msg={err} /> : null}
           {enabled ? (
             <Btn onClick={() => setStage('disable')} variant="ghost" disabled={busy}>
-              Turn off 2FA
+              {t('profile.tfa.turnOff')}
             </Btn>
           ) : (
             <Btn onClick={startSetup} variant="solid" disabled={busy}>
-              {busy ? 'Starting…' : 'Set up 2FA'}
+              {busy ? t('profile.tfa.starting') : t('profile.tfa.setUp')}
             </Btn>
           )}
         </div>
@@ -113,23 +113,23 @@ export function TwoFactorPanel({ onBack }) {
       {stage === 'setup' && (
         <div className="space-y-5">
           <p className="font-mono text-[11px] leading-relaxed text-muted">
-            1 — Scan this in your authenticator app, or enter the key by hand.
+            {t('profile.tfa.step1')}
           </p>
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
             {qr ? (
-              <img src={qr} alt="2FA QR code" width={160} height={160} className="bg-white p-2" />
+              <img src={qr} alt={t('profile.tfa.qrAlt')} width={160} height={160} className="bg-white p-2" />
             ) : (
               <div className="flex h-[160px] w-[160px] items-center justify-center border border-line font-mono text-[10px] text-muted">
-                QR…
+                {t('profile.tfa.qrLoading')}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <Label>Manual key</Label>
+              <Label>{t('profile.tfa.manualKey')}</Label>
               <div className="mt-2 select-all break-all border border-line bg-black px-3 py-2 font-mono text-[12px] tracking-[0.12em] text-ink">
                 {secret}
               </div>
               <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted">
-                2 — Enter the 6-digit code it shows.
+                {t('profile.tfa.step2')}
               </p>
             </div>
           </div>
@@ -145,10 +145,10 @@ export function TwoFactorPanel({ onBack }) {
           {err ? <ErrLine msg={err} /> : null}
           <div className="flex gap-3">
             <Btn onClick={confirmEnable} variant="solid" disabled={busy || code.length !== 6}>
-              {busy ? 'Verifying…' : 'Verify & enable'}
+              {busy ? t('profile.tfa.verifying') : t('profile.tfa.verifyEnable')}
             </Btn>
             <Btn onClick={() => setStage('idle')} variant="ghost">
-              Cancel
+              {t('common.cancel')}
             </Btn>
           </div>
         </div>
@@ -157,11 +157,10 @@ export function TwoFactorPanel({ onBack }) {
       {stage === 'codes' && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ink">
-            <span className="text-ink">✓</span> 2FA is on
+            <span className="text-ink">✓</span> {t('profile.tfa.onHeading')}
           </div>
           <p className="font-mono text-[11px] leading-relaxed text-muted">
-            Save these backup codes somewhere safe. Each works once if you lose your authenticator.
-            They’re shown only now.
+            {t('profile.tfa.codesExplain')}
           </p>
           <div className="grid grid-cols-2 gap-px border border-line bg-line">
             {codes.map((c) => (
@@ -172,10 +171,10 @@ export function TwoFactorPanel({ onBack }) {
           </div>
           <div className="flex gap-3">
             <Btn onClick={copyCodes} variant="ghost">
-              Copy codes
+              {t('profile.tfa.copyCodes')}
             </Btn>
             <Btn onClick={() => setStage('idle')} variant="solid">
-              Done
+              {t('profile.tfa.done')}
             </Btn>
           </div>
         </div>
@@ -184,9 +183,9 @@ export function TwoFactorPanel({ onBack }) {
       {stage === 'disable' && (
         <div className="space-y-4">
           <p className="font-mono text-[11px] leading-relaxed text-muted">
-            Confirm your password to turn 2FA off.
+            {t('profile.tfa.disableExplain')}
           </p>
-          <Field label="Password">
+          <Field label={t('profile.tfa.password')}>
             <input
               type="password"
               className={inputCls}
@@ -198,10 +197,10 @@ export function TwoFactorPanel({ onBack }) {
           {err ? <ErrLine msg={err} /> : null}
           <div className="flex gap-3">
             <Btn onClick={confirmDisable} variant="solid" disabled={busy || !pw}>
-              {busy ? 'Turning off…' : 'Turn off 2FA'}
+              {busy ? t('profile.tfa.turningOff') : t('profile.tfa.turnOff')}
             </Btn>
             <Btn onClick={() => setStage('idle')} variant="ghost">
-              Cancel
+              {t('common.cancel')}
             </Btn>
           </div>
         </div>
@@ -217,6 +216,7 @@ export function DeleteAccountPanel({ onBack }) {
   const { deleteAccount } = useApp()
   const { standalone } = usePWA()
   const navigate = useNavigate()
+  const t = useT()
   const [pw, setPw] = useState('')
   const [confirmText, setConfirmText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -229,17 +229,16 @@ export function DeleteAccountPanel({ onBack }) {
     const r = await deleteAccount(pw)
     setBusy(false)
     if (r.ok) navigate(standalone ? '/login' : '/')
-    else setErr(r.error || 'Could not delete the account.')
+    else setErr(r.error || t('profile.del.error'))
   }
 
   return (
-    <Shell title="Delete account" onBack={onBack}>
+    <Shell title={t('profile.deleteAccount')} onBack={onBack}>
       <div className="space-y-4">
         <div className="border border-line-bright bg-black px-4 py-3 font-mono text-[11px] leading-relaxed text-ink">
-          This is permanent. Your profile, photo and follows are removed. Past battle results stay,
-          but anonymised — your name is wiped from them. This can’t be undone.
+          {t('profile.del.warning')}
         </div>
-        <Field label="Password">
+        <Field label={t('profile.del.password')}>
           <input
             type="password"
             className={inputCls}
@@ -248,12 +247,12 @@ export function DeleteAccountPanel({ onBack }) {
             placeholder="••••••••"
           />
         </Field>
-        <Field label="Type DELETE to confirm">
+        <Field label={t('profile.del.typeToConfirm')}>
           <input
             className={inputCls}
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
-            placeholder="DELETE"
+            placeholder={t('profile.del.confirmWord')}
             autoCapitalize="characters"
           />
         </Field>
@@ -268,10 +267,10 @@ export function DeleteAccountPanel({ onBack }) {
                 : 'border-line text-muted opacity-40 pointer-events-none'
             }`}
           >
-            {busy ? 'Deleting…' : 'Delete forever'}
+            {busy ? t('profile.del.deleting') : t('profile.del.deleteForever')}
           </button>
           <Btn onClick={onBack} variant="ghost">
-            Cancel
+            {t('common.cancel')}
           </Btn>
         </div>
       </div>
@@ -281,12 +280,13 @@ export function DeleteAccountPanel({ onBack }) {
 
 // ----- shared chrome ---------------------------------------------------------
 function Shell({ title, onBack, children }) {
+  const t = useT()
   return (
     <div className="border border-line-bright bg-panel">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{title}</span>
         <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
-          ◂ Back
+          ◂ {t('common.back')}
         </button>
       </div>
       <div className="p-5">{children}</div>

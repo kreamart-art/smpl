@@ -4,7 +4,8 @@ import { useApp } from '../context/AppContext.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
-import { STATUS, STATUS_LABEL, nextStatus } from '../data/status.js'
+import { STATUS, nextStatus } from '../data/status.js'
+import { useT } from '../i18n/index.jsx'
 
 const empty = {
   title: '',
@@ -33,6 +34,7 @@ function PanelHead({ index, title, note }) {
 }
 
 export default function Dashboard() {
+  const t = useT()
   const app = useApp()
   const {
     isCurator,
@@ -55,7 +57,7 @@ export default function Dashboard() {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 30 * 1024 * 1024) {
-      setMsg({ ok: false, text: 'That audio is over 30 MB — trim or bounce it smaller.' })
+      setMsg({ ok: false, text: t('dashboard.msg.over30') })
       e.target.value = ''
       return
     }
@@ -65,30 +67,33 @@ export default function Dashboard() {
     e.target.value = ''
     if (r.ok) {
       setForm((f) => ({ ...f, sampleUrl: r.url, sampleName: file.name }))
-      setMsg({ ok: true, text: `Uploaded ${file.name}.` })
+      setMsg({ ok: true, text: t('dashboard.msg.uploaded', { name: file.name }) })
     } else {
-      setMsg({ ok: false, text: r.error || 'Upload failed.' })
+      setMsg({ ok: false, text: r.error || t('dashboard.msg.uploadFailed') })
     }
   }
 
   if (!isCurator) {
     return (
       <div className="mx-auto max-w-[760px] px-4 py-28 text-center sm:px-6">
-        <div className="font-mono text-[10px] uppercase tracking-[0.26em] text-faint">Restricted</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.26em] text-faint">{t('dashboard.restricted.kicker')}</div>
         <h1 className="mt-4 font-sans text-[clamp(2.6rem,9vw,5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
-          Curator only
+          {t('dashboard.restricted.title')}
         </h1>
         <p className="mx-auto mt-5 max-w-md font-mono text-[12px] leading-relaxed text-muted">
           {currentUser
-            ? `Signed in as ${currentUser.alias} (${currentUser.role}). The console is reserved for curators.`
-            : 'You need the curator account to run battles.'}
+            ? t('dashboard.restricted.signedIn', {
+                alias: currentUser.alias,
+                role: t(`role.${currentUser.role}`),
+              })
+            : t('dashboard.restricted.anon')}
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Btn to="/login" variant="solid" size="lg">
-            Login as curator
+            {t('dashboard.restricted.login')}
           </Btn>
           <Btn to="/battles" variant="ghost" size="lg">
-            Browse battles
+            {t('dashboard.restricted.browse')}
           </Btn>
         </div>
         <p className="mt-5 font-mono text-[10px] tracking-[0.16em] text-faint">curator@smpl.app</p>
@@ -99,13 +104,19 @@ export default function Dashboard() {
   const onCreate = async (e) => {
     e.preventDefault()
     if (!form.title.trim()) {
-      setMsg({ ok: false, text: 'Give the battle a title.' })
+      setMsg({ ok: false, text: t('dashboard.msg.needTitle') })
       return
     }
     const r = await createBattle(form)
     if (r.ok) {
       setForm(empty)
-      setMsg({ ok: true, text: `Created "${r.battle.title}" — now in ANNOUNCED.` })
+      setMsg({
+        ok: true,
+        text: t('dashboard.msg.created', {
+          title: r.battle.title,
+          status: t(`status.${STATUS.ANNOUNCED}`),
+        }),
+      })
     } else {
       setMsg({ ok: false, text: r.error })
     }
@@ -118,10 +129,10 @@ export default function Dashboard() {
           <span className="font-mono text-[13px] text-faint tnum">C0</span>
           <div>
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
-              Curator console
+              {t('dashboard.console.kicker')}
             </div>
             <h1 className="font-sans text-[clamp(2.4rem,6vw,4.5rem)] font-bold uppercase leading-none tracking-tighter">
-              Dashboard
+              {t('dashboard.console.title')}
             </h1>
           </div>
         </div>
@@ -142,18 +153,22 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <Reveal>
             <div className="border border-line bg-panel">
-              <PanelHead index="C1" title="Create battle" note="→ Announced" />
+              <PanelHead
+                index="C1"
+                title={t('dashboard.create.title')}
+                note={t('dashboard.create.note', { status: t(`status.${STATUS.ANNOUNCED}`) })}
+              />
               <form onSubmit={onCreate} className="space-y-5 px-6 py-6">
-                <Field label="Title">
+                <Field label={t('dashboard.create.fieldTitle')}>
                   <input
                     className={inputCls}
-                    placeholder="GHOST IN THE BREAK"
+                    placeholder={t('dashboard.create.fieldTitlePlaceholder')}
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                   />
                 </Field>
                 <div>
-                  <Label>Type</Label>
+                  <Label>{t('dashboard.create.type')}</Label>
                   <div className="mt-2 grid grid-cols-2 gap-3">
                     {['BEATS', 'VERSES'].map((k) => (
                       <button
@@ -166,24 +181,36 @@ export default function Dashboard() {
                             : 'border-line text-muted hover:border-line-bright hover:text-ink'
                         }`}
                       >
-                        {k === 'VERSES' ? '✎ Verses' : '≋ Beats'}
+                        {k === 'VERSES' ? `✎ ${t('kind.VERSES')}` : `≋ ${t('kind.BEATS')}`}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <Field label={form.kind === 'VERSES' ? 'Beat by' : 'Sample artist'}>
+                  <Field
+                    label={
+                      form.kind === 'VERSES'
+                        ? t('dashboard.create.beatBy')
+                        : t('dashboard.create.sampleArtist')
+                    }
+                  >
                     <input
                       className={inputCls}
-                      placeholder="Dorothy Ashby"
+                      placeholder={t('dashboard.create.artistPlaceholder')}
                       value={form.sampleArtist}
                       onChange={(e) => setForm({ ...form, sampleArtist: e.target.value })}
                     />
                   </Field>
-                  <Field label={form.kind === 'VERSES' ? 'Beat title' : 'Sample track'}>
+                  <Field
+                    label={
+                      form.kind === 'VERSES'
+                        ? t('dashboard.create.beatTitle')
+                        : t('dashboard.create.sampleTrack')
+                    }
+                  >
                     <input
                       className={inputCls}
-                      placeholder="Soul Vibrations"
+                      placeholder={t('dashboard.create.songPlaceholder')}
                       value={form.sampleSong}
                       onChange={(e) => setForm({ ...form, sampleSong: e.target.value })}
                     />
@@ -191,8 +218,12 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <div className="flex items-baseline justify-between">
-                    <Label>{form.kind === 'VERSES' ? 'The beat (audio)' : 'Sample audio'}</Label>
-                    <span className="font-mono text-[10px] text-muted">optional · mp3/wav/m4a · ≤30MB</span>
+                    <Label>
+                      {form.kind === 'VERSES'
+                        ? t('dashboard.create.theBeatAudio')
+                        : t('dashboard.create.sampleAudio')}
+                    </Label>
+                    <span className="font-mono text-[10px] text-muted">{t('dashboard.create.audioHint')}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     <label
@@ -200,7 +231,11 @@ export default function Dashboard() {
                         uploading ? 'pointer-events-none opacity-40' : ''
                       }`}
                     >
-                      {uploading ? 'Uploading…' : form.sampleUrl ? 'Replace file' : 'Upload audio'}
+                      {uploading
+                        ? t('dashboard.create.uploading')
+                        : form.sampleUrl
+                          ? t('dashboard.create.replace')
+                          : t('dashboard.create.upload')}
                       <input
                         type="file"
                         accept="audio/*"
@@ -212,24 +247,23 @@ export default function Dashboard() {
                     {form.sampleUrl ? (
                       <span className="flex items-center gap-2 font-mono text-[11px] text-ink">
                         <span className="text-muted">✓</span>
-                        <span className="max-w-[170px] truncate">{form.sampleName || 'uploaded'}</span>
+                        <span className="max-w-[170px] truncate">{form.sampleName || t('dashboard.create.uploadedFallback')}</span>
                         <button
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, sampleUrl: '', sampleName: '' }))}
                           className="text-muted hover:text-ink"
-                          aria-label="remove audio"
                         >
                           ✕
                         </button>
                       </span>
                     ) : (
                       <span className="font-mono text-[10px] text-muted">
-                        Players hear this. No file = stylised silent waveform.
+                        {t('dashboard.create.audioHelp')}
                       </span>
                     )}
                   </div>
                 </div>
-                <Field label="Max producers">
+                <Field label={t('dashboard.create.maxProducers')}>
                   <input
                     type="number"
                     min={2}
@@ -239,11 +273,11 @@ export default function Dashboard() {
                     onChange={(e) => setForm({ ...form, maxProducers: e.target.value })}
                   />
                 </Field>
-                <Field label="Description">
+                <Field label={t('dashboard.create.description')}>
                   <textarea
                     rows={3}
                     className={textareaCls}
-                    placeholder="What's the brief?"
+                    placeholder={t('dashboard.create.descriptionPlaceholder')}
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
@@ -255,13 +289,13 @@ export default function Dashboard() {
                     onChange={(e) => setForm({ ...form, sampleRevealed: e.target.checked })}
                     className="h-4 w-4 accent-white"
                   />
-                  Reveal sample immediately
+                  {t('dashboard.create.revealNow')}
                 </label>
                 <Btn type="submit" variant="solid" size="lg" full>
-                  Create battle
+                  {t('dashboard.create.submit')}
                 </Btn>
                 <p className="font-mono text-[10px] leading-relaxed text-muted">
-                  New battles start in ANNOUNCED. Push them forward below.
+                  {t('dashboard.create.footnote', { status: t(`status.${STATUS.ANNOUNCED}`) })}
                 </p>
               </form>
             </div>
@@ -272,7 +306,11 @@ export default function Dashboard() {
         <div className="lg:col-span-3">
           <Reveal delay={80}>
             <div className="border border-line bg-panel">
-              <PanelHead index="C2" title="Manage battles" note={`${battles.length} total`} />
+              <PanelHead
+                index="C2"
+                title={t('dashboard.manage.title')}
+                note={t('dashboard.manage.note', { n: battles.length })}
+              />
               <div className="divide-y divide-line">
                 {battles.map((b) => {
                   const subs = battleSubmissions(b.id)
@@ -291,8 +329,12 @@ export default function Dashboard() {
                           <div className="mt-1.5 flex flex-wrap items-center gap-2">
                             <StatusBadge status={b.status} size="sm" />
                             <span className="font-mono text-[10px] text-muted">
-                              {b.signups.length}/{b.maxProducers} prod · {subs.length} beats ·{' '}
-                              {b.attendees.length} here
+                              {t('dashboard.manage.counts', {
+                                p: b.signups.length,
+                                max: b.maxProducers,
+                                n: subs.length,
+                                a: b.attendees.length,
+                              })}
                             </span>
                           </div>
                         </div>
@@ -301,27 +343,27 @@ export default function Dashboard() {
                             <button
                               onClick={() => advanceStatus(b.id)}
                               className="h-9 border border-line-bright px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
-                              title={`→ ${STATUS_LABEL[nextStatus(b.status)]}`}
+                              title={`→ ${t(`status.${nextStatus(b.status)}`)}`}
                             >
-                              ▸ {STATUS_LABEL[nextStatus(b.status)]}
+                              ▸ {t(`status.${nextStatus(b.status)}`)}
                             </button>
                           ) : (
                             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
-                              Resolved
+                              {t('dashboard.manage.resolved')}
                             </span>
                           )}
                           <button
                             onClick={() => setOpenId(isOpen ? null : b.id)}
                             className="h-9 border border-line px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
                           >
-                            {isOpen ? 'Hide' : 'Manage'}
+                            {isOpen ? t('dashboard.manage.hide') : t('dashboard.manage.manage')}
                           </button>
                         </div>
                       </div>
 
                       {isOpen ? (
                         <div className="mt-4 border border-line bg-bg p-4">
-                          <Label>Participants</Label>
+                          <Label>{t('dashboard.manage.participants')}</Label>
                           <div className="mt-3 space-y-2">
                             {subs.length ? (
                               subs.map((s) => {
@@ -333,10 +375,12 @@ export default function Dashboard() {
                                     className="flex flex-wrap items-center justify-between gap-2 border border-line px-3 py-2"
                                   >
                                     <div className="flex items-center gap-2 font-mono text-[11px]">
-                                      <span className="text-ink">{p?.alias || 'unknown'}</span>
+                                      <span className="text-ink">{p?.alias || t('dashboard.manage.unknown')}</span>
                                       {isWinner ? <span className="text-ink">★</span> : null}
                                       <span className={s.approved ? 'text-muted' : 'text-ink'}>
-                                        {s.approved ? '· approved' : '· pending'}
+                                        {s.approved
+                                          ? t('dashboard.manage.approved')
+                                          : t('dashboard.manage.pending')}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -344,7 +388,9 @@ export default function Dashboard() {
                                         onClick={() => approveSubmission(s.id)}
                                         className="h-7 border border-line px-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted transition-colors hover:border-line-bright hover:text-ink"
                                       >
-                                        {s.approved ? 'Unapprove' : 'Approve'}
+                                        {s.approved
+                                          ? t('dashboard.manage.unapprove')
+                                          : t('dashboard.manage.approve')}
                                       </button>
                                       {b.status === STATUS.VOTING_PHASE ||
                                       b.status === STATUS.WINNER_DECLARED ? (
@@ -356,7 +402,9 @@ export default function Dashboard() {
                                               : 'border-line-bright text-ink hover:bg-ink hover:text-bg'
                                           }`}
                                         >
-                                          {isWinner ? '★ Winner' : 'Declare winner'}
+                                          {isWinner
+                                            ? t('dashboard.manage.winner')
+                                            : t('dashboard.manage.declareWinner')}
                                         </button>
                                       ) : null}
                                     </div>
@@ -364,13 +412,15 @@ export default function Dashboard() {
                                 )
                               })
                             ) : (
-                              <p className="font-mono text-[11px] text-muted">No submissions yet.</p>
+                              <p className="font-mono text-[11px] text-muted">{t('dashboard.manage.noSubmissions')}</p>
                             )}
                           </div>
                           <div className="mt-3 font-mono text-[10px] text-muted">
-                            Registered:{' '}
-                            {b.signups.map((id) => getUser(id)?.alias).filter(Boolean).join(', ') ||
-                              '—'}
+                            {t('dashboard.manage.registered', {
+                              names:
+                                b.signups.map((id) => getUser(id)?.alias).filter(Boolean).join(', ') ||
+                                '—',
+                            })}
                           </div>
                         </div>
                       ) : null}

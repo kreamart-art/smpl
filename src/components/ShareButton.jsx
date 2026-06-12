@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { IconShare } from './icons.jsx'
+import { useT } from '../i18n/index.jsx'
 
 // Share a battle / profile / result. Uses the native share sheet
 // (navigator.share) on devices that have it — falls back to copying the link.
@@ -8,10 +9,11 @@ export default function ShareButton({
   url,
   title = 'SMPL',
   text,
-  label = 'Share',
+  label,
   iconOnly = false,
   className = '',
 }) {
+  const t = useT()
   const [copied, setCopied] = useState(false)
   const timer = useRef(null)
 
@@ -52,8 +54,8 @@ export default function ShareButton({
     return (
       <button
         onClick={onShare}
-        aria-label={copied ? 'Link copied' : 'Share'}
-        title={copied ? 'Link copied' : 'Share'}
+        aria-label={copied ? t('share.copied') : t('share.share')}
+        title={copied ? t('share.copied') : t('share.share')}
         className={`relative flex items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink ${className}`}
       >
         {copied ? <span className="font-mono text-[10px] uppercase tracking-[0.12em]">✓</span> : <IconShare size={18} />}
@@ -67,7 +69,7 @@ export default function ShareButton({
       className={`inline-flex items-center justify-center gap-2 border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink ${className}`}
     >
       <IconShare size={15} />
-      {copied ? 'Link copied' : label}
+      {copied ? t('share.copied') : label || t('share.share')}
     </button>
   )
 }

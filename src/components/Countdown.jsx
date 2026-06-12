@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { breakdown, pad2 } from '../utils/wave.js'
+import { useT } from '../i18n/index.jsx'
 
 function useTick(active = true) {
   const [, setN] = useState(0)
@@ -23,18 +24,19 @@ export function CountdownInline({ to, className = '' }) {
 // Big segmented countdown for the battle detail header.
 export function CountdownBlocks({ to, label }) {
   useTick(!!to)
+  const t = useT()
   const { d, h, m, s, done } = breakdown((to || 0) - Date.now())
   const segs = [
-    { v: d, l: 'DAYS' },
-    { v: h, l: 'HRS' },
-    { v: m, l: 'MIN' },
-    { v: s, l: 'SEC' },
+    { v: d, l: t('cd.days') },
+    { v: h, l: t('cd.hrs') },
+    { v: m, l: t('cd.min') },
+    { v: s, l: t('cd.sec') },
   ]
   return (
     <div>
       {label ? (
         <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted">
-          {to && !done ? label : 'CLOSED'}
+          {to && !done ? label : t('cd.closed')}
         </div>
       ) : null}
       <div className="flex gap-2">

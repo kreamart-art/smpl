@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { Providers } from './context/AppContext.jsx'
 import { PWAProvider } from './context/PWAContext.jsx'
+import { LangProvider } from './i18n/index.jsx'
 import './index.css'
 
 // Register the service worker in production so the app is installable + offline.
@@ -17,9 +18,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <PWAProvider>
-        <Providers>
-          <App />
-        </Providers>
+        <LangProvider>
+          <Providers>
+            <App />
+          </Providers>
+        </LangProvider>
       </PWAProvider>
     </BrowserRouter>
   </React.StrictMode>,

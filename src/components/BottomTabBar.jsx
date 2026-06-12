@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { useT } from '../i18n/index.jsx'
 import { IconBattles, IconFeed, IconBell, IconUser } from './icons.jsx'
 
 function Tab({ to, label, icon, badge }) {
@@ -29,6 +30,7 @@ function Tab({ to, label, icon, badge }) {
 // Floating, pill-shaped tab bar (hovers above the bottom — Instagram-style).
 export default function BottomTabBar() {
   const { currentUser, unread } = useApp()
+  const t = useT()
   const profileTo = currentUser ? `/profile/${encodeURIComponent(currentUser.alias)}` : '/login'
 
   return (
@@ -37,10 +39,10 @@ export default function BottomTabBar() {
       style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
     >
       <div className="tab-pill flex w-full max-w-[440px] items-center gap-1 border border-line-bright bg-black/70 px-2 py-1.5 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)] backdrop-blur-xl">
-        <Tab to="/battles" label="Battles" icon={<IconBattles size={20} />} />
-        <Tab to="/feed" label="Feed" icon={<IconFeed size={20} />} />
-        <Tab to="/notifications" label="Alerts" icon={<IconBell size={20} />} badge={unread} />
-        <Tab to={profileTo} label="Profile" icon={<IconUser size={20} />} />
+        <Tab to="/battles" label={t('common.battles')} icon={<IconBattles size={20} />} />
+        <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={20} />} />
+        <Tab to="/notifications" label={t('common.alerts')} icon={<IconBell size={20} />} badge={unread} />
+        <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={20} />} />
       </div>
     </nav>
   )

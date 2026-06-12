@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Handle from '../components/Handle.jsx'
-import { roleLabel } from '../data/kind.js'
 
 const TABS = [
-  { key: 'all', label: 'ALL' },
-  { key: 'producer', label: 'PRODUCERS' },
-  { key: 'artist', label: 'ARTISTS' },
+  { key: 'all', labelKey: 'social.people.filterAll' },
+  { key: 'producer', labelKey: 'social.people.filterProducers' },
+  { key: 'artist', labelKey: 'social.people.filterArtists' },
 ]
 
 function PersonCard({ user }) {
+  const t = useT()
   const { currentUser, followerCount, isFollowing, toggleFollow } = useApp()
   const followers = followerCount(user.id)
   const following = isFollowing(user.id)
@@ -29,7 +30,7 @@ function PersonCard({ user }) {
             <Handle alias={user.alias} className="font-sans text-lg font-bold uppercase tracking-tight text-ink" />
           </div>
           <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            {roleLabel(user.role)}
+            {t('role.' + user.role)}
             {user.location ? <span className="text-faint"> · {user.location}</span> : null}
           </div>
         </div>
@@ -54,16 +55,16 @@ function PersonCard({ user }) {
 
       <div className="relative mt-5 flex items-center justify-between border-t border-line pt-4">
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
-          {followers} {followers === 1 ? 'follower' : 'followers'}
+          {followers} {followers === 1 ? t('social.people.followerOne') : t('social.people.followerMany')}
         </span>
         {isSelf ? (
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">You</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t('social.people.you')}</span>
         ) : !currentUser ? (
           <Link
             to="/login"
             className="border border-line-bright px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink hover:bg-ink hover:text-bg"
           >
-            Follow
+            {t('common.follow')}
           </Link>
         ) : (
           <button
@@ -72,7 +73,7 @@ function PersonCard({ user }) {
               following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:bg-ink hover:text-bg'
             }`}
           >
-            {following ? '✓ Following' : 'Follow'}
+            {following ? t('common.followingState') : t('common.follow')}
           </button>
         )}
       </div>
@@ -81,6 +82,7 @@ function PersonCard({ user }) {
 }
 
 export default function People() {
+  const t = useT()
   const { users, followerCount } = useApp()
   const [tab, setTab] = useState('all')
 
@@ -99,22 +101,22 @@ export default function People() {
         <div className="flex items-baseline gap-4 sm:gap-6">
           <span className="font-mono text-[13px] text-faint tnum">P0</span>
           <div>
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">Who to follow</div>
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">{t('social.people.eyebrow')}</div>
             <h1 className="font-sans text-[clamp(2.4rem,6vw,4rem)] font-bold uppercase leading-none tracking-tighter">
-              People
+              {t('common.people')}
             </h1>
           </div>
         </div>
         <div className="flex items-stretch border border-line">
-          {TABS.map((t) => (
+          {TABS.map((tabItem) => (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={tabItem.key}
+              onClick={() => setTab(tabItem.key)}
               className={`px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${
-                tab === t.key ? 'bg-ink text-bg' : 'text-muted hover:text-ink'
+                tab === tabItem.key ? 'bg-ink text-bg' : 'text-muted hover:text-ink'
               }`}
             >
-              {t.label}
+              {t(tabItem.labelKey)}
             </button>
           ))}
         </div>
@@ -127,7 +129,7 @@ export default function People() {
           ))}
         </div>
       ) : (
-        <p className="mt-10 font-mono text-sm text-muted">No one here yet.</p>
+        <p className="mt-10 font-mono text-sm text-muted">{t('social.people.empty')}</p>
       )}
     </div>
   )

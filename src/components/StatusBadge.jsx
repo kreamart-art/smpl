@@ -1,9 +1,11 @@
-import { STATUS, STATUS_LABEL } from '../data/status.js'
+import { STATUS } from '../data/status.js'
+import { useT } from '../i18n/index.jsx'
 
 // Monochrome status chip. Differentiation is by fill / border / a live dot —
 // never by colour, to keep the identity strictly black & off-white.
 export default function StatusBadge({ status, size = 'md' }) {
-  const label = STATUS_LABEL[status] || status
+  const t = useT()
+  const label = t(`status.${status}`)
   const live = status === STATUS.VOTING_PHASE
   const inverted = status === STATUS.WINNER_DECLARED
   const sizes = {
