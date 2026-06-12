@@ -428,17 +428,11 @@ export default function Profile() {
                 {user.alias}
                 {user.verified || user.role === 'admin' ? <VerifiedBadge size={26} title={t('profile.verified')} /> : null}
               </h1>
-              <div className="mt-3 inline-flex items-center gap-2 border border-line px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
-                {isCuratorProfile ? (
-                  <>
-                    <span className="text-ink">✓</span> {t('profile.badge.curator')}
-                  </>
-                ) : (
-                  <>
-                    <span className="text-ink">◆</span> {t('profile.badge.anon')}
-                  </>
-                )}
-              </div>
+              {isCuratorProfile ? (
+                <div className="mt-3 inline-flex items-center gap-2 border border-line px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
+                  <span className="text-ink">✓</span> {t('profile.badge.curator')}
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3">
