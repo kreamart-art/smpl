@@ -5,6 +5,7 @@ import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Handle from '../components/Handle.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
+import { inputCls } from '../components/ui.jsx'
 
 const TABS = [
   { key: 'all', labelKey: 'social.people.filterAll' },
@@ -87,16 +88,34 @@ export default function People() {
   const t = useT()
   const { users, followerCount, isBlocked } = useApp()
   const [tab, setTab] = useState('all')
+  const [q, setQ] = useState('')
 
-  const creators = useMemo(
-    () =>
-      users
-        .filter((u) => u.role === 'producer' || u.role === 'artist')
-        .filter((u) => !isBlocked(u.id))
-        .filter((u) => tab === 'all' || u.role === tab)
-        .sort((a, b) => followerCount(b.id) - followerCount(a.id)),
-    [users, tab, followerCount, isBlocked],
-  )
+  const creators = useMemo(() => {
+    const query = q.trim().toLowerCase()
+    return users
+      .filter((u) => !isBlocked(u.id))
+      // makers, plus the official @SMPL + any verified account
+      .filter((u) => u.role === 'producer' || u.role === 'artist' || u.verified || u.alias === 'SMPL')
+      // role tabs narrow makers; @SMPL stays visible in every tab
+      .filter((u) => tab === 'all' || u.role === tab || u.alias === 'SMPL')
+      .filter(
+        (u) =>
+          !query ||
+          u.alias.toLowerCase().includes(query) ||
+          (u.location || '').toLowerCase().includes(query) ||
+          (u.genres || []).some((g) => g.toLowerCase().includes(query)),
+      )
+      .sort((a, b) => {
+        // @SMPL first, then verified, then by followers
+        const aS = a.alias === 'SMPL' ? 1 : 0
+        const bS = b.alias === 'SMPL' ? 1 : 0
+        if (aS !== bS) return bS - aS
+        const aV = a.verified ? 1 : 0
+        const bV = b.verified ? 1 : 0
+        if (aV !== bV) return bV - aV
+        return followerCount(b.id) - followerCount(a.id)
+      })
+  }, [users, tab, q, followerCount, isBlocked])
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-14 sm:px-6 sm:py-20">
@@ -123,6 +142,16 @@ export default function People() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mt-6">
+        <input
+          type="search"
+          className={inputCls}
+          placeholder={t('social.people.searchPlaceholder')}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
       </div>
 
       {creators.length ? (
