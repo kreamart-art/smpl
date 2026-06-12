@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
-import { useT } from '../i18n/index.jsx'
+import { useT, useI18n } from '../i18n/index.jsx'
+import { ageFrom } from '../utils/wave.js'
 import { Btn, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import Avatar from '../components/Avatar.jsx'
 
@@ -57,9 +58,17 @@ function SectionLabel({ index, title, note }) {
   )
 }
 
+// Latest date of birth that still makes someone 16+ (for the dob input's max).
+const maxDob = (() => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 16)
+  return d.toISOString().slice(0, 10)
+})()
+
 export default function Signup() {
   const { signup } = useApp()
   const t = useT()
+  const { lang } = useI18n()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const initialRole = ['artist', 'listener'].includes(params.get('role'))
@@ -88,7 +97,16 @@ export default function Signup() {
   const submit = async (e) => {
     e.preventDefault()
     setError('')
-    const r = await signup({ ...form, role })
+    const age = ageFrom(form.dob, Date.now())
+    if (age === null) {
+      setError(t('auth.ageInvalid'))
+      return
+    }
+    if (age < 16) {
+      setError(t('auth.ageTooYoung'))
+      return
+    }
+    const r = await signup({ ...form, role, lang })
     if (!r.ok) {
       setError(r.error)
       return
@@ -228,6 +246,7 @@ export default function Signup() {
                 <Field label={t('auth.field.dob')} hint={t('auth.field.dobHint')}>
                   <input
                     type="date"
+                    max={maxDob}
                     className={`${inputCls} [color-scheme:dark]`}
                     value={form.dob}
                     onChange={set('dob')}

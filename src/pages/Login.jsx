@@ -1,16 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Waveform from '../components/Waveform.jsx'
-import { Btn, Field, inputCls, Label } from '../components/ui.jsx'
-
-const QUICK = [
-  { email: 'curator@smpl.app', label: 'Curator', sub: 'auth.quick.curator' },
-  { email: 'koder@smpl.app', label: 'KODER', sub: 'role.producer' },
-  { email: 'vex@smpl.app', label: 'VEX', sub: 'role.artist' },
-  { email: 'listener@smpl.app', label: 'earwitness', sub: 'role.listener' },
-]
+import { Btn, Field, inputCls } from '../components/ui.jsx'
 
 const codeInputCls =
   'w-full bg-black border border-line text-ink font-mono text-lg tracking-[0.4em] text-center px-3 h-12 outline-none focus:border-ink placeholder:text-muted'
@@ -25,20 +18,6 @@ export default function Login() {
   const [ticket, setTicket] = useState('') // set when the account has 2FA on
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
-  // The demo quick-login chips are hidden from the public — only the owner's
-  // device shows them (set via ?dev=1 or after logging in with the owner email).
-  const [showDemo, setShowDemo] = useState(false)
-
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('dev') === '1') localStorage.setItem('smpl_dev', '1')
-      if (params.get('dev') === '0') localStorage.removeItem('smpl_dev')
-      setShowDemo(localStorage.getItem('smpl_dev') === '1')
-    } catch {
-      /* ignore */
-    }
-  }, [])
 
   const land = (me) => navigate(me?.role === 'curator' ? '/dashboard' : '/battles')
 
@@ -51,14 +30,6 @@ export default function Login() {
       setTicket(r.ticket)
       setError('')
       return
-    }
-    // mark this device as the owner's so the demo chips show next time
-    if (String(mail).toLowerCase() === 'info.kreamix@gmail.com') {
-      try {
-        localStorage.setItem('smpl_dev', '1')
-      } catch {
-        /* ignore */
-      }
     }
     land(r.me)
   }
@@ -174,29 +145,6 @@ export default function Login() {
               <Link to="/forgot" className="font-mono text-[11px] text-muted underline underline-offset-4 hover:text-ink">
                 {t('auth.forgotLink')}
               </Link>
-            </div>
-
-            <div className={`mt-8 ${showDemo ? '' : 'hidden'}`}>
-              <Label>{t('auth.quick.title')}</Label>
-              <p className="mt-1 font-mono text-[10px] text-faint">{t('auth.quick.note')}</p>
-              <div className="mt-3 grid gap-2">
-                {QUICK.map((q) => (
-                  <button
-                    key={q.email}
-                    onClick={() => {
-                      setError('')
-                      go(q.email, 'smpl')
-                    }}
-                    className="flex items-center justify-between border border-line px-4 py-3 text-left transition-colors hover:border-ink"
-                  >
-                    <div>
-                      <div className="font-mono text-[12px] text-ink">{q.label}</div>
-                      <div className="font-mono text-[10px] text-muted">{q.email}</div>
-                    </div>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t(q.sub)} ▸</span>
-                  </button>
-                ))}
-              </div>
             </div>
 
             <p className="mt-6 font-mono text-[11px] text-muted">

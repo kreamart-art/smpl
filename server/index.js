@@ -284,6 +284,18 @@ app.get('/api/health', (_req, res) => ok(res, { seeded }))
 // ----- auth ------------------------------------------------------------------
 const langOf = (req) => (String(req.body?.lang || '').toLowerCase() === 'nl' ? 'nl' : 'en')
 
+// Whole-year age from a parseable date-of-birth string; null if missing/invalid.
+function ageFromDob(s) {
+  if (!s) return null
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return null
+  const now = new Date()
+  let a = now.getFullYear() - d.getFullYear()
+  const m = now.getMonth() - d.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--
+  return a
+}
+
 // Fire off an email-verification link (1 week valid). Non-blocking — a failed or
 // unconfigured send never breaks the request that triggered it.
 function sendVerificationEmail(row, lang) {
@@ -300,6 +312,10 @@ app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => 
   const cleanEmail = String(email || '').trim().toLowerCase()
   if (!cleanAlias || !cleanEmail) return fail(res, 400, 'Alias and email are required.')
   if (!password || String(password).length < 4) return fail(res, 400, 'Choose a password (min 4 chars).')
+  // SMPL is 16+ (Terms + AVG digital-consent age) — enforce it on the dob.
+  const age = ageFromDob(String(dob || '').trim())
+  if (age === null) return fail(res, 400, 'Enter a valid date of birth.')
+  if (age < 16) return fail(res, 400, 'You must be at least 16 to use SMPL.')
   if (cleanEmail === 'curator@smpl.app') return fail(res, 400, 'That account is reserved.')
   if (getUserByEmail(cleanEmail)) return fail(res, 409, 'An account with that email already exists.')
   if (getUserByAliasRow(cleanAlias)) return fail(res, 409, 'That alias is taken.')

@@ -137,6 +137,8 @@ export const extra = {
     'legal.privacy': 'Privacy',
     'legal.terms': 'Terms',
 
+    'auth.ageInvalid': 'Please enter your date of birth.',
+    'auth.ageTooYoung': 'You must be at least 16 to use SMPL.',
     'auth.forgotLink': 'Forgot password?',
     'auth.forgot.title': 'Forgot password',
     'auth.forgot.intro': 'Enter your email and we’ll send you a link to set a new password.',
@@ -306,6 +308,8 @@ export const extra = {
     'push.unsupported': 'Je browser ondersteunt geen meldingen.',
     'push.enableHint': 'Krijg een seintje bij nieuwe berichten, battles en uitslagen.',
 
+    'auth.ageInvalid': 'Vul je geboortedatum in.',
+    'auth.ageTooYoung': 'Je moet minimaal 16 zijn om SMPL te gebruiken.',
     'auth.forgotLink': 'Wachtwoord vergeten?',
     'auth.forgot.title': 'Wachtwoord vergeten',
     'auth.forgot.intro': 'Vul je e-mailadres in en we sturen je een link om een nieuw wachtwoord in te stellen.',
