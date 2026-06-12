@@ -12,6 +12,7 @@ export const common = {
     'kind.VERSES': 'Verses',
 
     'role.curator': 'Curator',
+    'role.admin': 'Admin',
     'role.producer': 'Producer',
     'role.artist': 'Artist',
     'role.listener': 'Listener',
@@ -58,6 +59,7 @@ export const common = {
     'kind.VERSES': 'Verses',
 
     'role.curator': 'Curator',
+    'role.admin': 'Admin',
     'role.producer': 'Producer',
     'role.artist': 'Artiest',
     'role.listener': 'Luisteraar',

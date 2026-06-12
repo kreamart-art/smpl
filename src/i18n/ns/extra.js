@@ -137,6 +137,8 @@ export const extra = {
     'legal.privacy': 'Privacy',
     'legal.terms': 'Terms',
 
+    'admin.makeCurator': 'Make curator',
+    'admin.removeCurator': 'Remove curator',
     'auth.ageInvalid': 'Please enter your date of birth.',
     'auth.ageTooYoung': 'You must be at least 16 to use SMPL.',
     'auth.forgotLink': 'Forgot password?',
@@ -308,6 +310,8 @@ export const extra = {
     'push.unsupported': 'Je browser ondersteunt geen meldingen.',
     'push.enableHint': 'Krijg een seintje bij nieuwe berichten, battles en uitslagen.',
 
+    'admin.makeCurator': 'Maak curator',
+    'admin.removeCurator': 'Curator verwijderen',
     'auth.ageInvalid': 'Vul je geboortedatum in.',
     'auth.ageTooYoung': 'Je moet minimaal 16 zijn om SMPL te gebruiken.',
     'auth.forgotLink': 'Wachtwoord vergeten?',

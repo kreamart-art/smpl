@@ -40,5 +40,5 @@ export function kindCopy(kind) {
 }
 
 export function roleLabel(role) {
-  return { producer: 'Producer', artist: 'Artist', listener: 'Listener', curator: 'Curator' }[role] || role
+  return { producer: 'Producer', artist: 'Artist', listener: 'Listener', curator: 'Curator', admin: 'Admin' }[role] || role
 }

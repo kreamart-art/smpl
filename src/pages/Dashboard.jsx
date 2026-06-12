@@ -47,6 +47,7 @@ export default function Dashboard() {
   const app = useApp()
   const {
     isCurator,
+    isAdmin,
     currentUser,
     battles,
     battleSubmissions,
@@ -177,15 +178,17 @@ export default function Dashboard() {
       ) : null}
 
       {isCurator ? (
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+        <div className={`mt-8 grid gap-6 ${isAdmin ? 'lg:grid-cols-3' : ''}`}>
+          <div className={isAdmin ? 'lg:col-span-2' : ''}>
             <Reveal>
               <ReportsPanel />
             </Reveal>
           </div>
-          <Reveal>
-            <BackupsPanel />
-          </Reveal>
+          {isAdmin ? (
+            <Reveal>
+              <BackupsPanel />
+            </Reveal>
+          ) : null}
         </div>
       ) : null}
 

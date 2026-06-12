@@ -205,4 +205,8 @@ export function migrate() {
   addColumn('battles', 'genre', 'TEXT')
   // 2026-06-12: email verification flag.
   addColumn('users', 'emailVerified', 'INTEGER')
+  // 2026-06-12: the founder account is the platform ADMIN (a tier above curator).
+  // Override the email with SMPL_ADMIN_EMAIL if it ever changes.
+  const adminEmail = (process.env.SMPL_ADMIN_EMAIL || 'info.kreamix@gmail.com').toLowerCase()
+  db.prepare("UPDATE users SET role = 'admin' WHERE lower(email) = ?").run(adminEmail)
 }

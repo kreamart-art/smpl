@@ -307,9 +307,13 @@ export function AppProvider({ children }) {
     (id) => api.post(`/api/reports/${id}/resolve`),
     [],
   )
-  // --- admin: database backups (curator-only) ------------------------------
+  // --- admin: backups + appointing curators --------------------------------
   const fetchBackups = useCallback(() => api.get('/api/admin/backups'), [])
   const triggerBackup = useCallback(() => api.post('/api/admin/backup'), [])
+  const setUserRole = useCallback(
+    (userId, role) => mutate(() => api.post(`/api/admin/users/${userId}/role`, { role })),
+    [mutate],
+  )
   const createBattle = useCallback(
     (data) => mutate(() => api.post('/api/battles', data)),
     [mutate],
@@ -359,7 +363,10 @@ export function AppProvider({ children }) {
     follows,
     myVotes,
     currentUser,
-    isCurator: currentUser?.role === 'curator',
+    // admin is a superset of curator — `isCurator` means "can run battles +
+    // moderate" (curator OR admin); `isAdmin` gates admin-only powers.
+    isCurator: currentUser?.role === 'curator' || currentUser?.role === 'admin',
+    isAdmin: currentUser?.role === 'admin',
     loading,
     error,
     unread,
@@ -406,6 +413,7 @@ export function AppProvider({ children }) {
     resolveReport,
     fetchBackups,
     triggerBackup,
+    setUserRole,
     createBattle,
     advanceStatus,
     declareWinner,

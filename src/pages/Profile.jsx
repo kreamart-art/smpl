@@ -330,7 +330,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole } =
     useApp()
   const base = getUserByAlias(alias)
   const [editing, setEditing] = useState(false)
@@ -358,7 +358,8 @@ export default function Profile() {
   const following = isFollowing(user.id)
   const age = ageFrom(user.dob, Date.now())
   const hasPrivate = user.name || user.dob || user.email
-  const isCuratorProfile = user.role === 'curator'
+  // admin runs battles like a curator → show the curator/host file for both.
+  const isCuratorProfile = user.role === 'curator' || user.role === 'admin'
   const cstats = isCuratorProfile ? curatorStats(user.id) : null
 
   return (
@@ -475,6 +476,14 @@ export default function Profile() {
                     {following ? t('common.followingState') : t('common.follow')}
                   </button>
                   <UserSafetyMenu user={user} />
+                  {isAdmin && user.role !== 'admin' ? (
+                    <button
+                      onClick={() => setUserRole(user.id, user.role === 'curator' ? 'producer' : 'curator')}
+                      className="h-12 border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
+                    >
+                      {user.role === 'curator' ? t('admin.removeCurator') : t('admin.makeCurator')}
+                    </button>
+                  ) : null}
                 </>
               )}
             </div>

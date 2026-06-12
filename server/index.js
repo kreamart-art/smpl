@@ -247,12 +247,16 @@ app.use((req, _res, next) => {
   next()
 })
 const requireAuth = (req, res, next) => (req.user ? next() : fail(res, 401, 'Log in first.'))
+// admin is a strict superset of curator — anything a curator can do, an admin can.
+const isStaff = (user) => user?.role === 'curator' || user?.role === 'admin'
 const requireCurator = (req, res, next) =>
-  req.user?.role === 'curator' ? next() : fail(res, 403, 'Curator only.')
+  isStaff(req.user) ? next() : fail(res, 403, 'Curators only.')
+const requireAdmin = (req, res, next) =>
+  req.user?.role === 'admin' ? next() : fail(res, 403, 'Admin only.')
 
-// A curator manages any battle; a host (producer/artist) manages their own.
+// Staff manage any battle; the battle's own curator manages theirs.
 const canManageBattle = (user, battle) =>
-  !!user && (user.role === 'curator' || (battle && battle.curatorId === user.id))
+  !!user && (isStaff(user) || (battle && battle.curatorId === user.id))
 
 // ----- simple in-memory rate limiting (fixed window per IP + route group) ----
 const clientIp = (req) =>
@@ -457,10 +461,9 @@ app.get('/api/battles/:id', (req, res) => {
 app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req, res) => {
   const d = req.body || {}
   const kind = d.kind === 'VERSES' ? 'VERSES' : 'BEATS'
-  const role = req.user.role
-  // Only SMPL curators organise battles. Producers + artists who want a battle
-  // run for them pay a curation fee (phase 2) — they don't self-host.
-  if (role !== 'curator') {
+  // Only SMPL staff (curators + admin) organise battles. Producers + artists who
+  // want a battle run for them pay a curation fee (phase 2) — they don't self-host.
+  if (!isStaff(req.user)) {
     return fail(res, 403, 'Only SMPL curators can organise battles.')
   }
   const t = Date.now()
@@ -717,17 +720,29 @@ app.post('/api/reports/:id/resolve', requireAuth, requireCurator, (req, res) => 
   return ok(res, {})
 })
 
-// ----- database backups (curator-only visibility) ----------------------------
-app.get('/api/admin/backups', requireAuth, requireCurator, (req, res) =>
+// ----- database backups (admin-only) -----------------------------------------
+app.get('/api/admin/backups', requireAuth, requireAdmin, (req, res) =>
   ok(res, { backups: listBackups().slice(0, 60) }),
 )
-app.post('/api/admin/backup', rateLimit('backup', 6, 10 * 60_000), requireAuth, requireCurator, (req, res) => {
+app.post('/api/admin/backup', rateLimit('backup', 6, 10 * 60_000), requireAuth, requireAdmin, (req, res) => {
   try {
     const r = runBackup()
     return ok(res, { name: r.file.split('/').pop(), size: r.size })
   } catch (e) {
     return fail(res, 500, `Backup failed: ${e.message}`)
   }
+})
+
+// ----- admin: appoint / remove curators --------------------------------------
+const ASSIGNABLE_ROLES = new Set(['curator', 'producer', 'artist', 'listener'])
+app.post('/api/admin/users/:id/role', requireAuth, requireAdmin, (req, res) => {
+  const target = getUserRow(req.params.id)
+  if (!target) return fail(res, 404, 'User not found.')
+  if (target.role === 'admin') return fail(res, 400, 'You can’t change an admin’s role.')
+  const role = req.body?.role
+  if (!ASSIGNABLE_ROLES.has(role)) return fail(res, 400, 'Invalid role.')
+  db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, target.id)
+  return ok(res, { user: pubUser(getUserRow(target.id)) })
 })
 
 // ----- web push notifications ------------------------------------------------
