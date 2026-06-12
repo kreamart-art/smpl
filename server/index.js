@@ -17,6 +17,16 @@ import {
   hashBackup,
 } from './auth.js'
 import { STATUS, STATUS_INDEX, nextStatus } from '../src/data/status.js'
+import { sendEmail, mailConfigured, resetEmail, verifyEmail as verifyEmailTpl, sourceEmail } from './email.js'
+import { runBackup, listBackups, scheduleBackups } from './backup.js'
+import { pushConfigured, vapidPublicKey, saveSubscription, removeSubscription, sendPush } from './push.js'
+
+// Public origin used to build links inside emails (reset / verify). Override
+// with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
+const APP_URL = (
+  process.env.SMPL_APP_URL ||
+  (process.env.NODE_ENV === 'production' ? 'https://smpl.artnomad.nl' : 'http://localhost:5190')
+).replace(/\/$/, '')
 
 // In dev, Vite owns 5190 and proxies /api here (5191). Only honour PORT in
 // production, where this server serves everything on one port.
@@ -141,12 +151,14 @@ function buildBootstrap(uid, userRow) {
 
   let unread = 0
   let unreadMessages = 0
+  let blocked = []
   if (userRow) {
     const personal = personalize(activityItems().items, userRow.id).filter((i) => i.personal)
     unread = personal.filter((i) => i.ts > (userRow.lastSeenAt || 0)).length
     unreadMessages = db
       .prepare('SELECT COUNT(*) AS c FROM messages WHERE toId = ? AND readAt IS NULL')
       .get(userRow.id).c
+    blocked = db.prepare('SELECT blockedId FROM blocks WHERE blockerId=?').all(userRow.id).map((r) => r.blockedId)
   }
 
   return {
@@ -159,6 +171,9 @@ function buildBootstrap(uid, userRow) {
     follows: allFollows(),
     unread,
     unreadMessages,
+    blocked,
+    mailConfigured,
+    pushConfigured,
   }
 }
 
@@ -225,8 +240,9 @@ app.use((req, _res, next) => {
   const token = h.startsWith('Bearer ') ? h.slice(7) : null
   const payload = token ? verifyToken(token) : null
   // A half-issued 2FA ticket (twofa:true) is NOT a logged-in session — it only
-  // works at /api/auth/2fa, read explicitly from the body there.
-  req.uid = payload && !payload.twofa ? payload.uid || null : null
+  // works at /api/auth/2fa, read explicitly from the body there. Likewise a
+  // single-purpose token (reset / verify) must never authenticate a session.
+  req.uid = payload && !payload.twofa && !payload.purpose ? payload.uid || null : null
   req.user = req.uid ? getUserRow(req.uid) : null
   next()
 })
@@ -238,11 +254,46 @@ const requireCurator = (req, res, next) =>
 const canManageBattle = (user, battle) =>
   !!user && (user.role === 'curator' || (battle && battle.curatorId === user.id))
 
+// ----- simple in-memory rate limiting (fixed window per IP + route group) ----
+const clientIp = (req) =>
+  (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'ip'
+const rlHits = new Map()
+const rateLimit = (name, max, windowMs) => (req, res, next) => {
+  const key = `${name}:${clientIp(req)}`
+  const now = Date.now()
+  let e = rlHits.get(key)
+  if (!e || now > e.reset) {
+    e = { count: 0, reset: now + windowMs }
+    rlHits.set(key, e)
+  }
+  if (++e.count > max) return fail(res, 429, 'Too many requests — slow down and try again shortly.')
+  next()
+}
+setInterval(() => {
+  const now = Date.now()
+  for (const [k, v] of rlHits) if (now > v.reset) rlHits.delete(k)
+}, 5 * 60_000)
+
+// Is one of these two users blocking the other?
+const isBlocked = (a, b) =>
+  !!db.prepare('SELECT 1 FROM blocks WHERE (blockerId=? AND blockedId=?) OR (blockerId=? AND blockedId=?)').get(a, b, b, a)
+
 // ----- health ----------------------------------------------------------------
 app.get('/api/health', (_req, res) => ok(res, { seeded }))
 
 // ----- auth ------------------------------------------------------------------
-app.post('/api/auth/signup', (req, res) => {
+const langOf = (req) => (String(req.body?.lang || '').toLowerCase() === 'nl' ? 'nl' : 'en')
+
+// Fire off an email-verification link (1 week valid). Non-blocking — a failed or
+// unconfigured send never breaks the request that triggered it.
+function sendVerificationEmail(row, lang) {
+  const token = signToken({ uid: row.id, purpose: 'verify' }, 7 * 24 * 60 * 60 * 1000)
+  const link = `${APP_URL}/verify?token=${encodeURIComponent(token)}`
+  const tpl = verifyEmailTpl(link, lang)
+  return sendEmail({ to: row.email, subject: tpl.subject, text: tpl.text, html: tpl.html })
+}
+
+app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => {
   const { alias, email, role, name, dob, location, bio, genres, links, avatar, password } =
     req.body || {}
   const cleanAlias = String(alias || '').trim()
@@ -284,10 +335,12 @@ app.post('/api/auth/signup', (req, res) => {
     user.passwordHash,
   )
   const row = getUserRow(id)
+  // kick off email verification (no-op if SMTP isn't configured yet)
+  sendVerificationEmail(row, langOf(req)).catch(() => {})
   return ok(res, { token: signToken({ uid: id }), me: meUser(row) })
 })
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', rateLimit('login', 25, 5 * 60_000), (req, res) => {
   const { email, password } = req.body || {}
   const row = getUserByEmail(String(email || '').trim())
   if (!row) return fail(res, 404, 'No account for that email. Try a quick-login chip or sign up.')
@@ -324,6 +377,55 @@ app.post('/api/auth/2fa', (req, res) => {
 
 app.get('/api/auth/me', requireAuth, (req, res) => ok(res, { me: meUser(req.user) }))
 
+// ----- password reset --------------------------------------------------------
+app.post('/api/auth/forgot', rateLimit('forgot', 6, 30 * 60_000), (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase()
+  const row = email ? getUserByEmail(email) : null
+  if (row) {
+    const token = signToken({ uid: row.id, purpose: 'reset' }, 60 * 60_000) // 1 hour
+    const link = `${APP_URL}/reset?token=${encodeURIComponent(token)}`
+    const tpl = resetEmail(link, langOf(req))
+    sendEmail({ to: row.email, subject: tpl.subject, text: tpl.text, html: tpl.html }).catch(() => {})
+    // Dev convenience: with no SMTP wired up, return the link so the flow stays
+    // testable. NEVER leaked in production.
+    if (!mailConfigured && process.env.NODE_ENV !== 'production') {
+      return ok(res, { sent: true, devLink: link })
+    }
+  }
+  // Always report success — never reveal whether an email is registered.
+  return ok(res, { sent: true })
+})
+
+app.post('/api/auth/reset', rateLimit('reset', 12, 30 * 60_000), (req, res) => {
+  const { token, password } = req.body || {}
+  const p = verifyToken(token)
+  if (!p || p.purpose !== 'reset' || !p.uid) return fail(res, 400, 'This reset link is invalid or has expired.')
+  const row = getUserRow(p.uid)
+  if (!row) return fail(res, 400, 'This reset link is invalid or has expired.')
+  if (!password || String(password).length < 4) return fail(res, 400, 'Choose a password (min 4 chars).')
+  // a successful reset proves control of the inbox → verify the email too
+  db.prepare('UPDATE users SET passwordHash = ?, emailVerified = 1 WHERE id = ?').run(hashPassword(password), row.id)
+  // With 2FA on, a reset alone shouldn't grant a session — send them to log in.
+  if (row.totpEnabled) return ok(res, { reset: true, needs2fa: true })
+  return ok(res, { reset: true, token: signToken({ uid: row.id }), me: meUser(getUserRow(row.id)) })
+})
+
+// ----- email verification ----------------------------------------------------
+app.post('/api/auth/verify-email', rateLimit('verify', 20, 30 * 60_000), (req, res) => {
+  const p = verifyToken(req.body?.token)
+  if (!p || p.purpose !== 'verify' || !p.uid) return fail(res, 400, 'This link is invalid or has expired.')
+  const row = getUserRow(p.uid)
+  if (!row) return fail(res, 400, 'This link is invalid or has expired.')
+  db.prepare('UPDATE users SET emailVerified = 1 WHERE id = ?').run(row.id)
+  return ok(res, { verified: true })
+})
+
+app.post('/api/auth/resend-verification', rateLimit('resend', 4, 30 * 60_000), requireAuth, (req, res) => {
+  if (req.user.emailVerified) return ok(res, { sent: true, already: true })
+  sendVerificationEmail(req.user, langOf(req)).catch(() => {})
+  return ok(res, { sent: true, configured: mailConfigured })
+})
+
 // ----- bootstrap -------------------------------------------------------------
 app.get('/api/bootstrap', (req, res) => ok(res, buildBootstrap(req.uid, req.user)))
 
@@ -336,15 +438,14 @@ app.get('/api/battles/:id', (req, res) => {
 })
 
 // ----- battles (curator) -----------------------------------------------------
-app.post('/api/battles', requireAuth, (req, res) => {
+app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req, res) => {
   const d = req.body || {}
   const kind = d.kind === 'VERSES' ? 'VERSES' : 'BEATS'
   const role = req.user.role
-  // Curators run anything. Producers + artists can HOST open-verse (VERSES)
-  // battles — drop a beat/track for others to rhyme over, for the sport or to
-  // find a collab. Sample-flip (BEATS) battles stay curator-only.
-  if (role !== 'curator' && !(kind === 'VERSES' && (role === 'producer' || role === 'artist'))) {
-    return fail(res, 403, 'Curators run sample battles. Producers and artists can host open-verse battles.')
+  // Only SMPL curators organise battles. Producers + artists who want a battle
+  // run for them pay a curation fee (phase 2) — they don't self-host.
+  if (role !== 'curator') {
+    return fail(res, 403, 'Only SMPL curators can organise battles.')
   }
   const t = Date.now()
   const DAY = 86400000
@@ -384,6 +485,17 @@ app.post('/api/battles', requireAuth, (req, res) => {
     Number(d.maxProducers) || 8, signupStart, signupEnd, submitStart, submitEnd, voteStart, voteEnd,
     status, '[]', '[]', null, d.blind ? 1 : 0, scheduled, String(d.genre || '').trim(),
   )
+  // tell the host's followers a new battle just dropped
+  const followers = db.prepare('SELECT followerId FROM follows WHERE followeeId=?').all(req.user.id)
+  const title = String(d.title || '').trim() || 'a new battle'
+  for (const f of followers) {
+    sendPush(f.followerId, {
+      title: `@${req.user.alias} started a battle`,
+      body: title,
+      tag: `battle-${id}`,
+      url: `/battles/${id}`,
+    }).catch(() => {})
+  }
   return ok(res, { battle: rowToBattle(getBattleRow(id)) })
 })
 
@@ -477,7 +589,7 @@ app.patch('/api/submissions/:id/approve', requireAuth, (req, res) => {
 })
 
 // ----- votes -----------------------------------------------------------------
-app.post('/api/battles/:id/vote', requireAuth, (req, res) => {
+app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
   if (!b) return fail(res, 404, 'Battle not found.')
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Voting is not open.')
@@ -493,6 +605,27 @@ app.post('/api/battles/:id/vote', requireAuth, (req, res) => {
     `v_${randomUUID().slice(0, 8)}`, b.id, sub.id, req.user.id,
   )
   return ok(res, {})
+})
+
+// Email the logged-in user a link to the battle source (sample/beat), so they
+// can pick it up on their computer. Needs SMTP configured.
+app.post('/api/battles/:id/email-source', rateLimit('emailsrc', 12, 30 * 60_000), requireAuth, async (req, res) => {
+  const b = getBattleRow(req.params.id)
+  if (!b) return fail(res, 404, 'Battle not found.')
+  if (!b.sampleRevealed || !b.sampleUrl || !/^\/?api\/uploads\//.test(b.sampleUrl))
+    return fail(res, 400, 'No downloadable source for this battle yet.')
+  const role = req.user.role
+  const allowed =
+    role === 'curator' ||
+    (b.kind === 'BEATS' && role === 'producer') ||
+    (b.kind === 'VERSES' && role === 'artist')
+  if (!allowed) return fail(res, 403, 'This download is for the battle’s makers.')
+  if (!mailConfigured) return fail(res, 503, 'Email isn’t set up yet.')
+  const link = `${APP_URL}${b.sampleUrl.startsWith('/') ? '' : '/'}${b.sampleUrl}`
+  const tpl = sourceEmail(link, b, langOf(req))
+  const r = await sendEmail({ to: req.user.email, subject: tpl.subject, text: tpl.text, html: tpl.html })
+  if (!r.ok) return fail(res, 502, 'Could not send the email — try again.')
+  return ok(res, { sent: true, to: req.user.email })
 })
 
 // ----- profiles / social -----------------------------------------------------
@@ -516,6 +649,82 @@ app.post('/api/users/:id/follow', requireAuth, (req, res) => {
   }
   db.prepare('INSERT INTO follows (followerId,followeeId) VALUES (?,?)').run(req.user.id, target.id)
   return ok(res, { following: true })
+})
+
+// ----- block / unblock -------------------------------------------------------
+app.post('/api/users/:id/block', requireAuth, (req, res) => {
+  const target = getUserRow(req.params.id)
+  if (!target) return fail(res, 404, 'User not found.')
+  if (target.id === req.user.id) return fail(res, 400, 'You cannot block yourself.')
+  const has = db.prepare('SELECT 1 FROM blocks WHERE blockerId=? AND blockedId=?').get(req.user.id, target.id)
+  if (has) {
+    db.prepare('DELETE FROM blocks WHERE blockerId=? AND blockedId=?').run(req.user.id, target.id)
+    return ok(res, { blocked: false })
+  }
+  db.prepare('INSERT INTO blocks (blockerId, blockedId, createdAt) VALUES (?,?,?)').run(req.user.id, target.id, Date.now())
+  // a block severs the follow in both directions
+  db.prepare('DELETE FROM follows WHERE (followerId=? AND followeeId=?) OR (followerId=? AND followeeId=?)')
+    .run(req.user.id, target.id, target.id, req.user.id)
+  return ok(res, { blocked: true })
+})
+
+// ids the current user blocks — lets the client reflect block state
+app.get('/api/blocks', requireAuth, (req, res) => {
+  const ids = db.prepare('SELECT blockedId FROM blocks WHERE blockerId=?').all(req.user.id).map((r) => r.blockedId)
+  return ok(res, { blocked: ids })
+})
+
+// ----- reports (safety) ------------------------------------------------------
+const REPORT_TYPES = new Set(['user', 'battle', 'submission', 'message'])
+app.post('/api/reports', rateLimit('report', 12, 60 * 60_000), requireAuth, (req, res) => {
+  const { targetType, targetId, reason, context } = req.body || {}
+  if (!REPORT_TYPES.has(targetType)) return fail(res, 400, 'Unknown report type.')
+  if (!targetId) return fail(res, 400, 'Nothing to report.')
+  db.prepare(
+    'INSERT INTO reports (id, reporterId, targetType, targetId, reason, context, createdAt, resolved) VALUES (?,?,?,?,?,?,?,0)',
+  ).run(
+    `r_${randomUUID().slice(0, 10)}`, req.user.id, targetType, String(targetId),
+    String(reason || '').trim().slice(0, 1000), String(context || '').slice(0, 200), Date.now(),
+  )
+  return ok(res, {})
+})
+
+// curator-only moderation queue
+app.get('/api/reports', requireAuth, requireCurator, (req, res) => {
+  const rows = db.prepare('SELECT * FROM reports ORDER BY resolved ASC, createdAt DESC LIMIT 200').all()
+  const reports = rows.map((r) => ({ ...r, resolved: !!r.resolved, reporter: pubUser(getUserRow(r.reporterId)) }))
+  return ok(res, { reports })
+})
+
+app.post('/api/reports/:id/resolve', requireAuth, requireCurator, (req, res) => {
+  db.prepare('UPDATE reports SET resolved=1 WHERE id=?').run(req.params.id)
+  return ok(res, {})
+})
+
+// ----- database backups (curator-only visibility) ----------------------------
+app.get('/api/admin/backups', requireAuth, requireCurator, (req, res) =>
+  ok(res, { backups: listBackups().slice(0, 60) }),
+)
+app.post('/api/admin/backup', rateLimit('backup', 6, 10 * 60_000), requireAuth, requireCurator, (req, res) => {
+  try {
+    const r = runBackup()
+    return ok(res, { name: r.file.split('/').pop(), size: r.size })
+  } catch (e) {
+    return fail(res, 500, `Backup failed: ${e.message}`)
+  }
+})
+
+// ----- web push notifications ------------------------------------------------
+app.get('/api/push/key', (req, res) => ok(res, { key: vapidPublicKey, configured: pushConfigured }))
+app.post('/api/push/subscribe', requireAuth, (req, res) => {
+  const sub = req.body?.subscription
+  if (!sub?.endpoint) return fail(res, 400, 'Bad subscription.')
+  saveSubscription(req.user.id, sub)
+  return ok(res, {})
+})
+app.post('/api/push/unsubscribe', requireAuth, (req, res) => {
+  removeSubscription(req.body?.endpoint)
+  return ok(res, {})
 })
 
 // ----- profile editing -------------------------------------------------------
@@ -650,6 +859,7 @@ app.get('/api/threads', requireAuth, (req, res) => {
   }
   const threads = Object.values(byPartner)
     .map((t) => {
+      if (isBlocked(uid, t.partner)) return null // hide threads with blocked people
       const u = pubUser(getUserRow(t.partner))
       if (!u) return null
       return {
@@ -694,7 +904,7 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
   })
 })
 
-app.post('/api/messages', requireAuth, (req, res) => {
+app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) => {
   const { toAlias, body, battleId } = req.body || {}
   const text = String(body || '').trim()
   let bId = null
@@ -707,9 +917,17 @@ app.post('/api/messages', requireAuth, (req, res) => {
   const other = getUserByAliasRow(toAlias)
   if (!other) return fail(res, 404, 'User not found.')
   if (other.id === req.user.id) return fail(res, 400, 'You cannot message yourself.')
+  if (isBlocked(req.user.id, other.id)) return fail(res, 403, 'You can’t message this person.')
   db.prepare(
     'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId) VALUES (?,?,?,?,?,NULL,?)',
   ).run(`m_${randomUUID().slice(0, 10)}`, req.user.id, other.id, text, Date.now(), bId)
+  // notify the recipient on their devices (no-op if they have no subscriptions)
+  sendPush(other.id, {
+    title: `@${req.user.alias}`,
+    body: text ? text.slice(0, 140) : 'Shared a battle with you',
+    tag: `dm-${req.user.id}`,
+    url: `/messages/${req.user.alias}`,
+  }).catch(() => {})
   return ok(res, {})
 })
 
@@ -746,6 +964,7 @@ function stripAudioMetadata(buf) {
 // anonymous when its URL is exposed during blind voting.
 app.post(
   '/api/uploads/audio',
+  rateLimit('upload', 30, 60 * 60_000),
   requireAuth,
   express.raw({ type: ['audio/*', 'application/octet-stream'], limit: '30mb' }),
   (req, res) => {
@@ -777,6 +996,11 @@ if (existsSync(distDir)) {
 // Run scheduled battles forward on boot + every minute.
 autoAdvance()
 setInterval(autoAdvance, 60_000)
+
+// Automated daily DB snapshots — on in production, opt-in elsewhere.
+if (process.env.NODE_ENV === 'production' || process.env.SMPL_BACKUPS === '1') {
+  scheduleBackups()
+}
 
 app.listen(PORT, () => {
   console.log(`[smpl-api] listening on http://localhost:${PORT}${seeded ? ' (seeded fresh db)' : ''}`)

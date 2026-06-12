@@ -4,11 +4,11 @@
   --color-bg: #000000;
   --color-panel: #090908;
   --color-panel-2: #121110;
-  --color-line: #201e1a;
-  --color-line-bright: #38342e;
-  --color-faint: #423e37;
-  --color-muted: #6c675e;
-  --color-ink-dim: #a8a298;
+  --color-line: #322e28;
+  --color-line-bright: #524c43;
+  --color-faint: #6f685c;
+  --color-muted: #989183;
+  --color-ink-dim: #b7b1a6;
   --color-ink: #f0eee9;
   --color-bright: #ffffff;
 
@@ -106,7 +106,11 @@ body {
   }
 }
 .fadein {
-  animation: smpl-fadein 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* `backwards` (not `both`): hold the start frame before the run, but DROP the
+     lingering end-state transform afterwards — a persisted transform turns this
+     wrapper into the containing block for position:fixed modals (cropper, etc.),
+     pushing them off-screen. */
+  animation: smpl-fadein 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 /* --- scroll reveal (editorial) --- */

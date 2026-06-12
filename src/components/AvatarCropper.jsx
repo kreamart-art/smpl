@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useT } from '../i18n/index.jsx'
 import { Btn } from './ui.jsx'
+import Portal from './Portal.jsx'
 
 const FRAME = 260 // on-screen crop frame (px)
 const OUT = 256 // exported avatar size (px)
@@ -93,8 +94,13 @@ export default function AvatarCropper({ file, onSave, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" onClick={onCancel}>
-      <div className="w-full max-w-[340px] border border-line-bright bg-panel" onClick={(e) => e.stopPropagation()}>
+    <Portal>
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/80 p-4"
+      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      onClick={onCancel}
+    >
+      <div className="my-auto w-full max-w-[340px] border border-line-bright bg-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('crop.title')}</span>
           <button onClick={onCancel} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
@@ -143,5 +149,6 @@ export default function AvatarCropper({ file, onSave, onCancel }) {
         </div>
       </div>
     </div>
+    </Portal>
   )
 }

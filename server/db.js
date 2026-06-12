@@ -56,6 +56,17 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages (fromId, toId);
 CREATE INDEX IF NOT EXISTS idx_messages_to ON messages (toId, readAt);
+CREATE TABLE IF NOT EXISTS blocks (
+  blockerId TEXT, blockedId TEXT, createdAt INTEGER, PRIMARY KEY (blockerId, blockedId)
+);
+CREATE TABLE IF NOT EXISTS reports (
+  id TEXT PRIMARY KEY, reporterId TEXT, targetType TEXT, targetId TEXT, reason TEXT,
+  context TEXT, createdAt INTEGER, resolved INTEGER
+);
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  endpoint TEXT PRIMARY KEY, userId TEXT, p256dh TEXT, auth TEXT, createdAt INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (userId);
 `)
 
 const J = (v) => JSON.stringify(v ?? [])
@@ -96,6 +107,7 @@ export function meUser(r) {
     email: r.email,
     lastSeenAt: r.lastSeenAt || 0,
     twoFactor: !!r.totpEnabled,
+    emailVerified: !!r.emailVerified,
   }
 }
 
@@ -191,4 +203,6 @@ export function migrate() {
   addColumn('battles', 'scheduled', 'INTEGER')
   // 2026-06-12: a battle genre (shown on the share card to pull makers in).
   addColumn('battles', 'genre', 'TEXT')
+  // 2026-06-12: email verification flag.
+  addColumn('users', 'emailVerified', 'INTEGER')
 }

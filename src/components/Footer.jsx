@@ -60,9 +60,15 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <div className="mt-10 flex items-center gap-3 border-t border-line pt-6">
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('common.language')}</span>
-          <LangToggle />
+        <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line pt-6">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('common.language')}</span>
+            <LangToggle />
+          </div>
+          <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.16em] sm:ml-auto">
+            <Link to="/privacy" className="text-ink-dim transition-colors hover:text-ink">{t('legal.privacy')}</Link>
+            <Link to="/terms" className="text-ink-dim transition-colors hover:text-ink">{t('legal.terms')}</Link>
+          </div>
         </div>
       </div>
     </footer>

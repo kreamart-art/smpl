@@ -13,6 +13,8 @@ import People from './pages/People.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Messages from './pages/Messages.jsx'
 import SharePage from './pages/SharePage.jsx'
+import Legal from './pages/Legal.jsx'
+import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/Recover.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 function BootScreen({ error }) {
@@ -63,6 +65,11 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset" element={<ResetPassword />} />
+        <Route path="/verify" element={<VerifyEmail />} />
+        <Route path="/privacy" element={<Legal doc="privacy" />} />
+        <Route path="/terms" element={<Legal doc="terms" />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -170,6 +170,12 @@ export default function Login() {
               </Btn>
             </form>
 
+            <div className="mt-4">
+              <Link to="/forgot" className="font-mono text-[11px] text-muted underline underline-offset-4 hover:text-ink">
+                {t('auth.forgotLink')}
+              </Link>
+            </div>
+
             <div className={`mt-8 ${showDemo ? '' : 'hidden'}`}>
               <Label>{t('auth.quick.title')}</Label>
               <p className="mt-1 font-mono text-[10px] text-faint">{t('auth.quick.note')}</p>

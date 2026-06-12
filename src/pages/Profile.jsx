@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
@@ -11,7 +11,10 @@ import ShareButton from '../components/ShareButton.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
 import LangToggle from '../components/LangToggle.jsx'
-import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconPoster } from '../components/icons.jsx'
+import FollowList from '../components/FollowList.jsx'
+import { UserSafetyMenu } from '../components/Safety.jsx'
+import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconPoster, IconBell } from '../components/icons.jsx'
+import { pushSupported, pushPermission, isPushSubscribed, enablePush, disablePush } from '../lib/push.js'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -204,6 +207,56 @@ function Editor({ user, onClose }) {
   )
 }
 
+function NotificationsRow() {
+  const { pushConfigured } = useApp()
+  const t = useT()
+  const [on, setOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [perm, setPerm] = useState('default')
+
+  useEffect(() => {
+    setPerm(pushPermission())
+    isPushSubscribed().then(setOn)
+  }, [])
+
+  if (!pushConfigured || !pushSupported()) return null
+
+  const toggle = async () => {
+    setBusy(true)
+    if (on) {
+      await disablePush()
+      setOn(false)
+    } else {
+      const r = await enablePush()
+      setOn(!!r.ok)
+    }
+    setPerm(pushPermission())
+    setBusy(false)
+  }
+
+  return (
+    <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
+      <IconBell size={18} />
+      <span>{t('push.settings')}</span>
+      <span className="ml-auto">
+        {perm === 'denied' ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{t('push.blockedShort')}</span>
+        ) : (
+          <button
+            onClick={toggle}
+            disabled={busy}
+            className={`border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
+              on ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+            }`}
+          >
+            {on ? t('push.on') : t('push.off')}
+          </button>
+        )}
+      </span>
+    </div>
+  )
+}
+
 function SettingsPanel({ user, onEdit, onClose }) {
   const { logout } = useApp()
   const { standalone } = usePWA()
@@ -251,6 +304,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
             <LangToggle />
           </span>
         </div>
+        <NotificationsRow />
         <Item
           icon={<IconShield size={18} />}
           label={t('profile.twoFactorAuth')}
@@ -276,11 +330,12 @@ function SettingsPanel({ user, onEdit, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked } =
     useApp()
   const base = getUserByAlias(alias)
   const [editing, setEditing] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [followView, setFollowView] = useState(null) // null | 'followers' | 'following'
 
   if (!base) {
     return (
@@ -347,14 +402,14 @@ export default function Profile() {
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3">
             <div className="flex items-center gap-5">
-              <div className="text-right">
+              <button onClick={() => setFollowView('followers')} className="text-right transition-opacity hover:opacity-70">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.followers')}</div>
                 <div className="font-mono text-2xl tnum leading-none">{followers}</div>
-              </div>
-              <div className="text-right">
+              </button>
+              <button onClick={() => setFollowView('following')} className="text-right transition-opacity hover:opacity-70">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('common.following')}</div>
                 <div className="font-mono text-2xl tnum leading-none">{followingCount}</div>
-              </div>
+              </button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
@@ -373,12 +428,12 @@ export default function Profile() {
               />
               {isSelf ? (
                 <>
-                  {user.role !== 'listener' ? (
+                  {isCuratorProfile ? (
                     <Link
                       to="/dashboard"
                       className="flex h-12 items-center border border-ink bg-ink px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors duration-300 hover:bg-bright"
                     >
-                      {t(isCuratorProfile ? 'common.dashboard' : 'host.nav')}
+                      {t('common.dashboard')}
                     </Link>
                   ) : null}
                   <button
@@ -419,12 +474,24 @@ export default function Profile() {
                   >
                     {following ? t('common.followingState') : t('common.follow')}
                   </button>
+                  <UserSafetyMenu user={user} />
                 </>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {followView ? (
+        <FollowList userId={user.id} initialTab={followView} onClose={() => setFollowView(null)} />
+      ) : null}
+
+      {/* blocked note (other user) */}
+      {!isSelf && isBlocked(user.id) ? (
+        <div className="mt-4 border border-line bg-panel px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+          {t('safety.blockedNote', { alias: user.alias })}
+        </div>
+      ) : null}
 
       {/* EDITOR (self) */}
       {isSelf && editing ? (

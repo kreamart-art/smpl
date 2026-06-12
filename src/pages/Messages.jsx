@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
+import { UserSafetyMenu } from '../components/Safety.jsx'
 import { Btn, inputCls } from '../components/ui.jsx'
 
 function shortAgo(ts) {
@@ -213,10 +214,13 @@ function Thread({ alias }) {
           ◂ {t('messages.inbox')}
         </Link>
         {u ? (
-          <Link to={`/profile/${encodeURIComponent(u.alias)}`} className="ml-1 flex items-center gap-2">
-            <Avatar alias={u.alias} src={u.avatar} size={28} />
-            <span className="font-mono text-[12px] text-ink">@{u.alias}</span>
-          </Link>
+          <>
+            <Link to={`/profile/${encodeURIComponent(u.alias)}`} className="ml-1 flex items-center gap-2">
+              <Avatar alias={u.alias} src={u.avatar} size={28} />
+              <span className="font-mono text-[12px] text-ink">@{u.alias}</span>
+            </Link>
+            <UserSafetyMenu user={u} small className="ml-auto" />
+          </>
         ) : null}
       </div>
 

@@ -16,10 +16,12 @@
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "html-to-image": "^1.11.13",
+    "nodemailer": "^8.0.11",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router-dom": "^6.26.2",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",

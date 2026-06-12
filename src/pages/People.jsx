@@ -83,16 +83,17 @@ function PersonCard({ user }) {
 
 export default function People() {
   const t = useT()
-  const { users, followerCount } = useApp()
+  const { users, followerCount, isBlocked } = useApp()
   const [tab, setTab] = useState('all')
 
   const creators = useMemo(
     () =>
       users
         .filter((u) => u.role === 'producer' || u.role === 'artist')
+        .filter((u) => !isBlocked(u.id))
         .filter((u) => tab === 'all' || u.role === tab)
         .sort((a, b) => followerCount(b.id) - followerCount(a.id)),
-    [users, tab, followerCount],
+    [users, tab, followerCount, isBlocked],
   )
 
   return (

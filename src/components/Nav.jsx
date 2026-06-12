@@ -56,9 +56,9 @@ export default function Nav() {
               {t('common.feed')}
             </NavLink>
           ) : null}
-          {currentUser && currentUser.role !== 'listener' ? (
+          {isCurator ? (
             <NavLink to="/dashboard" className={navClass}>
-              {t(isCurator ? 'common.dashboard' : 'host.nav')}
+              {t('common.dashboard')}
             </NavLink>
           ) : null}
 

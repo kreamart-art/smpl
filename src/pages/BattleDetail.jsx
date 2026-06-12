@@ -6,6 +6,7 @@ import BeatPlayer from '../components/BeatPlayer.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import ShareButton from '../components/ShareButton.jsx'
 import ShareToDM from '../components/ShareToDM.jsx'
+import { ReportButton } from '../components/Safety.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
@@ -13,7 +14,7 @@ import { STATUS, STATUS_ORDER, STATUS_INDEX, countdownTarget } from '../data/sta
 import { shuffleSeeded, fmtDate } from '../utils/wave.js'
 import { kindCopy } from '../data/kind.js'
 import KindBadge from '../components/KindBadge.jsx'
-import { useT } from '../i18n/index.jsx'
+import { useT, useI18n } from '../i18n/index.jsx'
 
 // Countdown caption per status → battleDetail.cd.* key (mirrors countdownTarget).
 const CD_KEY = {
@@ -91,6 +92,7 @@ export default function BattleDetail() {
     userVoteInBattle,
     rankedSubmissions,
     voteCount,
+    mailConfigured,
   } = app
 
   const battle = getBattle(id)
@@ -289,13 +291,16 @@ export default function BattleDetail() {
         <div className="mb-2 flex items-center justify-between gap-3">
           <Label>{t(`battleDetail.sampleCaption.${battle.kind}`)}</Label>
           {canDownloadSource ? (
-            <a
-              href={battle.sampleUrl}
-              download={`SMPL-${(battle.title || 'source').replace(/[^\w]+/g, '_')}.${sourceExt}`}
-              className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
-            >
-              ↓ {t(`battleDetail.downloadSource.${battle.kind}`)}
-            </a>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={battle.sampleUrl}
+                download={`SMPL-${(battle.title || 'source').replace(/[^\w]+/g, '_')}.${sourceExt}`}
+                className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
+              >
+                ↓ {t(`battleDetail.downloadSource.${battle.kind}`)}
+              </a>
+              {mailConfigured ? <EmailSourceButton battleId={battle.id} /> : null}
+            </div>
           ) : null}
         </div>
         <AudioPlayer meta={sampleMeta} sealed={!battle.sampleRevealed} />
@@ -558,7 +563,44 @@ export default function BattleDetail() {
           </PhaseBox>
         )}
       </div>
+
+      <div className="mt-10 flex justify-center border-t border-line pt-6">
+        <ReportButton targetType="battle" targetId={battle.id} label={battle.title} />
+      </div>
     </div>
+  )
+}
+
+function EmailSourceButton({ battleId }) {
+  const { emailSource } = useApp()
+  const { lang } = useI18n()
+  const t = useT()
+  const [state, setState] = useState('idle') // idle | busy | sent | err
+
+  const send = async () => {
+    setState('busy')
+    const r = await emailSource(battleId, lang)
+    if (r.ok) {
+      setState('sent')
+      setTimeout(() => setState('idle'), 3500)
+    } else {
+      setState('err')
+      setTimeout(() => setState('idle'), 3500)
+    }
+  }
+
+  return (
+    <button
+      onClick={send}
+      disabled={state === 'busy' || state === 'sent'}
+      className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-ink"
+    >
+      {state === 'sent'
+        ? t('battleDetail.emailSent')
+        : state === 'busy'
+          ? t('battleDetail.emailSending')
+          : `✉ ${t('battleDetail.emailSource')}`}
+    </button>
   )
 }
 

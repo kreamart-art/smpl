@@ -30,6 +30,9 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [unread, setUnread] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [blocked, setBlocked] = useState([])
+  const [mailConfigured, setMailConfigured] = useState(false)
+  const [pushConfigured, setPushConfigured] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -43,6 +46,9 @@ export function AppProvider({ children }) {
     setCurrentUser(d.me || null)
     setUnread(d.unread || 0)
     setUnreadMessages(d.unreadMessages || 0)
+    setBlocked(d.blocked || [])
+    setMailConfigured(!!d.mailConfigured)
+    setPushConfigured(!!d.pushConfigured)
   }, [])
 
   const refresh = useCallback(async () => {
@@ -89,6 +95,7 @@ export function AppProvider({ children }) {
     (userId) => follows.filter((f) => f.followeeId === userId).length,
     [follows],
   )
+  const isBlocked = useCallback((userId) => blocked.includes(userId), [blocked])
   const isFollowing = useCallback(
     (userId) =>
       !!currentUser && follows.some((f) => f.followerId === currentUser.id && f.followeeId === userId),
@@ -198,6 +205,32 @@ export function AppProvider({ children }) {
     await refresh()
   }, [refresh])
 
+  // --- password reset + email verification ---------------------------------
+  const requestPasswordReset = useCallback(
+    (email, lang) => api.post('/api/auth/forgot', { email, lang }),
+    [],
+  )
+  const resetPassword = useCallback(
+    async (token, password) => {
+      const r = await api.post('/api/auth/reset', { token, password })
+      if (r.ok && r.token) {
+        setToken(r.token) // a reset (no 2FA) logs you straight in
+        await refresh()
+      }
+      return r
+    },
+    [refresh],
+  )
+  const verifyEmailToken = useCallback(
+    async (token) => {
+      const r = await api.post('/api/auth/verify-email', { token })
+      if (r.ok) await refresh()
+      return r
+    },
+    [refresh],
+  )
+  const resendVerification = useCallback((lang) => api.post('/api/auth/resend-verification', { lang }), [])
+
   // --- account security + deletion -----------------------------------------
   const setup2fa = useCallback(() => api.post('/api/me/2fa/setup'), [])
   const enable2fa = useCallback(
@@ -259,6 +292,24 @@ export function AppProvider({ children }) {
     (userId) => mutate(() => api.post(`/api/users/${userId}/follow`)),
     [mutate],
   )
+  // --- safety: block / report ---------------------------------------------
+  const toggleBlock = useCallback(
+    (userId) => mutate(() => api.post(`/api/users/${userId}/block`)),
+    [mutate],
+  )
+  const reportTarget = useCallback(
+    (targetType, targetId, reason, context) =>
+      api.post('/api/reports', { targetType, targetId, reason, context }),
+    [],
+  )
+  const fetchReports = useCallback(() => api.get('/api/reports'), [])
+  const resolveReport = useCallback(
+    (id) => api.post(`/api/reports/${id}/resolve`),
+    [],
+  )
+  // --- admin: database backups (curator-only) ------------------------------
+  const fetchBackups = useCallback(() => api.get('/api/admin/backups'), [])
+  const triggerBackup = useCallback(() => api.post('/api/admin/backup'), [])
   const createBattle = useCallback(
     (data) => mutate(() => api.post('/api/battles', data)),
     [mutate],
@@ -279,6 +330,8 @@ export function AppProvider({ children }) {
 
   // Curator audio upload (sample / open-verse beat). Returns { ok, url }.
   const uploadAudio = useCallback((file) => api.upload('/api/uploads/audio', file), [])
+  // Email the current user a download link to a battle's source (needs SMTP).
+  const emailSource = useCallback((battleId, lang) => api.post(`/api/battles/${battleId}/email-source`, { lang }), [])
 
   // --- profile + social ----------------------------------------------------
   const updateProfile = useCallback((payload) => mutate(() => api.patch('/api/me', payload)), [mutate])
@@ -311,6 +364,9 @@ export function AppProvider({ children }) {
     error,
     unread,
     unreadMessages,
+    blocked,
+    mailConfigured,
+    pushConfigured,
     refresh,
     // selectors
     getBattle,
@@ -322,6 +378,7 @@ export function AppProvider({ children }) {
     rankedSubmissions,
     followerCount,
     isFollowing,
+    isBlocked,
     producerStats,
     curatorStats,
     // auth
@@ -329,6 +386,10 @@ export function AppProvider({ children }) {
     verify2fa,
     signup,
     logout,
+    requestPasswordReset,
+    resetPassword,
+    verifyEmailToken,
+    resendVerification,
     setup2fa,
     enable2fa,
     disable2fa,
@@ -339,11 +400,18 @@ export function AppProvider({ children }) {
     submitBeat,
     castVote,
     toggleFollow,
+    toggleBlock,
+    reportTarget,
+    fetchReports,
+    resolveReport,
+    fetchBackups,
+    triggerBackup,
     createBattle,
     advanceStatus,
     declareWinner,
     approveSubmission,
     uploadAudio,
+    emailSource,
     updateProfile,
     fetchFeed,
     fetchNotifications,

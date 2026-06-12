@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import Reveal from '../components/Reveal.jsx'
+import ReportsPanel from '../components/ReportsPanel.jsx'
+import BackupsPanel from '../components/BackupsPanel.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { STATUS, nextStatus } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
@@ -59,9 +61,9 @@ export default function Dashboard() {
   const [msg, setMsg] = useState(null)
   const [openId, setOpenId] = useState(null)
   const [uploading, setUploading] = useState(false)
-  // Curators run everything; producers + artists host their own open-verse battles.
-  const canHost = !!currentUser && currentUser.role !== 'listener'
-  const myBattles = isCurator ? battles : battles.filter((b) => b.curatorId === currentUser?.id)
+  // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
+  const canHost = isCurator
+  const myBattles = battles
 
   const onPickSample = async (e) => {
     const file = e.target.files?.[0]
@@ -171,6 +173,19 @@ export default function Dashboard() {
         <div className="mt-6 border border-line-bright px-4 py-2.5 font-mono text-[11px] text-ink">
           {msg.ok ? '✓ ' : '! '}
           {msg.text}
+        </div>
+      ) : null}
+
+      {isCurator ? (
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Reveal>
+              <ReportsPanel />
+            </Reveal>
+          </div>
+          <Reveal>
+            <BackupsPanel />
+          </Reveal>
         </div>
       ) : null}
 

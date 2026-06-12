@@ -4,6 +4,7 @@ server/data.db
 server/data.db-wal
 server/data.db-shm
 server/uploads/
+server/backups/
 *.local
 .env
 .env.*

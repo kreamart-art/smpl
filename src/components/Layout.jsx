@@ -6,6 +6,8 @@ import TransportBar from './TransportBar.jsx'
 import AppTopBar from './AppTopBar.jsx'
 import BottomTabBar from './BottomTabBar.jsx'
 import InstallBanner from './InstallBanner.jsx'
+import VerifyEmailBanner from './VerifyEmailBanner.jsx'
+import PushPrompt from './PushPrompt.jsx'
 import { Grain, Vignette } from './Atmosphere.jsx'
 import { usePlayback } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
@@ -28,6 +30,8 @@ export default function Layout() {
         <Vignette />
         <Grain />
         <AppTopBar />
+        <PushPrompt />
+        <VerifyEmailBanner />
         <main
           className="relative flex-1"
           style={{ paddingBottom: `calc(${pad}px + env(safe-area-inset-bottom))` }}
@@ -48,6 +52,8 @@ export default function Layout() {
       <Vignette />
       <Grain />
       <Nav />
+      <PushPrompt />
+      <VerifyEmailBanner />
       <main className="relative flex-1">
         <div key={pathname} className="fadein">
           <Outlet />
