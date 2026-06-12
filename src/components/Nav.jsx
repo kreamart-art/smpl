@@ -63,7 +63,7 @@ export default function Nav() {
             <div className="flex items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
               <NotificationsBell />
               <Link
-                to={currentUser.role === 'curator' ? '/dashboard' : `/profile/${encodeURIComponent(currentUser.alias)}`}
+                to={`/profile/${encodeURIComponent(currentUser.alias)}`}
                 className="flex items-center gap-2 text-right"
                 title="Your profile"
               >

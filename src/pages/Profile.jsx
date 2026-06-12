@@ -6,6 +6,7 @@ import Avatar from '../components/Avatar.jsx'
 import Waveform from '../components/Waveform.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
+import BattleCard from '../components/BattleCard.jsx'
 import { IconSettings, IconLogout } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear, ageFrom } from '../utils/wave.js'
@@ -215,7 +216,7 @@ function SettingsPanel({ user, onEdit, onClose }) {
 
 export default function Profile() {
   const { alias } = useParams()
-  const { getUserByAlias, producerStats, followerCount, isFollowing, toggleFollow, currentUser, follows } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows } =
     useApp()
   const base = getUserByAlias(alias)
   const [editing, setEditing] = useState(false)
@@ -242,6 +243,8 @@ export default function Profile() {
   const following = isFollowing(user.id)
   const age = ageFrom(user.dob, Date.now())
   const hasPrivate = user.name || user.dob || user.email
+  const isCuratorProfile = user.role === 'curator'
+  const cstats = isCuratorProfile ? curatorStats(user.id) : null
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-10 sm:px-6 sm:py-12">
@@ -249,7 +252,7 @@ export default function Profile() {
       <div className="relative isolate overflow-hidden border border-line bg-panel">
         <span className="hero-bloom" aria-hidden="true" />
         <div className="relative flex items-center justify-between px-6 pt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-faint sm:px-8">
-          <span>SMPL Artist File</span>
+          <span>{isCuratorProfile ? 'SMPL Curator File' : 'SMPL Artist File'}</span>
           <span>{roleLabel(user.role)}</span>
         </div>
         <div className="relative px-6 pt-6 sm:px-8">
@@ -270,7 +273,15 @@ export default function Profile() {
                 {user.alias}
               </h1>
               <div className="mt-3 inline-flex items-center gap-2 border border-line px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
-                <span className="text-ink">◆</span> Identity on file — kept anonymous
+                {isCuratorProfile ? (
+                  <>
+                    <span className="text-ink">✓</span> Curator · curates the room
+                  </>
+                ) : (
+                  <>
+                    <span className="text-ink">◆</span> Identity on file — kept anonymous
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -403,20 +414,48 @@ export default function Profile() {
 
       {/* STATS */}
       <Reveal className="mt-14">
-        <SectionHead index="F1" kicker="Career figures" title="Statistics" />
+        <SectionHead index="F1" kicker={isCuratorProfile ? 'Curation figures' : 'Career figures'} title="Statistics" />
         <div className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
-          <StatCell label="Battles" value={stats.played} sub="played" />
-          <StatCell label="Won" value={stats.won} sub="first place" />
-          <StatCell label="Win ratio" value={`${stats.winRatio}%`} sub={`${stats.won}/${stats.played}`} />
-          <StatCell label="Total votes" value={stats.totalVotes} sub="career" />
+          {isCuratorProfile ? (
+            <>
+              <StatCell label="Battles" value={cstats.count} sub="curated" />
+              <StatCell label="Creators" value={cstats.creators} sub="hosted" />
+              <StatCell label="Drops" value={cstats.drops} sub="submitted" />
+              <StatCell label="Winners" value={cstats.winners} sub="crowned" />
+            </>
+          ) : (
+            <>
+              <StatCell label="Battles" value={stats.played} sub="played" />
+              <StatCell label="Won" value={stats.won} sub="first place" />
+              <StatCell label="Win ratio" value={`${stats.winRatio}%`} sub={`${stats.won}/${stats.played}`} />
+              <StatCell label="Total votes" value={stats.totalVotes} sub="career" />
+            </>
+          )}
         </div>
       </Reveal>
 
-      {/* HISTORY */}
-      <Reveal className="mt-14">
-        <SectionHead index="F2" kicker="The record" title="Battle history" />
-        <div className="border border-line bg-panel">
-          {stats.history.length ? (
+      {/* CURATED BATTLES (curator) */}
+      {isCuratorProfile ? (
+        <Reveal className="mt-14">
+          <SectionHead index="F2" kicker="The catalogue" title="Curated battles" />
+          {cstats.curated.length ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {cstats.curated.map((b) => (
+                <BattleCard key={b.id} battle={b} />
+              ))}
+            </div>
+          ) : (
+            <p className="border border-line bg-panel px-5 py-6 font-mono text-[12px] text-muted">
+              No battles curated yet.
+            </p>
+          )}
+        </Reveal>
+      ) : (
+        /* HISTORY (competitor) */
+        <Reveal className="mt-14">
+          <SectionHead index="F2" kicker="The record" title="Battle history" />
+          <div className="border border-line bg-panel">
+            {stats.history.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse">
                 <thead>
@@ -455,11 +494,12 @@ export default function Profile() {
                 </tbody>
               </table>
             </div>
-          ) : (
-            <p className="px-5 py-6 font-mono text-[12px] text-muted">No battles played yet.</p>
-          )}
-        </div>
-      </Reveal>
+            ) : (
+              <p className="px-5 py-6 font-mono text-[12px] text-muted">No battles played yet.</p>
+            )}
+          </div>
+        </Reveal>
+      )}
     </div>
   )
 }

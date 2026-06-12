@@ -135,6 +135,24 @@ export function AppProvider({ children }) {
     [users, battles, rankedSubmissions],
   )
 
+  // Curator-side figures: battles they run + who/what they've hosted.
+  const curatorStats = useCallback(
+    (userId) => {
+      const curated = battles.filter((b) => b.curatorId === userId)
+      const ids = new Set(curated.map((b) => b.id))
+      const creators = new Set()
+      for (const b of curated) for (const s of b.signups || []) creators.add(s)
+      const drops = submissions.filter((s) => ids.has(s.battleId)).length
+      const winners = curated.filter((b) => b.status === STATUS.WINNER_DECLARED).length
+      const live = curated.filter(
+        (b) => b.status === STATUS.VOTING_PHASE || b.status === STATUS.SUBMISSION_PHASE,
+      ).length
+      const sorted = [...curated].sort((a, b) => (b.signupStart || 0) - (a.signupStart || 0))
+      return { curated: sorted, count: curated.length, creators: creators.size, drops, winners, live }
+    },
+    [battles, submissions],
+  )
+
   // --- auth ----------------------------------------------------------------
   const login = useCallback(
     async (email, password) => {
@@ -248,6 +266,7 @@ export function AppProvider({ children }) {
     followerCount,
     isFollowing,
     producerStats,
+    curatorStats,
     // auth
     login,
     signup,

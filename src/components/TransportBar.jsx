@@ -14,7 +14,7 @@ export default function TransportBar() {
   return (
     <div
       className="fixed inset-x-0 z-40 border-t border-line-bright bg-black/95 backdrop-blur"
-      style={{ bottom: standalone ? 'calc(58px + env(safe-area-inset-bottom))' : 0 }}
+      style={{ bottom: standalone ? 'calc(env(safe-area-inset-bottom) + 76px)' : 0 }}
     >
       <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6">
         <button

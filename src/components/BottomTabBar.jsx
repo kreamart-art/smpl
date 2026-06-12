@@ -4,46 +4,43 @@ import { IconBattles, IconFeed, IconBell, IconUser } from './icons.jsx'
 
 function Tab({ to, label, icon, badge }) {
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `relative flex flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors ${
-          isActive ? 'text-ink' : 'text-muted'
-        }`
-      }
-    >
+    <NavLink to={to} className="flex-1">
       {({ isActive }) => (
-        <>
+        <div
+          className={`tab-pill-item flex flex-col items-center justify-center gap-0.5 py-2 transition-colors duration-200 ${
+            isActive ? 'bg-ink/10 text-ink' : 'text-muted'
+          }`}
+        >
           <span className="relative">
             {icon}
             {badge ? (
-              <span className="absolute -right-2 -top-1.5 min-w-[15px] border border-bg bg-ink px-1 text-center font-mono text-[8px] leading-[13px] text-bg">
+              <span className="absolute -right-2 -top-1.5 min-w-[15px] border border-black bg-ink px-1 text-center font-mono text-[8px] leading-[13px] text-bg">
                 {badge > 9 ? '9+' : badge}
               </span>
             ) : null}
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.12em]">{label}</span>
-          <span className={`absolute top-0 h-[2px] w-8 ${isActive ? 'bg-ink' : 'bg-transparent'}`} />
-        </>
+          <span className="font-mono text-[8px] uppercase tracking-[0.12em]">{label}</span>
+        </div>
       )}
     </NavLink>
   )
 }
 
+// Floating, pill-shaped tab bar (hovers above the bottom — Instagram-style).
 export default function BottomTabBar() {
   const { currentUser, unread } = useApp()
   const profileTo = currentUser ? `/profile/${encodeURIComponent(currentUser.alias)}` : '/login'
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line-bright bg-black/95 backdrop-blur-md"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4px)' }}
+      className="fixed inset-x-0 z-50 flex justify-center px-4"
+      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
     >
-      <div className="mx-auto flex max-w-[600px]">
-        <Tab to="/battles" label="Battles" icon={<IconBattles />} />
-        <Tab to="/feed" label="Feed" icon={<IconFeed />} />
-        <Tab to="/notifications" label="Alerts" icon={<IconBell />} badge={unread} />
-        <Tab to={profileTo} label="Profile" icon={<IconUser />} />
+      <div className="tab-pill flex w-full max-w-[440px] items-center gap-1 border border-line-bright bg-black/70 px-2 py-1.5 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+        <Tab to="/battles" label="Battles" icon={<IconBattles size={20} />} />
+        <Tab to="/feed" label="Feed" icon={<IconFeed size={20} />} />
+        <Tab to="/notifications" label="Alerts" icon={<IconBell size={20} />} badge={unread} />
+        <Tab to={profileTo} label="Profile" icon={<IconUser size={20} />} />
       </div>
     </nav>
   )

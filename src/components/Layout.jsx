@@ -21,8 +21,8 @@ export default function Layout() {
 
   // ---------- installed app shell (Instagram-style) ----------
   if (standalone) {
-    // leave room for the transport (when playing) + the bottom tab bar
-    const pad = (track ? 64 : 0) + 58
+    // leave room for the floating tab bar (+ the transport when playing)
+    const pad = (track ? 64 : 0) + 86
     return (
       <div className="relative flex min-h-full flex-col">
         <Vignette />

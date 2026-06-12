@@ -277,6 +277,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* The floating app tab bar is the one element allowed rounded corners
+   (class specificity beats the global `* { border-radius: 0 }`). */
+.tab-pill,
+.tab-pill-item {
+  border-radius: 9999px !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .grain,
   .dust,
