@@ -4,9 +4,11 @@ import { useApp } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
+import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconImage, IconMic } from '../components/icons.jsx'
 import { Btn, inputCls } from '../components/ui.jsx'
+import { roleLabel } from '../data/kind.js'
 
 const REACTIONS = ['❤️', '🔥', '😂', '👍', '😮', '😢', '🙏']
 
@@ -121,6 +123,8 @@ function Inbox() {
     if (last.kind === 'image') return `▣ ${t('messages.photo')}`
     if (last.kind === 'audio') return `▶ ${t('messages.voiceClip')}`
     if (last.kind === 'battle') return `↗ ${t('messages.sharedBattle')}`
+    if (last.kind === 'profile') return `↗ ${t('messages.sharedProfile')}`
+    if (last.kind === 'event') return `↗ ${t('messages.sharedEvent')}`
     return last.body
   }
 
@@ -209,6 +213,31 @@ function BattlePreview({ battleId }) {
       </div>
       <div className="mt-1 font-sans text-[14px] font-bold uppercase leading-tight tracking-tight text-ink">
         {b.title}
+      </div>
+    </Link>
+  )
+}
+
+// A shared profile card in a thread.
+function ProfilePreview({ alias }) {
+  const { getUserByAlias } = useApp()
+  const u = getUserByAlias(alias)
+  if (!u) return <span className="font-mono text-[11px] text-muted">↗ @{alias}</span>
+  return (
+    <Link
+      to={`/profile/${encodeURIComponent(u.alias)}`}
+      className="flex items-center gap-3 border border-line-bright bg-bg px-3 py-2.5 transition-colors hover:border-ink"
+    >
+      <Avatar alias={u.alias} src={u.avatar} size={38} />
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate font-sans text-[14px] font-bold uppercase tracking-tight text-ink">@{u.alias}</span>
+          {u.verified || u.role === 'admin' ? <VerifiedBadge size={12} /> : null}
+        </div>
+        <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-faint">
+          {roleLabel(u.role)}
+          {u.location ? ` · ${u.location}` : ''}
+        </div>
       </div>
     </Link>
   )
@@ -481,6 +510,10 @@ function Thread({ alias }) {
                           ) : null}
                           <div className="space-y-1.5">
                             {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
+                            {m.shareKind === 'profile' ? <ProfilePreview alias={m.shareRef} /> : null}
+                            {m.shareKind === 'event' ? (
+                              <span className="font-mono text-[11px] text-muted">↗ {t('messages.sharedEvent')}</span>
+                            ) : null}
                             {m.imageUrl ? (
                               <img
                                 src={m.imageUrl}

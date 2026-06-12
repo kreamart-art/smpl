@@ -5,9 +5,10 @@ import Avatar from './Avatar.jsx'
 import { IconMessage } from './icons.jsx'
 import { inputCls } from './ui.jsx'
 
-// Share a battle into a DM — pick a recipient, the battle lands as a card in
-// the conversation. Only shown to logged-in users.
-export default function ShareToDM({ battleId, className = '' }) {
+// Share a battle OR a profile (and, later, an event) into a DM — pick a
+// recipient and it lands as a card in the conversation. Pass either `battleId`
+// (legacy) or a generic `share={ kind:'profile'|'battle'|'event', ref }`.
+export default function ShareToDM({ battleId, share, className = '' }) {
   const { currentUser, users, follows, sendMessage } = useApp()
   const t = useT()
   const [open, setOpen] = useState(false)
@@ -15,7 +16,8 @@ export default function ShareToDM({ battleId, className = '' }) {
   const [sentTo, setSentTo] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  if (!currentUser) return null
+  const target = share || (battleId ? { kind: 'battle', ref: battleId } : null)
+  if (!currentUser || !target) return null
 
   const following = new Set(
     follows.filter((f) => f.followerId === currentUser.id).map((f) => f.followeeId),
@@ -37,7 +39,9 @@ export default function ShareToDM({ battleId, className = '' }) {
 
   const send = async (alias) => {
     setBusy(true)
-    const r = await sendMessage(alias, '', { battleId })
+    const payload =
+      target.kind === 'battle' ? { battleId: target.ref } : { shareKind: target.kind, shareRef: target.ref }
+    const r = await sendMessage(alias, '', payload)
     setBusy(false)
     if (r.ok) {
       setSentTo(alias)
@@ -67,7 +71,15 @@ export default function ShareToDM({ battleId, className = '' }) {
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('messages.shareTitle')}</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+                {t(
+                  target.kind === 'profile'
+                    ? 'messages.shareProfileTitle'
+                    : target.kind === 'event'
+                      ? 'messages.shareEventTitle'
+                      : 'messages.shareTitle',
+                )}
+              </span>
               <button onClick={close} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
                 {t('common.close')} ✕
               </button>

@@ -7,6 +7,7 @@ import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
 import BattleCard from '../components/BattleCard.jsx'
 import ShareButton from '../components/ShareButton.jsx'
+import ShareToDM from '../components/ShareToDM.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import FollowList from '../components/FollowList.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
@@ -297,6 +298,7 @@ export default function Profile() {
                 title={t('profile.share.title', { alias: user.alias })}
                 text={t('profile.share.text', { alias: user.alias, role: roleLabel(user.role) })}
               />
+              <ShareToDM share={{ kind: 'profile', ref: user.alias }} className="h-12 w-12" />
               {isSelf ? (
                 <>
                   {isCuratorProfile ? (

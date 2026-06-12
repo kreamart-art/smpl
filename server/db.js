@@ -220,6 +220,9 @@ export function migrate() {
   addColumn('users', 'phone', 'TEXT')
   addColumn('users', 'country', 'TEXT')
   addColumn('users', 'city', 'TEXT')
+  // 2026-06-13: share a profile/battle/event into a DM as a card.
+  addColumn('messages', 'shareKind', 'TEXT')
+  addColumn('messages', 'shareRef', 'TEXT')
   // 2026-06-12: optional public contact email on a profile.
   addColumn('users', 'contactEmail', 'TEXT')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.
