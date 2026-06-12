@@ -168,7 +168,7 @@ export default function Signup() {
                 </button>
               ) : null}
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <Field label="Alias" hint="your @handle">
                 <input
                   className={inputCls}
@@ -216,7 +216,7 @@ export default function Signup() {
               room.
             </div>
             <div className="space-y-5 p-5">
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <Field label="Legal name" hint="private">
                   <input
                     className={inputCls}
@@ -234,7 +234,7 @@ export default function Signup() {
                   />
                 </Field>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <Field label="Email" hint="private">
                   <input
                     type="email"

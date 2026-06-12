@@ -143,7 +143,7 @@ function Editor({ user, onClose }) {
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
           />
         </Field>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field label="Location">
             <input className={inputCls} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
           </Field>
@@ -360,7 +360,7 @@ export default function Profile() {
 
       {/* BIO + LINKS */}
       <Reveal className="mt-6">
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="border border-line bg-panel p-6 lg:col-span-2">
             <Label>Bio</Label>
             <p className="mt-4 font-sans text-[15px] leading-relaxed text-ink-dim">

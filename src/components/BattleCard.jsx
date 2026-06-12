@@ -13,7 +13,6 @@ export default function BattleCard({ battle }) {
   const subs = battleSubmissions(battle.id).length
   const attendees = battle.attendees.length
   const live = battle.status === STATUS.VOTING_PHASE
-  const cat = `SMPL·${battle.id.toUpperCase()}`
   const c = kindCopy(battle.kind)
 
   return (
@@ -24,12 +23,9 @@ export default function BattleCard({ battle }) {
       <span className="hover-bloom" aria-hidden="true" />
 
       {/* catalogue / status header */}
-      <div className="relative flex items-center justify-between gap-2 px-5 pt-5">
-        <div className="flex items-center gap-2">
-          <StatusBadge status={battle.status} size="sm" />
-          <KindBadge kind={battle.kind} size="sm" />
-        </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{cat}</span>
+      <div className="relative flex flex-wrap items-center gap-2 px-5 pt-5">
+        <StatusBadge status={battle.status} size="sm" />
+        <KindBadge kind={battle.kind} size="sm" />
       </div>
 
       {/* title + sample */}

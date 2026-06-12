@@ -92,7 +92,7 @@ export default function Battles() {
       </div>
 
       {sorted.length ? (
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map((b, i) => (
             <Reveal key={b.id} delay={i * 60}>
               <BattleCard battle={b} />

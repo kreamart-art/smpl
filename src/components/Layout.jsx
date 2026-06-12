@@ -28,7 +28,10 @@ export default function Layout() {
         <Vignette />
         <Grain />
         <AppTopBar />
-        <main className="relative flex-1" style={{ paddingBottom: pad }}>
+        <main
+          className="relative flex-1"
+          style={{ paddingBottom: `calc(${pad}px + env(safe-area-inset-bottom))` }}
+        >
           <div key={pathname} className="fadein">
             <Outlet />
           </div>

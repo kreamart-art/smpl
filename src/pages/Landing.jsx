@@ -143,7 +143,7 @@ export default function Landing() {
               <FeaturedBattle battle={featured} />
             </Reveal>
             {restActive.length ? (
-              <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {restActive.map((b, i) => (
                   <Reveal key={b.id} delay={i * 70}>
                     <BattleCard battle={b} />
@@ -161,7 +161,7 @@ export default function Landing() {
       {upcoming.length ? (
         <section className="mx-auto max-w-[1500px] px-4 pb-20 sm:px-6 sm:pb-28">
           <EditorialHead index="02" kicker="On the horizon" title="Upcoming" />
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {upcoming.map((b, i) => (
               <Reveal key={b.id} delay={i * 70}>
                 <BattleCard battle={b} />
@@ -175,7 +175,7 @@ export default function Landing() {
       <section className="border-t border-line bg-panel">
         <div className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-28">
           <EditorialHead index="03" kicker="The format" title="How a battle runs" />
-          <div className="mt-10 grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
             {HOW.map(([n, t, d], i) => (
               <Reveal key={n} delay={i * 70}>
                 <div className="h-full bg-bg p-6 transition-colors duration-500 hover:bg-panel-2">
