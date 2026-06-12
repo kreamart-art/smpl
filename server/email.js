@@ -5,17 +5,20 @@ import nodemailer from 'nodemailer'
 // password reset / verification degrade gracefully until SMTP is wired up.
 const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE } = process.env
 
-const PORT = Number(SMTP_PORT) || 465
+// Note: Hetzner blocks outbound 25 + 465 — use 587 (STARTTLS). Default to it.
+const PORT = Number(SMTP_PORT) || 587
 const FROM = SMTP_FROM || (SMTP_USER ? `SMPL <${SMTP_USER}>` : 'SMPL <no-reply@smpl.local>')
 
 export const mailConfigured = !!(SMTP_HOST && SMTP_USER && SMTP_PASS)
 
 let transport = null
 if (mailConfigured) {
+  const secure = SMTP_SECURE ? SMTP_SECURE === 'true' : PORT === 465
   transport = nodemailer.createTransport({
     host: SMTP_HOST,
     port: PORT,
-    secure: SMTP_SECURE ? SMTP_SECURE === 'true' : PORT === 465,
+    secure,
+    requireTLS: !secure, // force STARTTLS on 587 — never auth in plaintext
     auth: { user: SMTP_USER, pass: SMTP_PASS },
   })
 }
