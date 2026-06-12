@@ -49,9 +49,9 @@ export const auth = {
     'auth.signup.roleTitle': 'Choose a role',
     'auth.signup.roleProducerBlurb': 'Flip the sample, submit beats, build a battle record.',
     'auth.signup.roleArtistBlurb':
-      'Drop verses or vocals on the beat. Rap, sing, spoken word — one take, judged blind.',
+      'Drop verses or vocals on the beat. Rap, sing, spoken word — one take, the crowd decides.',
     'auth.signup.roleListenerBlurb':
-      'Attend, play the room, cast anonymous votes. No drops needed.',
+      'Attend, play the room, vote for your favourite. No drops needed.',
 
     // —— signup: section 02 public
     'auth.signup.publicTitle': 'Public profile',
@@ -75,7 +75,7 @@ export const auth = {
     'auth.signup.privateTitle': 'Private identity',
     'auth.signup.privateNote': 'Never shown publicly',
     'auth.signup.privateBanner':
-      'Verified on file · kept anonymous — legal name, date of birth & email never reach the room.',
+      'Verified on file · kept private — legal name, date of birth & email never reach the room.',
     'auth.field.legalName': 'Legal name',
     'auth.field.legalNameHint': 'private',
     'auth.field.legalNamePlaceholder': 'Your real name',
@@ -137,9 +137,9 @@ export const auth = {
     'auth.signup.roleTitle': 'Kies een rol',
     'auth.signup.roleProducerBlurb': 'Flip de sample, stuur beats in, bouw een battle-record op.',
     'auth.signup.roleArtistBlurb':
-      'Drop verses of vocals op de beat. Rap, zang, spoken word — één take, blind beoordeeld.',
+      'Drop verses of vocals op de beat. Rap, zang, spoken word — één take, de crowd beslist.',
     'auth.signup.roleListenerBlurb':
-      'Kom langs, voel de room, breng anonieme stemmen uit. Geen drops nodig.',
+      'Kom langs, voel de room, stem op je favoriet. Geen drops nodig.',
 
     // —— signup: section 02 public
     'auth.signup.publicTitle': 'Publiek profiel',
@@ -163,7 +163,7 @@ export const auth = {
     'auth.signup.privateTitle': 'Privé-identiteit',
     'auth.signup.privateNote': 'Nooit publiek zichtbaar',
     'auth.signup.privateBanner':
-      'Geverifieerd in dossier · anoniem gehouden — wettelijke naam, geboortedatum & e-mail bereiken de room nooit.',
+      'Geverifieerd in dossier · privé gehouden — wettelijke naam, geboortedatum & e-mail bereiken de room nooit.',
     'auth.field.legalName': 'Wettelijke naam',
     'auth.field.legalNameHint': 'privé',
     'auth.field.legalNamePlaceholder': 'Je echte naam',

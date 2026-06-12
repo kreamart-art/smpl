@@ -9,7 +9,7 @@ export const profile = {
     'profile.curatorFile': 'SMPL Curator File',
     'profile.memberSince': 'Member since {month}',
     'profile.badge.curator': 'Curator · curates the room',
-    'profile.badge.anon': 'Identity on file — kept anonymous',
+    'profile.badge.anon': 'Real name on file — kept private',
 
     // editor panel
     'profile.editProfile': 'Edit profile',
@@ -43,7 +43,7 @@ export const profile = {
     'profile.dobYears': '{dob} · {age} yrs',
     'profile.email': 'Email',
     'profile.privateFootnote':
-      'Never shown publicly. SMPL verifies your identity and keeps you anonymous to the room.',
+      'Never shown publicly. SMPL verifies your identity and keeps your real name private.',
 
     // bio + links cards
     'profile.bio': 'Bio',
@@ -141,7 +141,7 @@ export const profile = {
     'profile.curatorFile': 'SMPL Curator File',
     'profile.memberSince': 'lid sinds {month}',
     'profile.badge.curator': 'curator · cureert de room',
-    'profile.badge.anon': 'identiteit vastgelegd — blijft anoniem',
+    'profile.badge.anon': 'echte naam vastgelegd — blijft privé',
 
     // editor panel
     'profile.editProfile': 'profiel bewerken',
@@ -175,7 +175,7 @@ export const profile = {
     'profile.dobYears': '{dob} · {age} jr',
     'profile.email': 'e-mail',
     'profile.privateFootnote':
-      'Nooit openbaar getoond. SMPL verifieert je identiteit en houdt je anoniem voor de room.',
+      'Nooit openbaar getoond. SMPL verifieert je identiteit en houdt je echte naam privé.',
 
     // bio + links cards
     'profile.bio': 'bio',

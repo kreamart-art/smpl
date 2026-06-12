@@ -8,7 +8,7 @@ export const chrome = {
     'chrome.livePill': '{n} live',
     'chrome.yourProfile': 'Your profile',
 
-    'chrome.footer.masthead': 'SMPL — Vol. 001 / Beats & verses · anonymous battles',
+    'chrome.footer.masthead': 'SMPL — Vol. 001 / Beats & verses · open battles',
     'chrome.footer.sameSample': 'Same sample.',
     'chrome.footer.differentSoul': 'Different soul.',
 
@@ -18,7 +18,7 @@ export const chrome = {
     'chrome.footer.colophon': 'Colophon',
 
     'chrome.footer.ethosBody':
-      'Anonymous votes. No names until the room has spoken. The work stands alone.',
+      'One source, many takes. Follow the makers, vote for your favourite. The crowd crowns the winner.',
     'chrome.footer.colophonVersion': 'SMPL v1.0',
     'chrome.footer.colophonBuild': 'Prototype build',
     'chrome.footer.colophonPalette': 'Black / off-white / mono',
@@ -44,7 +44,7 @@ export const chrome = {
     'chrome.livePill': '{n} live',
     'chrome.yourProfile': 'Jouw profiel',
 
-    'chrome.footer.masthead': 'SMPL — Vol. 001 / Beats & verses · anonieme battles',
+    'chrome.footer.masthead': 'SMPL — Vol. 001 / Beats & verses · open battles',
     'chrome.footer.sameSample': 'Same sample.',
     'chrome.footer.differentSoul': 'Different soul.',
 
@@ -54,7 +54,7 @@ export const chrome = {
     'chrome.footer.colophon': 'Colofon',
 
     'chrome.footer.ethosBody':
-      'Anonieme stemmen. Geen namen tot de room heeft gesproken. Het werk staat op zichzelf.',
+      'Eén bron, vele takes. Volg de makers, stem op je favoriet. De crowd kroont de winnaar.',
     'chrome.footer.colophonVersion': 'SMPL v1.0',
     'chrome.footer.colophonBuild': 'Prototype build',
     'chrome.footer.colophonPalette': 'Zwart / gebroken wit / mono',

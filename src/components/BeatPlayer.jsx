@@ -4,8 +4,8 @@ import Waveform from './Waveform.jsx'
 import { Glyph } from './AudioPlayer.jsx'
 import { fmtTime } from '../utils/wave.js'
 
-// A single beat row. Anonymous during voting (label = "BEAT #n"), revealed
-// after the winner is declared (label = producer alias, linked to profile).
+// A single beat row. Shows the producer's @handle (linked to profile) when
+// revealed — from the voting phase on, so people vote for their favourite.
 export default function BeatPlayer({
   meta,
   index,

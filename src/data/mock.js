@@ -203,7 +203,7 @@ export const seedBattles = [
     sampleDuration: 9,
     sampleRevealed: true,
     description:
-      'One harp loop, sixteen seconds, no drums supplied. Flip it into something that haunts. Anonymous voting is live — judge the beat, not the name.',
+      'One harp loop, sixteen seconds, no drums supplied. Flip it into something that haunts. Voting is live — back your favourite.',
     curatorId: 'curator',
     maxProducers: 8,
     signupStart: now - 9 * DAY,
@@ -278,7 +278,7 @@ export const seedBattles = [
     sampleDuration: 14,
     sampleRevealed: true,
     description:
-      'One beat by KODER. Drop a verse — sixteen bars, one take. Anonymous voting is live: judge the pen, not the name.',
+      'One beat by KODER. Drop a verse — sixteen bars, one take. Voting is live — back your favourite.',
     curatorId: 'curator',
     maxProducers: 8,
     signupStart: now - 8 * DAY,
