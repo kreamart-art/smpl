@@ -211,6 +211,8 @@ export function migrate() {
   addColumn('messages', 'imageUrl', 'TEXT')
   addColumn('messages', 'audioUrl', 'TEXT')
   addColumn('messages', 'deletedAt', 'INTEGER')
+  // 2026-06-13: timestamp follows so a new follower surfaces as a notification.
+  addColumn('follows', 'createdAt', 'INTEGER')
   // 2026-06-12: optional public contact email on a profile.
   addColumn('users', 'contactEmail', 'TEXT')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.

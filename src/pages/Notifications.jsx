@@ -45,7 +45,9 @@ function phrase(t, key, vars, nodes) {
 function Row({ it, getUser }) {
   const t = useT()
   const navigate = useNavigate()
-  const alias = it.userId ? getUser(it.userId)?.alias : null
+  const isFollow = it.type === 'follow'
+  const who = isFollow ? it.actorId : it.userId
+  const alias = who ? getUser(who)?.alias : null
   const stop = (e) => e.stopPropagation()
   const H = alias ? (
     <span onClick={stop}>
@@ -54,20 +56,32 @@ function Row({ it, getUser }) {
   ) : null
   const TITLE = <span className="text-ink">{it.title}</span>
   let body
-  if (it.type === 'winner') body = phrase(t, 'social.act.winner', {}, { handle: H, title: TITLE })
+  if (isFollow) body = phrase(t, 'social.act.follow', {}, { handle: H })
+  else if (it.type === 'winner') body = phrase(t, 'social.act.winner', {}, { handle: H, title: TITLE })
   else if (it.type === 'placement') body = phrase(t, 'social.act.placement', { position: it.position }, { handle: H, title: TITLE })
   else if (it.type === 'voting') body = phrase(t, 'social.act.voting', {}, { title: TITLE })
   else if (it.type === 'signup') body = phrase(t, 'social.act.signup', {}, { title: TITLE })
   else if (it.type === 'submission') body = phrase(t, 'social.act.submission', {}, { title: TITLE })
   else body = phrase(t, 'social.act.announced', {}, { title: TITLE })
 
+  const goTo = isFollow
+    ? alias
+      ? `/profile/${encodeURIComponent(alias)}`
+      : '/people'
+    : `/battles/${it.battleId}`
   return (
     <div
-      onClick={() => navigate(`/battles/${it.battleId}`)}
+      onClick={() => navigate(goTo)}
       className="flex cursor-pointer items-start justify-between gap-3 border-b border-line px-4 py-4 transition-colors hover:bg-panel sm:px-5"
     >
       <div className="flex items-start gap-3">
-        <KindBadge kind={it.kind} size="sm" />
+        {isFollow ? (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-line-bright font-mono text-[13px] leading-none text-ink">
+            +
+          </span>
+        ) : (
+          <KindBadge kind={it.kind} size="sm" />
+        )}
         <div className="font-mono text-[12px] leading-relaxed text-ink-dim">{body}</div>
       </div>
       <span className="shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">

@@ -241,6 +241,21 @@ body {
   animation: smpl-spin 0.7s linear infinite;
 }
 
+/* new-follower toast */
+@keyframes smpl-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toast-in {
+  animation: smpl-toast-in 0.22s ease-out;
+}
+
 /* === LIGHT THEME (toggle via data-theme on <html>) ======================== */
 :root[data-theme='light'] {
   --color-bg: #e9e6de;

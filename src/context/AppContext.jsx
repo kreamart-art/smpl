@@ -48,6 +48,7 @@ export function AppProvider({ children }) {
   const [myVotes, setMyVotes] = useState({})
   const [currentUser, setCurrentUser] = useState(null)
   const [accountSessions, setAccountSessions] = useState(readSessions)
+  const [toast, setToast] = useState(null)
   const [unread, setUnread] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [blocked, setBlocked] = useState([])
@@ -110,6 +111,44 @@ export function AppProvider({ children }) {
       return next
     })
   }, [currentUser])
+
+  const dismissToast = useCallback(() => setToast(null), [])
+
+  // Near-real-time: poll a fresh bootstrap while the tab is visible so the bell
+  // badge, unread DMs and follower list stay current without a manual refresh.
+  useEffect(() => {
+    if (!currentUser?.id) return undefined
+    const tick = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') refresh()
+    }
+    const id = setInterval(tick, 25_000)
+    document.addEventListener('visibilitychange', tick)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  }, [currentUser?.id, refresh])
+
+  // Detect a brand-new follower across refreshes → surface a live toast.
+  const prevFollowers = useRef(null)
+  useEffect(() => {
+    if (!currentUser) {
+      prevFollowers.current = null
+      return
+    }
+    const mine = new Set(
+      follows.filter((f) => f.followeeId === currentUser.id).map((f) => f.followerId),
+    )
+    if (prevFollowers.current) {
+      for (const fid of mine) {
+        if (!prevFollowers.current.has(fid)) {
+          const u = users.find((x) => x.id === fid)
+          if (u) setToast({ kind: 'follow', alias: u.alias, avatar: u.avatar || '', id: fid })
+        }
+      }
+    }
+    prevFollowers.current = mine
+  }, [follows, users, currentUser])
 
   // --- selectors -----------------------------------------------------------
   const getBattle = useCallback((id) => battles.find((b) => b.id === id) || null, [battles])
@@ -466,6 +505,8 @@ export function AppProvider({ children }) {
     // house accounts (admin + the official @SMPL) may use the account switcher
     isHouse: currentUser?.role === 'admin' || currentUser?.alias === 'SMPL',
     accountSessions,
+    toast,
+    dismissToast,
     loading,
     error,
     unread,

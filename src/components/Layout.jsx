@@ -9,6 +9,7 @@ import InstallBanner from './InstallBanner.jsx'
 import VerifyEmailBanner from './VerifyEmailBanner.jsx'
 import PushPrompt from './PushPrompt.jsx'
 import PullToRefresh from './PullToRefresh.jsx'
+import Toast from './Toast.jsx'
 import { Grain, Vignette } from './Atmosphere.jsx'
 import { usePlayback } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
@@ -31,6 +32,7 @@ export default function Layout() {
         <Vignette />
         <Grain />
         <AppTopBar />
+        <Toast />
         <PushPrompt />
         <VerifyEmailBanner />
         <main
@@ -55,6 +57,7 @@ export default function Layout() {
       <Vignette />
       <Grain />
       <Nav />
+      <Toast />
       <PushPrompt />
       <VerifyEmailBanner />
       <main className="relative flex-1">

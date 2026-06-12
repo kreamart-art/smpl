@@ -86,16 +86,32 @@ function scheduledStatus(now, signupStart, signupEnd, submitEnd) {
 
 // Roll scheduled battles forward to match their timeline (forward-only, runs on
 // an interval). Manual battles (scheduled = 0) are untouched.
+// Nudge everyone who opted into push when a battle opens for signups or voting.
+function pushBattlePhase(battle, target) {
+  if (target !== STATUS.OPEN_FOR_SIGNUP && target !== STATUS.VOTING_PHASE) return
+  const open = target === STATUS.OPEN_FOR_SIGNUP
+  const ids = db.prepare('SELECT DISTINCT userId FROM push_subscriptions').all().map((r) => r.userId)
+  for (const uid of ids) {
+    sendPush(uid, {
+      title: open ? 'New battle open' : 'Voting is open',
+      body: open ? `“${battle.title}” is open for signups` : `Vote now on “${battle.title}”`,
+      tag: `battle-${battle.id}-${target}`,
+      url: `/battles/${battle.id}`,
+    }).catch(() => {})
+  }
+}
+
 function autoAdvance() {
   const now = Date.now()
   const rows = db
-    .prepare('SELECT id, status, signupStart, signupEnd, submitEnd FROM battles WHERE scheduled = 1')
+    .prepare('SELECT id, status, signupStart, signupEnd, submitEnd, title FROM battles WHERE scheduled = 1')
     .all()
   for (const b of rows) {
     if (b.status === STATUS.WINNER_DECLARED) continue
     const target = scheduledStatus(now, b.signupStart, b.signupEnd, b.submitEnd)
     if (STATUS_INDEX[target] > STATUS_INDEX[b.status]) {
       db.prepare('UPDATE battles SET status = ? WHERE id = ?').run(target, b.id)
+      pushBattlePhase(b, target)
     }
   }
 }
@@ -216,6 +232,17 @@ function activityItems() {
       items.push({ id: `ann_${b.id}`, type: 'announced', ts: b.signupStart, ...meta })
     }
   }
+  // "@x started following you" — surfaced to the followee in their notifications
+  const follows = db.prepare('SELECT followerId, followeeId, createdAt FROM follows WHERE createdAt IS NOT NULL').all()
+  for (const f of follows) {
+    items.push({
+      id: `fol_${f.followerId}_${f.followeeId}`,
+      type: 'follow',
+      ts: f.createdAt,
+      actorId: f.followerId, // who followed (shown as the handle)
+      userId: f.followeeId, // recipient (makes it personal to them)
+    })
+  }
   items.sort((a, c) => c.ts - a.ts)
   return { items }
 }
@@ -230,10 +257,23 @@ function personalize(items, uid) {
       .filter((b) => b.attendees.includes(uid) || b.signups.includes(uid))
       .map((b) => b.id),
   )
-  return items.map((i) => ({
-    ...i,
-    personal: !!((i.userId && followees.has(i.userId)) || i.userId === uid || mine.has(i.battleId)),
-  }))
+  return items.map((i) => {
+    // a follow only notifies the person who was followed — NOT their followers
+    // (the followees rule below would otherwise leak it to them).
+    if (i.type === 'follow') return { ...i, personal: i.userId === uid }
+    return {
+      ...i,
+      // a battle opening for signup or voting is broadcast to everyone (come
+      // join / come vote); winners + placements stay scoped to the people involved.
+      personal: !!(
+        i.type === 'signup' ||
+        i.type === 'voting' ||
+        (i.userId && followees.has(i.userId)) ||
+        i.userId === uid ||
+        mine.has(i.battleId)
+      ),
+    }
+  })
 }
 
 // ----- auth middleware -------------------------------------------------------
@@ -530,6 +570,7 @@ app.patch('/api/battles/:id/status', requireAuth, (req, res) => {
   if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
   const status = req.body?.status || nextStatus(b.status)
   db.prepare('UPDATE battles SET status = ? WHERE id = ?').run(status, b.id)
+  if (status !== b.status) pushBattlePhase(b, status)
   return ok(res, { battle: rowToBattle(getBattleRow(b.id)) })
 })
 
@@ -727,7 +768,14 @@ app.post('/api/users/:id/follow', requireAuth, (req, res) => {
     db.prepare('DELETE FROM follows WHERE followerId = ? AND followeeId = ?').run(req.user.id, target.id)
     return ok(res, { following: false })
   }
-  db.prepare('INSERT INTO follows (followerId,followeeId) VALUES (?,?)').run(req.user.id, target.id)
+  db.prepare('INSERT INTO follows (followerId,followeeId,createdAt) VALUES (?,?,?)').run(req.user.id, target.id, Date.now())
+  // tell the followee on their devices (no-op without a push subscription)
+  sendPush(target.id, {
+    title: 'New follower',
+    body: `@${req.user.alias} started following you`,
+    tag: `follow-${req.user.id}`,
+    url: `/profile/${req.user.alias}`,
+  }).catch(() => {})
   return ok(res, { following: true })
 })
 
@@ -964,7 +1012,9 @@ app.post('/api/me/delete', requireAuth, (req, res) => {
 })
 
 // ----- feed / notifications --------------------------------------------------
-app.get('/api/feed', (req, res) => ok(res, { feed: personalize(activityItems().items, req.uid).slice(0, 60) }))
+app.get('/api/feed', (req, res) =>
+  ok(res, { feed: personalize(activityItems().items, req.uid).filter((i) => i.type !== 'follow').slice(0, 60) }),
+)
 
 app.get('/api/notifications', requireAuth, (req, res) => {
   const personal = personalize(activityItems().items, req.user.id).filter((i) => i.personal)
