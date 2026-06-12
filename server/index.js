@@ -938,6 +938,9 @@ app.patch('/api/me', requireAuth, (req, res) => {
   }
   if (typeof b.name === 'string') set('name', b.name.trim())
   if (typeof b.dob === 'string') set('dob', b.dob.trim())
+  if (typeof b.phone === 'string') set('phone', b.phone.trim().slice(0, 40))
+  if (typeof b.country === 'string') set('country', b.country.trim().slice(0, 80))
+  if (typeof b.city === 'string') set('city', b.city.trim().slice(0, 80))
   if (typeof b.avatar === 'string') set('avatar', b.avatar)
   if (Array.isArray(b.links)) set('links', JSON.stringify(b.links))
   if (b.genres !== undefined) {
@@ -950,6 +953,18 @@ app.patch('/api/me', requireAuth, (req, res) => {
     vals.push(req.user.id)
     db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...vals)
   }
+  return ok(res, { me: meUser(getUserRow(req.user.id)) })
+})
+
+// Self-service account type. A listener who decides to compete can become a
+// producer/artist (and back); staff tiers (curator/admin) are NOT changeable here.
+const SELF_ROLES = new Set(['listener', 'producer', 'artist'])
+app.post('/api/me/role', requireAuth, (req, res) => {
+  if (req.user.role === 'admin' || req.user.role === 'curator')
+    return fail(res, 403, 'Staff roles can’t be changed here.')
+  const role = req.body?.role
+  if (!SELF_ROLES.has(role)) return fail(res, 400, 'Pick listener, producer or artist.')
+  db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.user.id)
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
 })
 

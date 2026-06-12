@@ -9,6 +9,7 @@ import LangToggle from '../components/LangToggle.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconBell, IconUser } from '../components/icons.jsx'
 import { pushSupported, pushPermission, isPushSubscribed, enablePush, disablePush } from '../lib/push.js'
+import { Field, inputCls } from '../components/ui.jsx'
 import { ageFrom } from '../utils/wave.js'
 import { useT } from '../i18n/index.jsx'
 
@@ -73,7 +74,27 @@ function NotificationsRow() {
 
 function PersonalDataPanel({ user, onBack }) {
   const t = useT()
+  const { updateProfile } = useApp()
   const age = ageFrom(user.dob, Date.now())
+  const [form, setForm] = useState({
+    name: user.name || '',
+    phone: user.phone || '',
+    country: user.country || '',
+    city: user.city || '',
+  })
+  const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const upd = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }))
+    setSaved(false)
+  }
+  const save = async () => {
+    setBusy(true)
+    const r = await updateProfile(form)
+    setBusy(false)
+    if (r.ok) setSaved(true)
+  }
+
   return (
     <div className="border border-line-bright bg-panel">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
@@ -84,15 +105,95 @@ function PersonalDataPanel({ user, onBack }) {
           ◂ {t('common.back')}
         </button>
       </div>
-      <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
-        <PrivateCell label={t('profile.legalName')} value={user.name} />
-        <PrivateCell
-          label={t('profile.dob')}
-          value={user.dob ? (age != null ? t('profile.dobYears', { dob: user.dob, age }) : user.dob) : ''}
-        />
-        <PrivateCell label={t('profile.email')} value={user.email} />
+      <div className="space-y-4 p-5">
+        <Field label={t('profile.legalName')}>
+          <input className={inputCls} value={form.name} onChange={upd('name')} placeholder={t('profile.legalNamePh')} />
+        </Field>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={t('profile.phone')}>
+            <input className={inputCls} type="tel" value={form.phone} onChange={upd('phone')} placeholder="+31 6 …" />
+          </Field>
+          <Field label={t('profile.country')}>
+            <input className={inputCls} value={form.country} onChange={upd('country')} placeholder="Nederland" />
+          </Field>
+        </div>
+        <Field label={t('profile.city')}>
+          <input className={inputCls} value={form.city} onChange={upd('city')} placeholder="Amsterdam" />
+        </Field>
+
+        {/* fixed identity — not editable here */}
+        <div className="grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2">
+          <PrivateCell
+            label={t('profile.dob')}
+            value={user.dob ? (age != null ? t('profile.dobYears', { dob: user.dob, age }) : user.dob) : '—'}
+          />
+          <PrivateCell label={t('profile.email')} value={user.email} />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={save}
+            disabled={busy}
+            className="border border-line-bright px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-40"
+          >
+            {busy ? t('profile.saving') : t('common.save')}
+          </button>
+          {saved ? <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">✓ {t('profile.saved')}</span> : null}
+        </div>
+        <p className="font-mono text-[10px] leading-relaxed text-muted">
+          {t('profile.privateFootnote')} {t('settings.dataLockedHint')}
+        </p>
       </div>
-      <div className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">{t('profile.privateFootnote')}</div>
+    </div>
+  )
+}
+
+// Listener → producer/artist (and back). Staff tiers can't change here.
+function AccountTypePanel({ user, onBack }) {
+  const t = useT()
+  const { updateRole } = useApp()
+  const [busy, setBusy] = useState(null)
+  const pick = async (role) => {
+    if (role === user.role) return
+    setBusy(role)
+    await updateRole(role)
+    setBusy(null)
+  }
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <span>⇄</span> {t('settings.accountType')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <p className="px-5 py-3 font-mono text-[10px] leading-relaxed text-muted">{t('settings.accountTypeHint')}</p>
+      <div className="divide-y divide-line">
+        {['listener', 'producer', 'artist'].map((role) => {
+          const active = role === user.role
+          return (
+            <button
+              key={role}
+              onClick={() => pick(role)}
+              disabled={!!busy}
+              className={`flex w-full items-center justify-between px-5 py-4 text-left font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-bg ${
+                active ? 'text-ink' : 'text-ink-dim'
+              }`}
+            >
+              <span>{t(`role.${role}`)}</span>
+              {active ? (
+                <span className="font-mono text-[10px] text-ink">● {t('settings.currentAccount')}</span>
+              ) : busy === role ? (
+                <span className="text-muted">…</span>
+              ) : (
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t('settings.switchTo')}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -218,6 +319,7 @@ export default function Settings() {
   if (view === '2fa') return <Shell><TwoFactorPanel onBack={() => setView('menu')} /></Shell>
   if (view === 'delete') return <Shell><DeleteAccountPanel onBack={() => setView('menu')} /></Shell>
   if (view === 'private') return <Shell><PersonalDataPanel user={user} onBack={() => setView('menu')} /></Shell>
+  if (view === 'role') return <Shell><AccountTypePanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'switch') return <Shell><AccountSwitcher onBack={() => setView('menu')} /></Shell>
 
   const Item = ({ icon, label, onClick, danger, right }) => (
@@ -273,6 +375,14 @@ export default function Settings() {
           <NotificationsRow />
           {user.name || user.dob || user.email ? (
             <Item icon={<IconUser size={18} />} label={t('settings.personalData')} onClick={() => setView('private')} />
+          ) : null}
+          {user.role === 'listener' || user.role === 'producer' || user.role === 'artist' ? (
+            <Item
+              icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⇄</span>}
+              label={t('settings.accountType')}
+              onClick={() => setView('role')}
+              right={<span className="font-mono text-[10px] text-muted">{t(`role.${user.role}`)}</span>}
+            />
           ) : null}
           {isHouse ? (
             <Item

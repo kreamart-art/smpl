@@ -115,6 +115,9 @@ export function meUser(r) {
     name: r.name || '',
     dob: r.dob || '',
     email: r.email,
+    phone: r.phone || '',
+    country: r.country || '',
+    city: r.city || '',
     lastSeenAt: r.lastSeenAt || 0,
     twoFactor: !!r.totpEnabled,
     emailVerified: !!r.emailVerified,
@@ -213,6 +216,10 @@ export function migrate() {
   addColumn('messages', 'deletedAt', 'INTEGER')
   // 2026-06-13: timestamp follows so a new follower surfaces as a notification.
   addColumn('follows', 'createdAt', 'INTEGER')
+  // 2026-06-13: richer, self-editable personal data (contact / identity).
+  addColumn('users', 'phone', 'TEXT')
+  addColumn('users', 'country', 'TEXT')
+  addColumn('users', 'city', 'TEXT')
   // 2026-06-12: optional public contact email on a profile.
   addColumn('users', 'contactEmail', 'TEXT')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.

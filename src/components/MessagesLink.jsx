@@ -14,9 +14,10 @@ export default function MessagesLink({ className = '' }) {
     >
       <IconMessage size={15} />
       {unreadMessages > 0 ? (
-        <span className="absolute -right-1.5 -top-1.5 min-w-[16px] border border-bg bg-ink px-1 text-center font-mono text-[9px] leading-[14px] text-bg">
-          {unreadMessages > 9 ? '9+' : unreadMessages}
-        </span>
+        <span
+          className="absolute -right-1 -top-1 h-2.5 w-2.5 border border-bg bg-verified"
+          aria-label="unread messages"
+        />
       ) : null}
     </Link>
   )
