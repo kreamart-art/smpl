@@ -6,7 +6,7 @@ import { Btn, Field, inputCls, Label } from './ui.jsx'
 import { useT } from '../i18n/index.jsx'
 
 const codeInputCls =
-  'w-full bg-black border border-line text-ink font-mono text-lg tracking-[0.4em] text-center px-3 h-12 outline-none focus:border-ink placeholder:text-muted'
+  'w-full bg-bg border border-line text-ink font-mono text-lg tracking-[0.4em] text-center px-3 h-12 outline-none focus:border-ink placeholder:text-muted'
 
 // ---------------------------------------------------------------------------
 // TWO-FACTOR (TOTP) — enrol with an authenticator app, store backup codes.
@@ -125,7 +125,7 @@ export function TwoFactorPanel({ onBack }) {
             )}
             <div className="min-w-0 flex-1">
               <Label>{t('profile.tfa.manualKey')}</Label>
-              <div className="mt-2 select-all break-all border border-line bg-black px-3 py-2 font-mono text-[12px] tracking-[0.12em] text-ink">
+              <div className="mt-2 select-all break-all border border-line bg-bg px-3 py-2 font-mono text-[12px] tracking-[0.12em] text-ink">
                 {secret}
               </div>
               <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted">
@@ -235,7 +235,7 @@ export function DeleteAccountPanel({ onBack }) {
   return (
     <Shell title={t('profile.deleteAccount')} onBack={onBack}>
       <div className="space-y-4">
-        <div className="border border-line-bright bg-black px-4 py-3 font-mono text-[11px] leading-relaxed text-ink">
+        <div className="border border-line-bright bg-bg px-4 py-3 font-mono text-[11px] leading-relaxed text-ink">
           {t('profile.del.warning')}
         </div>
         <Field label={t('profile.del.password')}>

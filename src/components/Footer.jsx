@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n/index.jsx'
 import LangToggle from './LangToggle.jsx'
+import ThemeToggle from './ThemeToggle.jsx'
 
 const PHASES = [
   'status.ANNOUNCED',
@@ -64,6 +65,10 @@ export default function Footer() {
           <div className="flex items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('common.language')}</span>
             <LangToggle />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('settings.theme')}</span>
+            <ThemeToggle />
           </div>
           <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.16em] sm:ml-auto">
             <Link to="/contact" className="text-ink-dim transition-colors hover:text-ink">{t('contact.title')}</Link>

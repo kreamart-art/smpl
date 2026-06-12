@@ -6,7 +6,7 @@ import Waveform from '../components/Waveform.jsx'
 import { Btn, Field, inputCls } from '../components/ui.jsx'
 
 const codeInputCls =
-  'w-full bg-black border border-line text-ink font-mono text-lg tracking-[0.4em] text-center px-3 h-12 outline-none focus:border-ink placeholder:text-muted'
+  'w-full bg-bg border border-line text-ink font-mono text-lg tracking-[0.4em] text-center px-3 h-12 outline-none focus:border-ink placeholder:text-muted'
 
 export default function Login() {
   const { login, verify2fa } = useApp()

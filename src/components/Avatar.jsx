@@ -17,7 +17,7 @@ export default function Avatar({ alias, src, size = 48, className = '' }) {
   }
 
   const tone = hashStr(a) % 3
-  const bg = tone === 0 ? 'bg-ink text-bg' : tone === 1 ? 'bg-panel-2 text-ink' : 'bg-black text-ink'
+  const bg = tone === 0 ? 'bg-ink text-bg' : tone === 1 ? 'bg-panel-2 text-ink' : 'bg-line-bright text-ink'
   return (
     <div
       className={`flex shrink-0 items-center justify-center border border-line-bright font-mono font-bold tracking-tight ${bg} ${className}`}

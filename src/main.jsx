@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { Providers } from './context/AppContext.jsx'
 import { PWAProvider } from './context/PWAContext.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 import { LangProvider } from './i18n/index.jsx'
 import './index.css'
 
@@ -18,11 +19,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <PWAProvider>
-        <LangProvider>
-          <Providers>
-            <App />
-          </Providers>
-        </LangProvider>
+        <ThemeProvider>
+          <LangProvider>
+            <Providers>
+              <App />
+            </Providers>
+          </LangProvider>
+        </ThemeProvider>
       </PWAProvider>
     </BrowserRouter>
   </React.StrictMode>,

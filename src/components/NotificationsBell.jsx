@@ -79,7 +79,7 @@ export default function NotificationsBell() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-80 border border-line-bright bg-black">
+        <div className="absolute right-0 z-50 mt-2 w-80 border border-line-bright bg-panel">
           <div className="flex items-center justify-between border-b border-line px-3 py-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{t('nbell.title')}</span>
             <Link

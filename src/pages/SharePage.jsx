@@ -179,7 +179,7 @@ export default function SharePage() {
             ◂ {t('common.back')}
           </button>
           <Link to="/" aria-label="SMPL — home">
-            <img src="/logo.png" alt="SMPL" className="h-5 w-auto" />
+            <img src="/logo.png" alt="SMPL" className="logo-chrome h-5 w-auto" />
           </Link>
         </div>
 

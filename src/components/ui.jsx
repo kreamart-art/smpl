@@ -102,9 +102,9 @@ export function Field({ label, hint, children }) {
 }
 
 export const inputCls =
-  'w-full bg-black border border-line text-ink font-mono text-sm px-3 h-11 outline-none focus:border-ink placeholder:text-muted'
+  'w-full bg-bg border border-line text-ink font-mono text-sm px-3 h-11 outline-none focus:border-ink placeholder:text-muted'
 export const textareaCls =
-  'w-full bg-black border border-line text-ink font-sans text-sm px-3 py-3 outline-none focus:border-ink placeholder:text-muted resize-none'
+  'w-full bg-bg border border-line text-ink font-sans text-sm px-3 py-3 outline-none focus:border-ink placeholder:text-muted resize-none'
 
 export function SectionTitle({ index, title, right }) {
   return (

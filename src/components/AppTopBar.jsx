@@ -21,7 +21,7 @@ export default function AppTopBar() {
           <MessagesLink />
         </span>
         <Link to="/battles" aria-label="SMPL — home">
-          <img src="/logo.png" alt="SMPL" className="h-5 w-auto" />
+          <img src="/logo.png" alt="SMPL" className="logo-chrome h-5 w-auto" />
         </Link>
         <span className="flex w-12 items-center justify-end gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
           <span className="block h-1.5 w-1.5 bg-ink pulse-dot" />

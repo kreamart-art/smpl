@@ -11,6 +11,7 @@ import ShareButton from '../components/ShareButton.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
 import LangToggle from '../components/LangToggle.jsx'
+import ThemeToggle from '../components/ThemeToggle.jsx'
 import FollowList from '../components/FollowList.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
@@ -332,6 +333,13 @@ function SettingsPanel({ user, onEdit, onClose }) {
             <LangToggle />
           </span>
         </div>
+        <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
+          <span className="flex w-[18px] justify-center text-[15px] leading-none">◐</span>
+          <span>{t('settings.theme')}</span>
+          <span className="ml-auto">
+            <ThemeToggle />
+          </span>
+        </div>
         <NotificationsRow />
         {user.name || user.dob || user.email ? (
           <Item icon={<IconUser size={18} />} label={t('settings.personalData')} onClick={() => setView('private')} />
@@ -418,7 +426,7 @@ export default function Profile() {
               </div>
               <h1 className="mt-2 flex flex-wrap items-center gap-3 font-sans text-[clamp(2.4rem,8vw,4.5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
                 {user.alias}
-                {user.verified ? <VerifiedBadge size={26} title={t('profile.verified')} /> : null}
+                {user.verified || user.role === 'admin' ? <VerifiedBadge size={26} title={t('profile.verified')} /> : null}
               </h1>
               <div className="mt-3 inline-flex items-center gap-2 border border-line px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
                 {isCuratorProfile ? (

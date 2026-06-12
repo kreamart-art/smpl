@@ -70,7 +70,7 @@ export default function BeatPlayer({
           aria-label={isPlaying ? 'pause' : 'play'}
           className={`flex w-12 shrink-0 items-center justify-center border-r transition-colors ${
             isWinner
-              ? 'border-black/30 hover:bg-black hover:text-ink'
+              ? 'border-line-bright hover:bg-ink hover:text-bg'
               : 'border-line hover:bg-ink hover:text-bg'
           }`}
         >

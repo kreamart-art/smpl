@@ -70,7 +70,7 @@ export default function FollowList({ userId, initialTab = 'followers', onClose }
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="truncate font-mono text-[12px] text-ink">@{u.alias}</span>
-                        {u.verified ? <VerifiedBadge size={13} /> : null}
+                        {u.verified || u.role === 'admin' ? <VerifiedBadge size={13} /> : null}
                       </div>
                       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{roleLabel(u.role)}</div>
                     </div>

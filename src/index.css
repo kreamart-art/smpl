@@ -11,6 +11,7 @@
   --color-ink-dim: #b7b1a6;
   --color-ink: #f0eee9;
   --color-bright: #ffffff;
+  --color-verified: #e11d2a; /* the one accent — the verified seal */
 
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
@@ -221,6 +222,38 @@ body {
 }
 .group:hover .hover-bloom {
   opacity: 1;
+}
+
+/* === LIGHT THEME (toggle via data-theme on <html>) ======================== */
+:root[data-theme='light'] {
+  --color-bg: #e9e6de;
+  --color-panel: #faf9f5;
+  --color-panel-2: #eeebe3;
+  --color-line: #d6d0c5;
+  --color-line-bright: #ada495;
+  --color-faint: #8c867a;
+  --color-muted: #6b655b;
+  --color-ink-dim: #46423a;
+  --color-ink: #15120d;
+  --color-bright: #000000;
+}
+/* the cinematic atmosphere is built for black — tone it down on paper */
+[data-theme='light'] .vignette {
+  box-shadow: inset 0 0 200px 24px rgba(40, 34, 24, 0.06), inset 0 0 70px rgba(40, 34, 24, 0.04);
+}
+[data-theme='light'] .grain {
+  opacity: 0.035;
+}
+[data-theme='light'] .hero-bloom {
+  background: radial-gradient(120% 70% at 50% 28%, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0) 60%);
+}
+[data-theme='light'] .hover-bloom {
+  background: radial-gradient(100% 120% at 50% 0%, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0) 60%);
+}
+/* the wordmark PNG is pure white — flip it to black on light chrome (NOT the
+   share-card poster, which stays a dark export). */
+[data-theme='light'] .logo-chrome {
+  filter: invert(1);
 }
 
 /* --- floating dust --- */
