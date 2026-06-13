@@ -6,7 +6,7 @@
   "server": {
     "androidScheme": "https",
     "iosScheme": "https",
-    "allowNavigation": ["smpl.artnomad.nl"]
+    "allowNavigation": ["usesmpl.com"]
   },
   "ios": {
     "backgroundColor": "#000000"

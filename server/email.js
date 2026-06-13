@@ -44,7 +44,7 @@ function shell(bodyHtml) {
   <div style="max-width:480px;margin:0 auto;border:1px solid #2a2a2a;background:#111">
     <div style="padding:28px 28px 4px"><div style="font-family:Arial,Helvetica,sans-serif;font-weight:800;letter-spacing:6px;font-size:20px;color:#ffffff">SMPL</div></div>
     <div style="padding:18px 28px 28px;font-size:14px;line-height:1.6">${bodyHtml}</div>
-    <div style="padding:16px 28px;border-top:1px solid #2a2a2a;font-size:11px;color:#777;letter-spacing:0.5px">Same sample. Different soul. · smpl.artnomad.nl</div>
+    <div style="padding:16px 28px;border-top:1px solid #2a2a2a;font-size:11px;color:#777;letter-spacing:0.5px">Same sample. Different soul. · usesmpl.com</div>
   </div>
 </body></html>`
 }

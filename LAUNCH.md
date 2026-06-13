@@ -18,8 +18,8 @@ Everything you need to fill in App Store Connect (Apple) and the Play Console
   > same source — flip the sample your way, drop your beat or verse, and let the
   > crowd vote. Follow makers, DM them, and climb the board. Same sample.
   > Different soul.
-- **Support URL:** https://smpl.artnomad.nl/contact
-- **Marketing/Privacy URL:** https://smpl.artnomad.nl/privacy
+- **Support URL:** https://usesmpl.com/contact
+- **Marketing/Privacy URL:** https://usesmpl.com/privacy
 
 ## App privacy (Apple) / Data safety (Google)
 

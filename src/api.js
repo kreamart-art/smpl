@@ -12,7 +12,7 @@ const NATIVE = (() => {
     return false
   }
 })()
-export const API_BASE = NATIVE ? import.meta.env.VITE_API_BASE || 'https://smpl.artnomad.nl' : ''
+export const API_BASE = NATIVE ? import.meta.env.VITE_API_BASE || 'https://usesmpl.com' : ''
 
 // Resolve a server-relative media path (uploads, audio, images) to an absolute
 // URL when running natively; a no-op on the web.

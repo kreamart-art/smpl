@@ -26,7 +26,7 @@ import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
 const APP_URL = (
   process.env.SMPL_APP_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://smpl.artnomad.nl' : 'http://localhost:5190')
+  (process.env.NODE_ENV === 'production' ? 'https://usesmpl.com' : 'http://localhost:5190')
 ).replace(/\/$/, '')
 // Where the contact form lands.
 const CONTACT_TO = process.env.SMPL_CONTACT_EMAIL || 'info@artnomad.nl'
@@ -51,6 +51,15 @@ mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const app = express()
 app.use(cors())
+// Canonical host: 301 the old domain + www to https://usesmpl.com (the move off
+// artnomad.nl). Keeps old links/bookmarks working without fronting the parent.
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase()
+  if (host === 'smpl.artnomad.nl' || host === 'www.usesmpl.com') {
+    return res.redirect(301, `https://usesmpl.com${req.originalUrl}`)
+  }
+  next()
+})
 app.use(express.json({ limit: '2mb' }))
 
 // ----- helpers ---------------------------------------------------------------

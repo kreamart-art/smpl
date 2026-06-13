@@ -2,7 +2,7 @@
 
 The web app is wrapped with [Capacitor](https://capacitorjs.com) into native
 iOS + Android apps. The native shell bundles the built web assets locally and
-talks to the **live backend at `https://smpl.artnomad.nl`** (no server.url — it's
+talks to the **live backend at `https://usesmpl.com`** (no server.url — it's
 not a thin remote webview). App id: **`nl.artnomad.smpl`**, name **SMPL**.
 
 What's already wired in this repo:
@@ -10,7 +10,7 @@ What's already wired in this repo:
 - `capacitor.config.json` — app id/name, black chrome, splash config.
 - `src/lib/native.js` — on boot (native only): **locks portrait**, sets the
   status bar, hides the splash, handles the Android back button.
-- `src/api.js` — `API_BASE` points to `https://smpl.artnomad.nl` when native;
+- `src/api.js` — `API_BASE` points to `https://usesmpl.com` when native;
   `mediaUrl()` makes uploaded audio/images/sample links absolute.
 - `assets/` — `icon-only.png` (1024) + `splash[-dark].png` (2732) sources for
   icon/splash generation. *Replace `assets/icon-only.png` with a crisp 1024px+

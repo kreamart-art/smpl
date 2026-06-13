@@ -123,7 +123,7 @@ export default function ShareCard({ cardRef, kind, data, format = 'story', logoS
                 {data.cta}
               </div>
               <div className="font-mono text-muted" style={{ fontSize: 28, letterSpacing: '0.1em' }}>
-                smpl.artnomad.nl
+                usesmpl.com
               </div>
             </div>
           </div>
