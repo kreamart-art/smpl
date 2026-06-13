@@ -9,6 +9,7 @@ import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconImage, IconMic } from '../components/icons.jsx'
 import { Btn, inputCls } from '../components/ui.jsx'
 import { roleLabel } from '../data/kind.js'
+import { mediaUrl } from '../api.js'
 
 const REACTIONS = ['❤️', '🔥', '😂', '👍', '😮', '😢', '🙏']
 
@@ -276,7 +277,7 @@ function AudioClip({ src, mine }) {
   }
   return (
     <div className="flex items-center gap-2 py-0.5">
-      <audio ref={ref} src={src} preload="metadata" />
+      <audio ref={ref} src={mediaUrl(src)} preload="metadata" />
       <button
         type="button"
         onClick={toggle}
@@ -516,7 +517,7 @@ function Thread({ alias }) {
                             ) : null}
                             {m.imageUrl ? (
                               <img
-                                src={m.imageUrl}
+                                src={mediaUrl(m.imageUrl)}
                                 alt=""
                                 className="max-h-72 w-auto max-w-full border border-line"
                                 loading="lazy"

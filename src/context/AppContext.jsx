@@ -8,7 +8,7 @@ import {
   useMemo,
 } from 'react'
 import { STATUS } from '../data/status.js'
-import { api, setToken, getToken } from '../api.js'
+import { api, setToken, getToken, mediaUrl } from '../api.js'
 
 // Locally-stored set of authenticated sessions, so house accounts (admin +
 // @SMPL) can switch back and forth without re-login. Each entry carries its own
@@ -621,7 +621,7 @@ export function PlaybackProvider({ children }) {
     if (!a) return
     setAudioDur(0)
     seekRef.current = frac > 0 ? frac : null
-    a.src = src
+    a.src = mediaUrl(src)
     a.load()
     play()
   }

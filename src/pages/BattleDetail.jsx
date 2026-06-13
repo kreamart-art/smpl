@@ -14,6 +14,7 @@ import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
 import { STATUS, STATUS_ORDER, STATUS_INDEX, countdownTarget } from '../data/status.js'
 import { shuffleSeeded, fmtDate } from '../utils/wave.js'
+import { mediaUrl } from '../api.js'
 import { kindCopy } from '../data/kind.js'
 import KindBadge from '../components/KindBadge.jsx'
 import { useT, useI18n } from '../i18n/index.jsx'
@@ -302,7 +303,7 @@ export default function BattleDetail() {
           {canDownloadSource ? (
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href={battle.sampleUrl}
+                href={mediaUrl(battle.sampleUrl)}
                 download={`SMPL-${(battle.title || 'source').replace(/[^\w]+/g, '_')}.${sourceExt}`}
                 target="_blank"
                 rel="noopener noreferrer"
