@@ -328,6 +328,156 @@ function AccountSwitcher({ onBack }) {
   )
 }
 
+// Change your @handle and login email. A new email must be re-verified; the
+// admin-granted badge is unaffected.
+function IdentityPanel({ user, onBack }) {
+  const t = useT()
+  const { updateProfile } = useApp()
+  const [alias, setAlias] = useState(user.alias || '')
+  const [email, setEmail] = useState(user.email || '')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  const aliasChanged = alias.trim() !== user.alias
+  const emailChanged = email.trim().toLowerCase() !== String(user.email || '').toLowerCase()
+  const clear = () => {
+    setMsg('')
+    setErr('')
+  }
+  const save = async () => {
+    clear()
+    setBusy(true)
+    const payload = {}
+    if (aliasChanged) payload.alias = alias.trim()
+    if (emailChanged) payload.email = email.trim()
+    const r = await updateProfile(payload)
+    setBusy(false)
+    if (r.ok) setMsg(emailChanged ? t('settings.identityEmailSent') : t('settings.identitySaved'))
+    else setErr(r.error || t('settings.saveFailed'))
+  }
+
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <span>@</span> {t('settings.identity')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="space-y-4 p-5">
+        <Field label={t('settings.handle')} hint={t('settings.handleHint')}>
+          <input
+            className={inputCls}
+            value={alias}
+            onChange={(e) => {
+              setAlias(e.target.value)
+              clear()
+            }}
+            maxLength={20}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="jouwnaam"
+          />
+        </Field>
+        <Field label={t('profile.email')} hint={t('settings.emailHint')}>
+          <input
+            className={inputCls}
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              clear()
+            }}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="jij@voorbeeld.nl"
+          />
+        </Field>
+        {err ? <p className="font-mono text-[11px] text-ink">{err}</p> : null}
+        {msg ? <p className="font-mono text-[11px] text-muted">✓ {msg}</p> : null}
+        <button
+          onClick={save}
+          disabled={busy || !(aliasChanged || emailChanged)}
+          className="border border-line-bright px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-40"
+        >
+          {busy ? t('profile.saving') : t('common.save')}
+        </button>
+        <p className="font-mono text-[10px] leading-relaxed text-faint">{t('settings.identityNote')}</p>
+      </div>
+    </div>
+  )
+}
+
+// "Install SMPL" — one-tap on Chrome/Android, step-by-step on iOS Safari.
+function InstallPanel({ onBack }) {
+  const t = useT()
+  const { canInstall, promptInstall, isIOS } = usePWA()
+  const [done, setDone] = useState(false)
+  const go = async () => {
+    const r = await promptInstall()
+    if (r.ok) setDone(true)
+  }
+  const Step = ({ n, children }) => (
+    <li className="flex gap-2">
+      <span className="text-ink">{n} ·</span>
+      <span>{children}</span>
+    </li>
+  )
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <span>⤓</span> {t('settings.install')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="space-y-4 p-5">
+        <div className="flex items-center gap-3">
+          <img src="/icon-192.png" alt="" className="h-12 w-12 border border-line-bright" />
+          <div className="min-w-0">
+            <div className="font-sans text-base font-bold uppercase tracking-tight">{t('chrome.install.title')}</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t('chrome.install.subline')}</div>
+          </div>
+        </div>
+        {canInstall ? (
+          <button
+            onClick={go}
+            className="h-11 w-full border border-ink bg-ink font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+          >
+            {done ? t('chrome.install.gotIt') : t('chrome.install.cta')}
+          </button>
+        ) : (
+          <ol className="space-y-3 font-mono text-[12px] leading-relaxed text-ink-dim">
+            {isIOS ? (
+              <>
+                <Step n="1">
+                  {t('chrome.install.iosStep1Tap')} <span className="text-ink">{t('chrome.install.iosShare')}</span>{' '}
+                  {t('chrome.install.iosStep1In')}
+                </Step>
+                <Step n="2">{t('chrome.install.iosStep2')}</Step>
+                <Step n="3">{t('chrome.install.iosStep3')}</Step>
+              </>
+            ) : (
+              <>
+                <Step n="1">{t('chrome.install.androidStep1')}</Step>
+                <Step n="2">{t('chrome.install.androidStep2')}</Step>
+                <Step n="3">{t('chrome.install.androidStep3')}</Step>
+              </>
+            )}
+          </ol>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Settings() {
   const { currentUser, logout, isHouse } = useApp()
   const { standalone } = usePWA()
@@ -363,6 +513,8 @@ export default function Settings() {
   if (view === 'private') return <Shell><PersonalDataPanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'role') return <Shell><AccountTypePanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'switch') return <Shell><AccountSwitcher onBack={() => setView('menu')} /></Shell>
+  if (view === 'identity') return <Shell><IdentityPanel user={user} onBack={() => setView('menu')} /></Shell>
+  if (view === 'install') return <Shell><InstallPanel onBack={() => setView('menu')} /></Shell>
 
   const Item = ({ icon, label, onClick, danger, right }) => (
     <button
@@ -399,6 +551,12 @@ export default function Settings() {
             icon={<IconSettings size={18} />}
             label={t('profile.editProfile')}
             onClick={() => navigate(`/profile/${encodeURIComponent(user.alias)}?edit=1`)}
+          />
+          <Item
+            icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">@</span>}
+            label={t('settings.identity')}
+            onClick={() => setView('identity')}
+            right={<span className="max-w-[120px] truncate font-mono text-[10px] text-muted">@{user.alias}</span>}
           />
           <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
             <IconGlobe size={18} />
@@ -443,6 +601,13 @@ export default function Settings() {
               </span>
             }
           />
+          {!standalone ? (
+            <Item
+              icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⤓</span>}
+              label={t('settings.install')}
+              onClick={() => setView('install')}
+            />
+          ) : null}
           <Item icon={<IconLogout size={18} />} label={t('common.logout')} onClick={out} />
           {canDelete ? (
             <Item icon={<IconTrash size={18} />} label={t('profile.deleteAccount')} onClick={() => setView('delete')} danger />

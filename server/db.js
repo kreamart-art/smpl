@@ -235,6 +235,8 @@ export function migrate() {
   addColumn('submissions', 'disqualified', 'INTEGER')
   // 2026-06-12: optional public contact email on a profile.
   addColumn('users', 'contactEmail', 'TEXT')
+  // 2026-06-13: emoji "stickers" stamped onto a DM photo (JSON: [{id,emoji,x,y,by}]).
+  addColumn('messages', 'photoStamps', 'TEXT')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.
   addColumn('battles', 'blind', 'INTEGER')
   addColumn('battles', 'scheduled', 'INTEGER')

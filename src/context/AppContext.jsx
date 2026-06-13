@@ -498,6 +498,8 @@ export function AppProvider({ children }) {
   )
   const reactMessage = useCallback((id, emoji) => api.post(`/api/messages/${id}/react`, { emoji }), [])
   const unsendMessage = useCallback((id) => api.del(`/api/messages/${id}`), [])
+  const stampPhoto = useCallback((id, { emoji, x, y }) => api.post(`/api/messages/${id}/stamp`, { emoji, x, y }), [])
+  const unstampPhoto = useCallback((id, stampId) => api.del(`/api/messages/${id}/stamp/${stampId}`), [])
   const uploadImage = useCallback((file) => api.upload('/api/uploads/image', file), [])
   const markNotificationsSeen = useCallback(async () => {
     await api.post('/api/notifications/seen')
@@ -596,6 +598,8 @@ export function AppProvider({ children }) {
     sendMessage,
     reactMessage,
     unsendMessage,
+    stampPhoto,
+    unstampPhoto,
     uploadImage,
   }
 

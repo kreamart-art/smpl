@@ -970,6 +970,12 @@ app.post('/api/contact', rateLimit('contact', 5, 30 * 60_000), async (req, res) 
 })
 
 // ----- profile editing -------------------------------------------------------
+// handles that nobody can self-assign (house/staff/impersonation risks)
+const RESERVED_ALIASES = new Set([
+  'smpl', 'admin', 'curator', 'support', 'help', 'staff', 'team',
+  'system', 'official', 'mod', 'moderator', 'root', 'security',
+])
+
 app.patch('/api/me', requireAuth, (req, res) => {
   const b = req.body || {}
   if (typeof b.avatar === 'string' && b.avatar.length > 1_500_000)
@@ -1000,10 +1006,32 @@ app.patch('/api/me', requireAuth, (req, res) => {
       : String(b.genres || '').split(',').map((g) => g.trim()).filter(Boolean)
     set('genres', JSON.stringify(list))
   }
+  // self-service identity: change your handle (alias) and/or login email
+  let reverify = false
+  if (typeof b.alias === 'string' && b.alias.trim() !== req.user.alias) {
+    const a = b.alias.trim()
+    if (!/^[A-Za-z0-9_.]{2,20}$/.test(a))
+      return fail(res, 400, 'Handle must be 2–20 characters: letters, numbers, “_” or “.”.')
+    if (RESERVED_ALIASES.has(a.toLowerCase())) return fail(res, 409, 'That handle is reserved.')
+    const taken = getUserByAliasRow(a)
+    if (taken && taken.id !== req.user.id) return fail(res, 409, 'That handle is taken.')
+    set('alias', a)
+  }
+  if (typeof b.email === 'string' && b.email.trim().toLowerCase() !== String(req.user.email || '').toLowerCase()) {
+    const e = b.email.trim()
+    if (!/^\S+@\S+\.\S+$/.test(e)) return fail(res, 400, 'That email doesn’t look right.')
+    if (e.toLowerCase() === 'curator@smpl.app') return fail(res, 409, 'That email is reserved.')
+    const taken = getUserByEmail(e)
+    if (taken && taken.id !== req.user.id) return fail(res, 409, 'An account with that email already exists.')
+    set('email', e)
+    set('emailVerified', 0) // a new address must be re-verified (badge stays untouched)
+    reverify = true
+  }
   if (fields.length) {
     vals.push(req.user.id)
     db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...vals)
   }
+  if (reverify) sendVerificationEmail(getUserRow(req.user.id), langOf(req)).catch(() => {})
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
 })
 
@@ -1223,6 +1251,7 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
       shareRef: m.deletedAt ? null : m.shareRef || null,
       reply: m.deletedAt ? null : preview(byId[m.replyTo]),
       reactions: m.deletedAt ? [] : Object.values(reactByMsg[m.id] || {}),
+      photoStamps: m.deletedAt ? [] : safeStamps(m.photoStamps),
       readAt: m.readAt || null,
       deleted: !!m.deletedAt,
     })),
@@ -1310,6 +1339,46 @@ app.post('/api/messages/:id/react', requireAuth, (req, res) => {
   return ok(res, { emoji })
 })
 
+// emoji "stickers" stamped onto a DM photo at a point (x,y are 0..1 fractions)
+const STAMP_EMOJI = ['❤️', '🔥', '😂', '😮', '👏', '💯', '🎤', '🎧', '👀', '🥲']
+function safeStamps(raw) {
+  try {
+    const a = JSON.parse(raw || '[]')
+    return Array.isArray(a) ? a : []
+  } catch {
+    return []
+  }
+}
+
+app.post('/api/messages/:id/stamp', requireAuth, (req, res) => {
+  const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id)
+  if (!m) return fail(res, 404, 'Message not found.')
+  const uid = req.user.id
+  if (m.fromId !== uid && m.toId !== uid) return fail(res, 403, 'Not your conversation.')
+  if (m.deletedAt || !m.imageUrl) return fail(res, 400, 'That message has no photo.')
+  const emoji = String(req.body?.emoji || '').trim()
+  if (!STAMP_EMOJI.includes(emoji)) return fail(res, 400, 'Unsupported emoji.')
+  const x = Number(req.body?.x)
+  const y = Number(req.body?.y)
+  if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) return fail(res, 400, 'Bad position.')
+  const stamps = safeStamps(m.photoStamps)
+  if (stamps.length >= 60) return fail(res, 400, 'This photo is full of stickers.')
+  stamps.push({ id: `st_${randomUUID().slice(0, 8)}`, emoji, x, y, by: uid })
+  db.prepare('UPDATE messages SET photoStamps = ? WHERE id = ?').run(JSON.stringify(stamps), m.id)
+  return ok(res, { stamps })
+})
+
+app.delete('/api/messages/:id/stamp/:stampId', requireAuth, (req, res) => {
+  const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id)
+  if (!m) return fail(res, 404, 'Message not found.')
+  const uid = req.user.id
+  if (m.fromId !== uid && m.toId !== uid) return fail(res, 403, 'Not your conversation.')
+  // you can only peel off your own stickers
+  const stamps = safeStamps(m.photoStamps).filter((s) => !(s.id === req.params.stampId && s.by === uid))
+  db.prepare('UPDATE messages SET photoStamps = ? WHERE id = ?').run(JSON.stringify(stamps), m.id)
+  return ok(res, { stamps })
+})
+
 // unsend your own message (soft delete → renders as "message deleted")
 app.delete('/api/messages/:id', requireAuth, (req, res) => {
   const m = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id)
@@ -1317,7 +1386,7 @@ app.delete('/api/messages/:id', requireAuth, (req, res) => {
   if (m.fromId !== req.user.id) return fail(res, 403, 'You can only unsend your own messages.')
   if (m.deletedAt) return ok(res, {})
   db.prepare(
-    "UPDATE messages SET deletedAt=?, body='', imageUrl=NULL, audioUrl=NULL, battleId=NULL, replyTo=NULL WHERE id=?",
+    "UPDATE messages SET deletedAt=?, body='', imageUrl=NULL, audioUrl=NULL, battleId=NULL, replyTo=NULL, photoStamps=NULL WHERE id=?",
   ).run(Date.now(), m.id)
   db.prepare('DELETE FROM message_reactions WHERE messageId=?').run(m.id)
   return ok(res, {})

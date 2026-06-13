@@ -6,6 +6,7 @@ import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
+import PhotoViewer from '../components/PhotoViewer.jsx'
 import { IconImage, IconMic } from '../components/icons.jsx'
 import { Btn, inputCls, textareaCls } from '../components/ui.jsx'
 import { roleLabel } from '../data/kind.js'
@@ -296,7 +297,7 @@ function AudioClip({ src, mine }) {
 
 // ----- one conversation ------------------------------------------------------
 function Thread({ alias }) {
-  const { fetchThread, sendMessage, reactMessage, unsendMessage, uploadImage, uploadAudio, refresh, currentUser } = useApp()
+  const { fetchThread, sendMessage, reactMessage, unsendMessage, stampPhoto, unstampPhoto, uploadImage, uploadAudio, refresh, currentUser } = useApp()
   const { standalone } = usePWA()
   const t = useT()
   const [data, setData] = useState(null)
@@ -312,6 +313,7 @@ function Thread({ alias }) {
   const recRef = useRef(null)
   const didRefresh = useRef(false)
   const taRef = useRef(null)
+  const [viewerId, setViewerId] = useState(null) // message id whose photo is open fullscreen
 
   const load = useCallback(
     async (initial) => {
@@ -435,9 +437,18 @@ function Thread({ alias }) {
     await unsendMessage(id)
     load(false)
   }
+  const addStamp = async (id, s) => {
+    await stampPhoto(id, s)
+    load(false)
+  }
+  const removeStamp = async (id, sid) => {
+    await unstampPhoto(id, sid)
+    load(false)
+  }
 
   const u = data?.user
   const msgs = data?.messages || []
+  const viewerMsg = viewerId ? msgs.find((m) => m.id === viewerId) : null
   const lastMineId = [...msgs].reverse().find((m) => m.mine && !m.deleted)?.id
   return (
     <div
@@ -525,12 +536,35 @@ function Thread({ alias }) {
                               <span className="font-mono text-[11px] text-muted">↗ {t('messages.sharedEvent')}</span>
                             ) : null}
                             {m.imageUrl ? (
-                              <img
-                                src={mediaUrl(m.imageUrl)}
-                                alt=""
-                                className="max-h-72 w-auto max-w-full border border-line"
-                                loading="lazy"
-                              />
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setViewerId(m.id)
+                                }}
+                                className="relative block w-fit cursor-zoom-in"
+                              >
+                                <img
+                                  src={mediaUrl(m.imageUrl)}
+                                  alt=""
+                                  className="block max-h-72 w-auto max-w-full border border-line"
+                                  loading="lazy"
+                                />
+                                {m.photoStamps?.length ? (
+                                  <span className="pointer-events-none absolute inset-0">
+                                    {m.photoStamps.map((s) => (
+                                      <span
+                                        key={s.id}
+                                        style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }}
+                                        className="absolute -translate-x-1/2 -translate-y-1/2 text-base leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                                      >
+                                        {s.emoji}
+                                      </span>
+                                    ))}
+                                  </span>
+                                ) : null}
+                              </span>
                             ) : null}
                             {m.audioUrl ? (
                               <div className={`border px-2 ${m.mine ? 'border-ink bg-ink' : 'border-line bg-panel'}`}>
@@ -705,6 +739,17 @@ function Thread({ alias }) {
           </Btn>
         </form>
       )}
+
+      {viewerMsg?.imageUrl ? (
+        <PhotoViewer
+          src={mediaUrl(viewerMsg.imageUrl)}
+          stamps={viewerMsg.photoStamps || []}
+          currentUserId={currentUser?.id}
+          onAddStamp={(s) => addStamp(viewerMsg.id, s)}
+          onRemoveStamp={(sid) => removeStamp(viewerMsg.id, sid)}
+          onClose={() => setViewerId(null)}
+        />
+      ) : null}
     </div>
   )
 }
