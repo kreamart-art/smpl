@@ -6,7 +6,7 @@ import { useI18n, useT } from '../i18n/index.jsx'
 // the real legal entity + inbox.
 const CONTACT = 'info@artnomad.nl'
 const OPERATOR = 'ART NOMAD'
-const UPDATED = '2026-06-12'
+const UPDATED = '2026-06-13'
 
 const CONTENT = {
   privacy: {
@@ -22,9 +22,10 @@ const CONTENT = {
           h: 'Welke gegevens we verzamelen',
           p: [
             'Account: je alias, e-mailadres en een versleuteld (gehasht) wachtwoord.',
-            'Identiteit: je volledige naam en geboortedatum — we gebruiken de geboortedatum om te bevestigen dat je oud genoeg bent. Deze velden zijn privé en alleen voor jou zichtbaar.',
+            'Identiteit: je volledige naam, geboortedatum en optioneel telefoonnummer, land en woonplaats — de geboortedatum gebruiken we om te bevestigen dat je oud genoeg bent. Deze velden zijn privé en alleen voor jou zichtbaar.',
             'Profiel: bio, locatie, genres, links, profielfoto en een optioneel openbaar contact-e-mailadres dat je zelf kiest.',
-            'Jouw content: audio-inzendingen, stemmen, berichten en wie je volgt.',
+            'Jouw content: audio-inzendingen, stemmen, reacties, berichten (incl. foto’s en spraakclips) en wie je volgt.',
+            'Meldingen: als je pushmeldingen aanzet, een apparaat-token om je die meldingen te kunnen sturen (via Apple of Google).',
             'Technische gegevens: je IP-adres en serverlogs, kort bewaard voor beveiliging en anti-spam.',
           ],
         },
@@ -45,7 +46,7 @@ const CONTENT = {
         {
           h: 'Delen met anderen',
           p: [
-            'We verkopen je gegevens nooit. We delen ze alleen met de partijen die nodig zijn om de dienst te laten werken: onze hostingprovider (servers in een datacenter in de EU) en onze e-mailprovider voor systeemmails zoals wachtwoordherstel.',
+            'We verkopen je gegevens nooit. We delen ze alleen met de partijen die nodig zijn om de dienst te laten werken: onze hostingprovider (servers in een datacenter in de EU), onze e-mailprovider voor systeemmails zoals wachtwoordherstel, en — als je meldingen aanzet — Apple en/of Google om pushmeldingen aan je apparaat te bezorgen.',
           ],
         },
         {
@@ -89,9 +90,10 @@ const CONTENT = {
           h: 'What we collect',
           p: [
             'Account: your alias, email address and an encrypted (hashed) password.',
-            'Identity: your legal name and date of birth — we use the date of birth to confirm you are old enough. These fields are private and visible only to you.',
+            'Identity: your legal name, date of birth and optional phone number, country and city — we use the date of birth to confirm you are old enough. These fields are private and visible only to you.',
             'Profile: bio, location, genres, links, profile photo and an optional public contact email you choose yourself.',
-            'Your content: audio submissions, votes, messages and who you follow.',
+            'Your content: audio submissions, votes, comments, messages (incl. photos and voice clips) and who you follow.',
+            'Notifications: if you enable push, a device token so we can send you those notifications (via Apple or Google).',
             'Technical data: your IP address and server logs, kept briefly for security and anti-spam.',
           ],
         },
@@ -112,7 +114,7 @@ const CONTENT = {
         {
           h: 'Sharing',
           p: [
-            'We never sell your data. We share it only with the parties needed to run the service: our hosting provider (servers in an EU data centre) and our email provider for system emails such as password resets.',
+            'We never sell your data. We share it only with the parties needed to run the service: our hosting provider (servers in an EU data centre), our email provider for system emails such as password resets, and — if you enable notifications — Apple and/or Google to deliver push notifications to your device.',
           ],
         },
         {
@@ -285,13 +287,157 @@ const CONTENT = {
       ],
     },
   },
+
+  guidelines: {
+    nl: {
+      title: 'Community-richtlijnen',
+      intro:
+        'SMPL is een plek om muziek te maken en te vieren. Deze richtlijnen houden het veilig en eerlijk voor iedereen. Ze gelden voor alles wat je plaatst: inzendingen, reacties, berichten en je profiel.',
+      sections: [
+        {
+          h: 'Niet toegestaan',
+          p: [
+            'Haat, intimidatie, pesten, bedreigingen of het aanzetten tot geweld.',
+            'Seksueel expliciete content, en absoluut nooit content waarbij minderjarigen betrokken zijn.',
+            'Illegale content, of het delen van privégegevens van anderen (doxxing).',
+            'Spam, oplichting, nep-accounts en het zich voordoen als iemand anders.',
+            'Stem-manipulatie: meerdere accounts, gekochte stemmen of afspraakjes om uitslagen te sturen.',
+          ],
+        },
+        {
+          h: 'Eerlijk battlen',
+          p: [
+            'Gebruik de officiële sample en lever je eigen, originele werk in — geen plagiaat of gejatte content.',
+            'Wie de regels overtreedt kan door de curator worden gediskwalificeerd; de inzending gaat dan uit de stemming en kan niet winnen.',
+          ],
+        },
+        {
+          h: 'Rapporteren en blokkeren',
+          p: [
+            'Zie je iets wat niet hoort? Gebruik de rapporteer-knop, of blokkeer iemand om alle contact te stoppen.',
+            'We bekijken meldingen en grijpen in waar nodig — doorgaans binnen 24 uur.',
+          ],
+        },
+        {
+          h: 'Gevolgen',
+          p: [
+            'Afhankelijk van de overtreding kunnen we content verwijderen, een inzending diskwalificeren, of een account schorsen of verwijderen.',
+            `Denk je dat we een fout maakten? Mail ${CONTACT} en we kijken er opnieuw naar.`,
+          ],
+        },
+      ],
+    },
+    en: {
+      title: 'Community Guidelines',
+      intro:
+        'SMPL is a place to make and celebrate music. These guidelines keep it safe and fair for everyone. They apply to everything you post: entries, comments, messages and your profile.',
+      sections: [
+        {
+          h: 'Not allowed',
+          p: [
+            'Hate, harassment, bullying, threats or incitement to violence.',
+            'Sexually explicit content, and never any content involving minors.',
+            'Illegal content, or sharing other people’s private information (doxxing).',
+            'Spam, scams, fake accounts and impersonation.',
+            'Vote manipulation: multiple accounts, bought votes or arrangements to swing results.',
+          ],
+        },
+        {
+          h: 'Battle fairly',
+          p: [
+            'Use the official sample and submit your own original work — no plagiarism or stolen content.',
+            'Breaking the rules can get you disqualified by the curator; the entry is then pulled from voting and can’t win.',
+          ],
+        },
+        {
+          h: 'Reporting and blocking',
+          p: [
+            'See something off? Use the report button, or block someone to stop all contact.',
+            'We review reports and act where needed — usually within 24 hours.',
+          ],
+        },
+        {
+          h: 'Consequences',
+          p: [
+            'Depending on the breach we may remove content, disqualify an entry, or suspend or delete an account.',
+            `Think we got it wrong? Email ${CONTACT} and we’ll take another look.`,
+          ],
+        },
+      ],
+    },
+  },
+
+  copyright: {
+    nl: {
+      title: 'Auteursrecht',
+      intro:
+        'SMPL respecteert auteursrecht en verwacht dat van jou ook. Upload alleen werk waarvan jij de rechten hebt, en meld inbreuk zodat we kunnen ingrijpen.',
+      sections: [
+        {
+          h: 'Jouw verantwoordelijkheid',
+          p: [
+            'Plaats alleen audio en beeld die je zelf hebt gemaakt of waarvoor je toestemming hebt.',
+            'De officiële battle-sample wordt aangeboden om binnen die battle mee te werken; de rechten blijven bij de eigenaar. Gebruik ’m niet voor andere doeleinden.',
+          ],
+        },
+        {
+          h: 'Inbreuk melden (notice & takedown)',
+          p: [
+            `Denk je dat iets jouw auteursrecht schendt? Mail ${CONTACT} met: een beschrijving van het werk, de link naar de inbreukmakende inhoud op SMPL, jouw contactgegevens, en een verklaring te goeder trouw dat je rechthebbende (of gemachtigde) bent.`,
+            'We verwijderen of blokkeren de gemelde inhoud zo snel als redelijk mogelijk.',
+          ],
+        },
+        {
+          h: 'Tegenbericht',
+          p: [
+            'Is jouw inhoud onterecht verwijderd? Reageer op de melding met uitleg waarom je het recht hebt om het te plaatsen, dan beoordelen we het opnieuw.',
+          ],
+        },
+        {
+          h: 'Herhaalde inbreuk',
+          p: ['Accounts die herhaaldelijk inbreuk maken, verwijderen we.'],
+        },
+      ],
+    },
+    en: {
+      title: 'Copyright',
+      intro:
+        'SMPL respects copyright and expects you to as well. Only upload work you hold the rights to, and report infringement so we can act.',
+      sections: [
+        {
+          h: 'Your responsibility',
+          p: [
+            'Only post audio and images you made yourself or have permission to use.',
+            'The official battle sample is provided for use within that battle; the rights stay with its owner. Don’t use it for anything else.',
+          ],
+        },
+        {
+          h: 'Reporting infringement (notice & takedown)',
+          p: [
+            `Believe something infringes your copyright? Email ${CONTACT} with: a description of the work, the link to the infringing content on SMPL, your contact details, and a good-faith statement that you are the rights holder (or authorised to act).`,
+            'We remove or disable the reported content as soon as reasonably possible.',
+          ],
+        },
+        {
+          h: 'Counter-notice',
+          p: [
+            'Was your content removed by mistake? Reply to the notice explaining why you have the right to post it, and we’ll review it again.',
+          ],
+        },
+        {
+          h: 'Repeat infringers',
+          p: ['We terminate the accounts of repeat infringers.'],
+        },
+      ],
+    },
+  },
 }
 
 export default function Legal({ doc }) {
   const { lang } = useI18n()
   const t = useT()
   const data = CONTENT[doc][lang] || CONTENT[doc].en
-  const otherDoc = doc === 'privacy' ? 'terms' : 'privacy'
+  const otherDocs = ['privacy', 'terms', 'guidelines', 'copyright'].filter((d) => d !== doc)
 
   return (
     <div className="mx-auto max-w-[760px] px-4 py-12 sm:px-6 sm:py-16">
@@ -323,10 +469,16 @@ export default function Legal({ doc }) {
         ))}
       </div>
 
-      <div className="mt-12 flex flex-wrap items-center gap-4 border-t border-line pt-6">
-        <Link to={`/${otherDoc}`} className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink underline-offset-4 hover:underline">
-          → {t(`legal.${otherDoc}`)}
-        </Link>
+      <div className="mt-12 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-line pt-6">
+        {otherDocs.map((d) => (
+          <Link
+            key={d}
+            to={`/${d}`}
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink underline-offset-4 hover:underline"
+          >
+            → {t(`legal.${d}`)}
+          </Link>
+        ))}
         <Link to="/" className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
           {t('notFound.home')}
         </Link>

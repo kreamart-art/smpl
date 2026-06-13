@@ -73,6 +73,8 @@ export default function App() {
         <Route path="/verify" element={<VerifyEmail />} />
         <Route path="/privacy" element={<Legal doc="privacy" />} />
         <Route path="/terms" element={<Legal doc="terms" />} />
+        <Route path="/guidelines" element={<Legal doc="guidelines" />} />
+        <Route path="/copyright" element={<Legal doc="copyright" />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="*" element={<NotFound />} />
       </Route>

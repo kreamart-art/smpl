@@ -74,7 +74,20 @@ function NotificationsRow() {
 
 function PersonalDataPanel({ user, onBack }) {
   const t = useT()
-  const { updateProfile } = useApp()
+  const { updateProfile, exportData } = useApp()
+  const downloadData = async () => {
+    const r = await exportData()
+    if (!r.ok || !r.data) return
+    const blob = new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'smpl-my-data.json'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
   const age = ageFrom(user.dob, Date.now())
   const [form, setForm] = useState({
     name: user.name || '',
@@ -139,6 +152,14 @@ function PersonalDataPanel({ user, onBack }) {
             {busy ? t('profile.saving') : t('common.save')}
           </button>
           {saved ? <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">✓ {t('profile.saved')}</span> : null}
+        </div>
+        <div className="border-t border-line pt-4">
+          <button
+            onClick={downloadData}
+            className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+          >
+            ↓ {t('settings.downloadData')}
+          </button>
         </div>
         <p className="font-mono text-[10px] leading-relaxed text-muted">
           {t('profile.privateFootnote')} {t('settings.dataLockedHint')}

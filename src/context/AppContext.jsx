@@ -474,6 +474,7 @@ export function AppProvider({ children }) {
   // --- profile + social ----------------------------------------------------
   const updateProfile = useCallback((payload) => mutate(() => api.patch('/api/me', payload)), [mutate])
   const updateRole = useCallback((role) => mutate(() => api.post('/api/me/role', { role })), [mutate])
+  const exportData = useCallback(() => api.get('/api/me/export'), [])
   const fetchFeed = useCallback(() => api.get('/api/feed'), [])
   const fetchNotifications = useCallback(() => api.get('/api/notifications'), [])
 
@@ -583,6 +584,7 @@ export function AppProvider({ children }) {
     deleteComment,
     updateProfile,
     updateRole,
+    exportData,
     fetchFeed,
     fetchNotifications,
     markNotificationsSeen,

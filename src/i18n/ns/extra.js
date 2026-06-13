@@ -136,6 +136,8 @@ export const extra = {
 
     'legal.privacy': 'Privacy',
     'legal.terms': 'Terms',
+    'legal.guidelines': 'Community Guidelines',
+    'legal.copyright': 'Copyright',
 
     'admin.makeCurator': 'Make curator',
     'admin.removeCurator': 'Remove curator',
@@ -173,6 +175,7 @@ export const extra = {
     'settings.accountType': 'Account type',
     'settings.accountTypeHint': 'A listener can become a producer or artist to compete — and switch back anytime.',
     'settings.dataLockedHint': 'Your date of birth and login email can’t be changed here.',
+    'settings.downloadData': 'Download my data',
     'comments.viewAll': 'View all {n} comments',
     'comments.viewOne': 'View comment',
     'comments.add': 'Add a comment',
@@ -427,6 +430,7 @@ export const extra = {
     'settings.accountType': 'Accounttype',
     'settings.accountTypeHint': 'Een luisteraar kan producer of artiest worden om mee te doen — en altijd terugwisselen.',
     'settings.dataLockedHint': 'Je geboortedatum en login-e-mail kun je hier niet wijzigen.',
+    'settings.downloadData': 'Download mijn gegevens',
     'comments.viewAll': 'Bekijk alle {n} reacties',
     'comments.viewOne': 'Bekijk reactie',
     'comments.add': 'Reactie toevoegen',
@@ -514,5 +518,7 @@ export const extra = {
 
     'legal.privacy': 'Privacy',
     'legal.terms': 'Voorwaarden',
+    'legal.guidelines': 'Community-richtlijnen',
+    'legal.copyright': 'Auteursrecht',
   },
 }

@@ -1001,6 +1001,24 @@ app.post('/api/me/role', requireAuth, (req, res) => {
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
 })
 
+// AVG/GDPR right to data portability — everything we hold about you, as JSON.
+app.get('/api/me/export', requireAuth, (req, res) => {
+  const uid = req.user.id
+  const data = {
+    exportedAt: new Date().toISOString(),
+    account: meUser(req.user),
+    submissions: db.prepare('SELECT * FROM submissions WHERE producerId = ?').all(uid),
+    votes: db.prepare('SELECT id, battleId, submissionId FROM votes WHERE userId = ?').all(uid),
+    following: db.prepare('SELECT followeeId, createdAt FROM follows WHERE followerId = ?').all(uid),
+    followers: db.prepare('SELECT followerId, createdAt FROM follows WHERE followeeId = ?').all(uid),
+    comments: db.prepare('SELECT id, submissionId, battleId, body, createdAt FROM comments WHERE userId = ?').all(uid),
+    messagesSent: db
+      .prepare('SELECT id, toId, body, imageUrl, audioUrl, createdAt FROM messages WHERE fromId = ? AND deletedAt IS NULL')
+      .all(uid),
+  }
+  return ok(res, { data })
+})
+
 // ----- two-factor auth (TOTP) ------------------------------------------------
 app.post('/api/me/2fa/setup', requireAuth, (req, res) => {
   if (req.user.totpEnabled) return fail(res, 400, '2FA is already on. Turn it off first to re-enrol.')

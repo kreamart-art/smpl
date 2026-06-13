@@ -74,6 +74,8 @@ export default function Footer() {
             <Link to="/contact" className="text-ink-dim transition-colors hover:text-ink">{t('contact.title')}</Link>
             <Link to="/privacy" className="text-ink-dim transition-colors hover:text-ink">{t('legal.privacy')}</Link>
             <Link to="/terms" className="text-ink-dim transition-colors hover:text-ink">{t('legal.terms')}</Link>
+            <Link to="/guidelines" className="text-ink-dim transition-colors hover:text-ink">{t('legal.guidelines')}</Link>
+            <Link to="/copyright" className="text-ink-dim transition-colors hover:text-ink">{t('legal.copyright')}</Link>
           </div>
         </div>
       </div>
