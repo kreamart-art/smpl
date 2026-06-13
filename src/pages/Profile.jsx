@@ -373,7 +373,7 @@ export default function Profile() {
         <div className="relative grid grid-cols-1 border-t border-line lg:grid-cols-3">
           <div className="p-6 lg:col-span-2 lg:border-r lg:border-line">
             <Label>{t('profile.bio')}</Label>
-            <p className="mt-4 font-sans text-[15px] leading-relaxed text-ink-dim">
+            <p className="mt-4 whitespace-pre-line font-sans text-[15px] leading-relaxed text-ink-dim">
               {user.bio ? <Mentions text={user.bio} /> : t('profile.noBio')}
             </p>
             {user.genres?.length ? (
