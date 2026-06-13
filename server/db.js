@@ -96,6 +96,7 @@ export function pubUser(r) {
     alias: r.alias,
     // the public never sees the "admin" tier — admins read as curators
     role: r.role === 'admin' ? 'curator' : r.role,
+    dualRole: !!r.dualRole, // competes in both beats + verses
     bio: r.bio || '',
     location: r.location || '',
     links: P(r.links),
@@ -228,6 +229,8 @@ export function migrate() {
   addColumn('messages', 'shareRef', 'TEXT')
   // 2026-06-13: record consent to Terms + Privacy at signup (AVG/GDPR).
   addColumn('users', 'acceptedTerms', 'INTEGER')
+  // 2026-06-13: a competitor who does BOTH beats + verses (joins both battle types).
+  addColumn('users', 'dualRole', 'INTEGER')
   // 2026-06-13: a curator can disqualify a submission that breaks the rules.
   addColumn('submissions', 'disqualified', 'INTEGER')
   // 2026-06-12: optional public contact email on a profile.

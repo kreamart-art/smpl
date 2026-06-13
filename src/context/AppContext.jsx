@@ -473,7 +473,10 @@ export function AppProvider({ children }) {
 
   // --- profile + social ----------------------------------------------------
   const updateProfile = useCallback((payload) => mutate(() => api.patch('/api/me', payload)), [mutate])
-  const updateRole = useCallback((role) => mutate(() => api.post('/api/me/role', { role })), [mutate])
+  const updateRole = useCallback(
+    (role, dual = false) => mutate(() => api.post('/api/me/role', { role, dual })),
+    [mutate],
+  )
   const exportData = useCallback(() => api.get('/api/me/export'), [])
   const fetchFeed = useCallback(() => api.get('/api/feed'), [])
   const fetchNotifications = useCallback(() => api.get('/api/notifications'), [])

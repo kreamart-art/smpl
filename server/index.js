@@ -29,7 +29,7 @@ const APP_URL = (
   (process.env.NODE_ENV === 'production' ? 'https://usesmpl.com' : 'http://localhost:5190')
 ).replace(/\/$/, '')
 // Where the contact form lands.
-const CONTACT_TO = process.env.SMPL_CONTACT_EMAIL || 'info@artnomad.nl'
+const CONTACT_TO = process.env.SMPL_CONTACT_EMAIL || 'info@usesmpl.com'
 
 // In dev, Vite owns 5190 and proxies /api here (5191). Only honour PORT in
 // production, where this server serves everything on one port.
@@ -617,7 +617,10 @@ app.post('/api/battles/:id/register', requireAuth, (req, res) => {
   if (!b) return fail(res, 404, 'Battle not found.')
   if (!req.body?.agreeRules) return fail(res, 400, 'You must accept the battle rules to enter.')
   const need = b.kind === 'VERSES' ? 'artist' : 'producer'
-  if (req.user.role !== need)
+  // a dual-role competitor (producer + artist) may enter either battle type
+  const isCompetitor = req.user.role === 'producer' || req.user.role === 'artist'
+  const canEnter = req.user.role === need || (req.user.dualRole && isCompetitor)
+  if (!canEnter)
     return fail(
       res,
       403,
@@ -1006,7 +1009,9 @@ app.post('/api/me/role', requireAuth, (req, res) => {
     return fail(res, 403, 'Staff roles can’t be changed here.')
   const role = req.body?.role
   if (!SELF_ROLES.has(role)) return fail(res, 400, 'Pick listener, producer or artist.')
-  db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.user.id)
+  // "dual" = also compete in the other type; only meaningful for producer/artist
+  const dual = role !== 'listener' && req.body?.dual ? 1 : 0
+  db.prepare('UPDATE users SET role = ?, dualRole = ? WHERE id = ?').run(role, dual, req.user.id)
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
 })
 

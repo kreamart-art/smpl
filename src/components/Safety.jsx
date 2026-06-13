@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
+import Portal from './Portal.jsx'
 import { Btn, textareaCls } from './ui.jsx'
 
 const REASONS = ['spam', 'harassment', 'hate', 'sexual', 'ip', 'other']
@@ -146,13 +147,21 @@ export function UserSafetyMenu({ user, className = '', small = false }) {
   const t = useT()
   const { currentUser, isBlocked, toggleBlock } = useApp()
   const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState(null)
   const [confirmBlock, setConfirmBlock] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [busy, setBusy] = useState(false)
+  const btnRef = useRef(null)
 
   if (!currentUser || !user || user.id === currentUser.id) return null
   const blocked = isBlocked(user.id)
 
+  const toggleMenu = () => {
+    if (open) return close()
+    const r = btnRef.current?.getBoundingClientRect()
+    if (r) setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) })
+    setOpen(true)
+  }
   const close = () => {
     setOpen(false)
     setConfirmBlock(false)
@@ -167,7 +176,8 @@ export function UserSafetyMenu({ user, className = '', small = false }) {
   return (
     <div className={`relative ${className}`}>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={toggleMenu}
         aria-label={t('safety.report')}
         className={`flex items-center justify-center border border-line-bright leading-none text-ink transition-colors duration-300 hover:border-ink ${
           small ? 'h-9 w-9 pb-1.5 text-xl' : 'h-12 w-12 pb-2 text-2xl'
@@ -177,10 +187,14 @@ export function UserSafetyMenu({ user, className = '', small = false }) {
       </button>
 
       {open ? (
-        <>
+        <Portal>
           {/* click-away */}
-          <div className="fixed inset-0 z-40" onClick={close} />
-          <div className="absolute right-0 z-50 mt-2 w-60 border border-line-bright bg-panel">
+          <div className="fixed inset-0 z-[60]" onClick={close} />
+          {/* fixed + portaled so the banner's overflow-hidden can't clip it */}
+          <div
+            className="fixed z-[61] w-60 border border-line-bright bg-panel shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)]"
+            style={{ top: pos?.top, right: pos?.right }}
+          >
             {confirmBlock ? (
               <div className="p-4">
                 <p className="font-mono text-[11px] leading-relaxed text-muted">
@@ -215,7 +229,7 @@ export function UserSafetyMenu({ user, className = '', small = false }) {
               </div>
             )}
           </div>
-        </>
+        </Portal>
       ) : null}
 
       <ReportDialog

@@ -177,7 +177,13 @@ function AccountTypePanel({ user, onBack }) {
   const pick = async (role) => {
     if (role === user.role) return
     setBusy(role)
-    await updateRole(role)
+    // keep "does both" when switching between producer/artist; drop it for listener
+    await updateRole(role, role !== 'listener' && user.dualRole)
+    setBusy(null)
+  }
+  const toggleDual = async () => {
+    setBusy('dual')
+    await updateRole(user.role, !user.dualRole)
     setBusy(null)
   }
   return (
@@ -215,6 +221,21 @@ function AccountTypePanel({ user, onBack }) {
           )
         })}
       </div>
+      {user.role === 'producer' || user.role === 'artist' ? (
+        <div className="border-t border-line px-5 py-4">
+          <button
+            onClick={toggleDual}
+            disabled={!!busy}
+            className="flex w-full items-center justify-between text-left font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim transition-colors hover:text-ink"
+          >
+            <span>{t('settings.dualRole')}</span>
+            <span className={`font-mono text-[10px] ${user.dualRole ? 'text-ink' : 'text-faint'}`}>
+              {busy === 'dual' ? '…' : user.dualRole ? t('profile.on') : t('profile.off')}
+            </span>
+          </button>
+          <p className="mt-2 font-mono text-[10px] leading-relaxed text-faint">{t('settings.dualRoleHint')}</p>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -402,7 +423,7 @@ export default function Settings() {
               icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⇄</span>}
               label={t('settings.accountType')}
               onClick={() => setView('role')}
-              right={<span className="font-mono text-[10px] text-muted">{t(`role.${user.role}`)}</span>}
+              right={<span className="font-mono text-[10px] text-muted">{user.dualRole ? t('role.dual') : t(`role.${user.role}`)}</span>}
             />
           ) : null}
           {isHouse ? (

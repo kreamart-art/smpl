@@ -33,7 +33,7 @@ function PersonCard({ user }) {
             {user.verified || user.role === 'admin' ? <VerifiedBadge size={15} /> : null}
           </div>
           <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            {t('role.' + user.role)}
+            {user.dualRole ? t('role.dual') : t('role.' + user.role)}
             {user.location ? <span className="text-faint"> · {user.location}</span> : null}
           </div>
         </div>

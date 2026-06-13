@@ -245,13 +245,13 @@ export default function Profile() {
         <span className="hero-bloom" aria-hidden="true" />
         <div className="relative flex items-center justify-between px-6 pt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-faint sm:px-8">
           <span>{isCuratorProfile ? t('profile.curatorFile') : t('profile.artistFile')}</span>
-          <span>{roleLabel(user.role)}</span>
+          <span>{user.dualRole ? t('role.dual') : roleLabel(user.role)}</span>
         </div>
         <div className="relative px-6 pt-6 sm:px-8">
           <Waveform seed={`banner-${user.id}`} bars={120} height={88} animated baseClass="bg-line-bright" />
         </div>
         <div className="relative flex flex-col gap-6 px-6 py-7 sm:flex-row sm:items-end sm:justify-between sm:px-8">
-          <div className="flex items-end gap-5">
+          <div className="flex min-w-0 items-end gap-5">
             <Avatar alias={user.alias} src={user.avatar} size={88} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
@@ -261,8 +261,8 @@ export default function Profile() {
                 <span className="text-faint">/</span>
                 <span>{t('profile.memberSince', { month: fmtMonthYear(user.joinedAt) })}</span>
               </div>
-              <h1 className="mt-2 flex flex-wrap items-center gap-3 font-sans text-[clamp(2.4rem,8vw,4.5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
-                {user.alias}
+              <h1 className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-sans text-[clamp(1.7rem,7vw,4.5rem)] font-bold uppercase leading-[0.85] tracking-tighter">
+                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{user.alias}</span>
                 {user.verified || user.role === 'admin' ? <VerifiedBadge size={26} title={t('profile.verified')} /> : null}
               </h1>
               {isCuratorProfile ? (
