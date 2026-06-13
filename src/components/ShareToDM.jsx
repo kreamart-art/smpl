@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from './Avatar.jsx'
+import VerifiedBadge from './VerifiedBadge.jsx'
 import { IconMessage } from './icons.jsx'
 import { inputCls } from './ui.jsx'
 
@@ -103,6 +104,7 @@ export default function ShareToDM({ battleId, share, className = '' }) {
                     >
                       <Avatar alias={u.alias} src={u.avatar} size={36} />
                       <span className="truncate font-mono text-[12px] text-ink">@{u.alias}</span>
+                      {u.verified ? <VerifiedBadge size={11} /> : null}
                       {sentTo === u.alias ? (
                         <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink">
                           ✓ {t('messages.sentTo', { alias: u.alias })}

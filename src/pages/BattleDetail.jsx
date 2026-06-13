@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.jsx'
 import AudioPlayer from '../components/AudioPlayer.jsx'
 import BeatPlayer from '../components/BeatPlayer.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
+import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import ShareButton from '../components/ShareButton.jsx'
 import ShareToDM from '../components/ShareToDM.jsx'
 import { ReportButton } from '../components/Safety.jsx'
@@ -281,7 +282,10 @@ export default function BattleDetail() {
           <div className="mb-5 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.24em] text-faint">
             <span>SMPL·{battle.id.toUpperCase()}</span>
             <span className="h-px w-8 bg-line-bright" />
-            <span className="text-muted">{t('battleDetail.curatedBy', { alias: curator?.alias || 'SMPL' })}</span>
+            <span className="inline-flex items-center gap-1 text-muted">
+              {t('battleDetail.curatedBy', { alias: curator?.alias || 'SMPL' })}
+              {curator?.verified ? <VerifiedBadge size={11} /> : null}
+            </span>
           </div>
           <h1 className="font-sans text-[clamp(2.6rem,8vw,6rem)] font-bold uppercase leading-[0.82] tracking-tighter">
             {battle.title}
@@ -544,6 +548,7 @@ export default function BattleDetail() {
                       noun={c.drop.toUpperCase()}
                       revealed={!battle.blind}
                       alias={battle.blind ? undefined : getUser(s.producerId)?.alias}
+                      verified={!battle.blind && !!getUser(s.producerId)?.verified}
                       rightSlot={btn}
                     />
                     {isCurator ? (
@@ -585,6 +590,7 @@ export default function BattleDetail() {
                       rank={rank}
                       revealed
                       alias={getUser(s.producerId)?.alias}
+                      verified={!!getUser(s.producerId)?.verified}
                       votes={voteCount(s.id)}
                       showVotes
                       isWinner={isWinner}

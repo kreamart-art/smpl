@@ -704,6 +704,9 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   if (!b) return fail(res, 404, 'Battle not found.')
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Voting is not open.')
   if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Voting has closed.')
+  // anyone may vote on a battle — except the producers/artists competing in it
+  if (b.signups.includes(req.user.id))
+    return fail(res, 403, 'You’re competing in this battle — you can’t vote here.')
   const already = db
     .prepare('SELECT 1 FROM votes WHERE battleId = ? AND userId = ?')
     .get(b.id, req.user.id)

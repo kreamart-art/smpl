@@ -169,7 +169,10 @@ function Inbox() {
               <Avatar alias={th.user.alias} src={th.user.avatar} size={44} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate font-mono text-[12px] text-ink">@{th.user.alias}</span>
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="truncate font-mono text-[12px] text-ink">@{th.user.alias}</span>
+                    {th.user.verified ? <VerifiedBadge size={11} /> : null}
+                  </span>
                   <span className="shrink-0 font-mono text-[10px] text-faint">{shortAgo(th.last.createdAt)}</span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2">
@@ -469,6 +472,7 @@ function Thread({ alias }) {
             <Link to={`/profile/${encodeURIComponent(u.alias)}`} className="ml-1 flex items-center gap-2">
               <Avatar alias={u.alias} src={u.avatar} size={28} />
               <span className="font-mono text-[12px] text-ink">@{u.alias}</span>
+              {u.verified ? <VerifiedBadge size={11} /> : null}
             </Link>
             <UserSafetyMenu user={u} small className="ml-auto" />
           </>

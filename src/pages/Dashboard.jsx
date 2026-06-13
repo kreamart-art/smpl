@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
+import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import Reveal from '../components/Reveal.jsx'
 import ReportsPanel from '../components/ReportsPanel.jsx'
 import BackupsPanel from '../components/BackupsPanel.jsx'
@@ -165,8 +166,9 @@ export default function Dashboard() {
             </h1>
           </div>
         </div>
-        <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
           {currentUser.alias}
+          {currentUser.verified ? <VerifiedBadge size={12} /> : null}
         </div>
       </div>
 

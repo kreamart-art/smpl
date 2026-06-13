@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { usePlayback } from '../context/AppContext.jsx'
+import VerifiedBadge from './VerifiedBadge.jsx'
 import Waveform from './Waveform.jsx'
 import { Glyph } from './AudioPlayer.jsx'
 import { fmtTime } from '../utils/wave.js'
@@ -12,6 +13,7 @@ export default function BeatPlayer({
   noun = 'BEAT',
   revealed = false,
   alias,
+  verified = false,
   votes,
   showVotes = false,
   isWinner = false,
@@ -41,11 +43,17 @@ export default function BeatPlayer({
               {String(rank).padStart(2, '0')}
             </span>
           ) : null}
-          <span className="truncate font-mono text-[11px] uppercase tracking-[0.16em]">
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[11px] uppercase tracking-[0.16em]">
             {revealed && alias ? (
-              <Link to={`/profile/${encodeURIComponent(alias)}`} className="underline-offset-4 hover:underline">
-                @{alias}
-              </Link>
+              <>
+                <Link
+                  to={`/profile/${encodeURIComponent(alias)}`}
+                  className="truncate underline-offset-4 hover:underline"
+                >
+                  @{alias}
+                </Link>
+                {verified ? <VerifiedBadge size={11} /> : null}
+              </>
             ) : (
               `${noun} #${index}`
             )}
