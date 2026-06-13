@@ -125,6 +125,7 @@ export function meUser(r) {
     lastSeenAt: r.lastSeenAt || 0,
     twoFactor: !!r.totpEnabled,
     emailVerified: !!r.emailVerified,
+    curatorCompetes: !!r.curatorCompetes,
   }
 }
 
@@ -237,6 +238,8 @@ export function migrate() {
   addColumn('users', 'contactEmail', 'TEXT')
   // 2026-06-13: emoji "stickers" stamped onto a DM photo (JSON: [{id,emoji,x,y,by}]).
   addColumn('messages', 'photoStamps', 'TEXT')
+  // 2026-06-14: a curator who opted to also compete in battles (never their own).
+  addColumn('users', 'curatorCompetes', 'INTEGER')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.
   addColumn('battles', 'blind', 'INTEGER')
   addColumn('battles', 'scheduled', 'INTEGER')

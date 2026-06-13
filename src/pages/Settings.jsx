@@ -478,8 +478,105 @@ function InstallPanel({ onBack }) {
   )
 }
 
+// A curator/admin can opt to ALSO compete in battles. Enabling it requires
+// accepting the extra terms (above all: never compete in a battle you curate).
+function CuratorCompetePanel({ user, onBack }) {
+  const t = useT()
+  const { setCuratorCompetes } = useApp()
+  const [busy, setBusy] = useState(false)
+  const [confirm, setConfirm] = useState(false)
+  const on = !!user.curatorCompetes
+
+  const enable = async () => {
+    setBusy(true)
+    await setCuratorCompetes(true, true)
+    setBusy(false)
+    setConfirm(false)
+  }
+  const disable = async () => {
+    setBusy(true)
+    await setCuratorCompetes(false)
+    setBusy(false)
+  }
+
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <span>⚔</span> {t('settings.compete')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="space-y-4 p-5">
+        <p className="font-mono text-[11px] leading-relaxed text-muted">{t('settings.competeHint')}</p>
+        <div className="flex items-center justify-between border border-line px-4 py-3.5">
+          <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink">{t('settings.competeToggle')}</span>
+          <button
+            onClick={() => (on ? disable() : setConfirm(true))}
+            disabled={busy}
+            className={`border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
+              on ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+            }`}
+          >
+            {busy ? '…' : on ? t('profile.on') : t('profile.off')}
+          </button>
+        </div>
+        <p className="font-mono text-[10px] leading-relaxed text-faint">
+          {on ? t('settings.competeOnNote') : t('settings.competeOffNote')}
+        </p>
+      </div>
+
+      {confirm ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setConfirm(false)}
+        >
+          <div
+            className="w-full max-w-[460px] border border-line-bright bg-panel"
+            onClick={(e) => e.stopPropagation()}
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="border-b border-line px-5 py-3.5 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+              {t('settings.competeTermsTitle')}
+            </div>
+            <ul className="space-y-3 p-5 font-mono text-[12px] leading-relaxed text-ink-dim">
+              <li className="flex gap-2">
+                <span className="text-ink">›</span> {t('settings.competeTerm1')}
+              </li>
+              <li className="flex gap-2">
+                <span className="text-ink">›</span>
+                <span className="text-ink">{t('settings.competeTerm2')}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-ink">›</span> {t('settings.competeTerm3')}
+              </li>
+            </ul>
+            <div className="flex gap-3 px-5 pb-5">
+              <button
+                onClick={enable}
+                disabled={busy}
+                className="flex-1 border border-ink bg-ink px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright disabled:opacity-50"
+              >
+                {busy ? '…' : t('settings.competeAccept')}
+              </button>
+              <button
+                onClick={() => setConfirm(false)}
+                className="border border-line-bright px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-bg"
+              >
+                {t('safety.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export default function Settings() {
-  const { currentUser, logout, isHouse } = useApp()
+  const { currentUser, logout, isHouse, isCurator } = useApp()
   const { standalone } = usePWA()
   const navigate = useNavigate()
   const t = useT()
@@ -515,6 +612,7 @@ export default function Settings() {
   if (view === 'switch') return <Shell><AccountSwitcher onBack={() => setView('menu')} /></Shell>
   if (view === 'identity') return <Shell><IdentityPanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'install') return <Shell><InstallPanel onBack={() => setView('menu')} /></Shell>
+  if (view === 'compete') return <Shell><CuratorCompetePanel user={user} onBack={() => setView('menu')} /></Shell>
 
   const Item = ({ icon, label, onClick, danger, right }) => (
     <button
@@ -582,6 +680,18 @@ export default function Settings() {
               label={t('settings.accountType')}
               onClick={() => setView('role')}
               right={<span className="font-mono text-[10px] text-muted">{user.dualRole ? t('role.dual') : t(`role.${user.role}`)}</span>}
+            />
+          ) : null}
+          {isCurator ? (
+            <Item
+              icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⚔</span>}
+              label={t('settings.compete')}
+              onClick={() => setView('compete')}
+              right={
+                <span className={`font-mono text-[10px] ${user.curatorCompetes ? 'text-ink' : 'text-faint'}`}>
+                  {user.curatorCompetes ? t('profile.on') : t('profile.off')}
+                </span>
+              }
             />
           ) : null}
           {isHouse ? (

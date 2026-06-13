@@ -477,6 +477,10 @@ export function AppProvider({ children }) {
     (role, dual = false) => mutate(() => api.post('/api/me/role', { role, dual })),
     [mutate],
   )
+  const setCuratorCompetes = useCallback(
+    (on, agree = false) => mutate(() => api.post('/api/me/curator-competes', { on, agree })),
+    [mutate],
+  )
   const exportData = useCallback(() => api.get('/api/me/export'), [])
   const fetchFeed = useCallback(() => api.get('/api/feed'), [])
   const fetchNotifications = useCallback(() => api.get('/api/notifications'), [])
@@ -589,6 +593,7 @@ export function AppProvider({ children }) {
     deleteComment,
     updateProfile,
     updateRole,
+    setCuratorCompetes,
     exportData,
     fetchFeed,
     fetchNotifications,

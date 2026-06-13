@@ -622,10 +622,15 @@ app.post('/api/battles/:id/register', requireAuth, (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
   if (!b) return fail(res, 404, 'Battle not found.')
   if (!req.body?.agreeRules) return fail(res, 400, 'You must accept the battle rules to enter.')
+  // hard rule: nobody competes in a battle they curate (conflict of interest)
+  if (b.curatorId === req.user.id)
+    return fail(res, 403, 'You curate this battle — you can’t compete in it.')
   const need = b.kind === 'VERSES' ? 'artist' : 'producer'
-  // a dual-role competitor (producer + artist) may enter either battle type
+  // a dual-role competitor (producer + artist) may enter either battle type;
+  // a curator/admin who opted into competing may enter any battle that isn't theirs
   const isCompetitor = req.user.role === 'producer' || req.user.role === 'artist'
-  const canEnter = req.user.role === need || (req.user.dualRole && isCompetitor)
+  const competingStaff = !!req.user.curatorCompetes && isStaff(req.user)
+  const canEnter = req.user.role === need || (req.user.dualRole && isCompetitor) || competingStaff
   if (!canEnter)
     return fail(
       res,
@@ -1046,6 +1051,18 @@ app.post('/api/me/role', requireAuth, (req, res) => {
   // "dual" = also compete in the other type; only meaningful for producer/artist
   const dual = role !== 'listener' && req.body?.dual ? 1 : 0
   db.prepare('UPDATE users SET role = ?, dualRole = ? WHERE id = ?').run(role, dual, req.user.id)
+  return ok(res, { me: meUser(getUserRow(req.user.id)) })
+})
+
+// Staff opt-in: a curator/admin may also compete in battles — but never in a
+// battle they curate (enforced at /register). Turning it on requires accepting
+// the extra terms.
+app.post('/api/me/curator-competes', requireAuth, (req, res) => {
+  if (!isStaff(req.user)) return fail(res, 403, 'Only curators can enable this.')
+  const on = !!req.body?.on
+  if (on && !req.body?.agree)
+    return fail(res, 400, 'You must accept the competing terms to turn this on.')
+  db.prepare('UPDATE users SET curatorCompetes = ? WHERE id = ?').run(on ? 1 : 0, req.user.id)
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
 })
 
