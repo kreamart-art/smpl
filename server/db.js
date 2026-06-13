@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 CREATE TABLE IF NOT EXISTS message_reactions (
   messageId TEXT, userId TEXT, emoji TEXT, createdAt INTEGER, PRIMARY KEY (messageId, userId)
 );
+CREATE TABLE IF NOT EXISTS device_tokens (
+  token TEXT PRIMARY KEY, userId TEXT, platform TEXT, createdAt INTEGER
+);
 CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (userId);
 CREATE TABLE IF NOT EXISTS comments (
   id TEXT PRIMARY KEY, submissionId TEXT, battleId TEXT, userId TEXT, body TEXT, createdAt INTEGER

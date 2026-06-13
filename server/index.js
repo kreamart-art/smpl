@@ -20,6 +20,7 @@ import { STATUS, STATUS_INDEX, nextStatus } from '../src/data/status.js'
 import { sendEmail, mailConfigured, resetEmail, verifyEmail as verifyEmailTpl, sourceEmail } from './email.js'
 import { runBackup, listBackups, scheduleBackups } from './backup.js'
 import { pushConfigured, vapidPublicKey, saveSubscription, removeSubscription, sendPush } from './push.js'
+import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -917,6 +918,17 @@ app.post('/api/push/subscribe', requireAuth, (req, res) => {
 })
 app.post('/api/push/unsubscribe', requireAuth, (req, res) => {
   removeSubscription(req.body?.endpoint)
+  return ok(res, {})
+})
+// native app (Capacitor) device tokens — APNs (iOS) / FCM (Android)
+app.post('/api/push/native-register', requireAuth, (req, res) => {
+  const { token, platform } = req.body || {}
+  if (!token) return fail(res, 400, 'No device token.')
+  saveDeviceToken(req.user.id, String(token), platform)
+  return ok(res, {})
+})
+app.post('/api/push/native-unregister', requireAuth, (req, res) => {
+  removeDeviceToken(req.body?.token)
   return ok(res, {})
 })
 

@@ -62,10 +62,35 @@ Re-run `npm run cap:sync` after any web change to copy the new `dist/` in.
   - `<uses-permission android:name="android.permission.RECORD_AUDIO" />`
   - `android:screenOrientation="portrait"` on the main `<activity>` (belt-and-braces with the runtime lock).
 
-## Next (step 2): native push
+## Native push (step 2 — code DONE, needs credentials)
 
-Web push is replaced by native push on device. Add `@capacitor/push-notifications`
-wiring (already installed), register for APNs (iOS) / FCM (Android), and POST the
-device token to a new server endpoint so the backend can notify via APNs/FCM.
+The app already registers for push and stores the device token server-side
+(`@capacitor/push-notifications` → `src/lib/pushNative.js` → `NativeBoot.jsx` →
+`POST /api/push/native-register`). The server (`server/nativepush.js`) sends to
+**APNs (iOS)** and **FCM (Android)** using only Node built-ins, hooked into the
+existing `sendPush()` so DMs / follows / battle events all reach devices. It's a
+**no-op until you set the credentials** below (env on the Coolify app).
 
-See [[smpl_deploy]] for backend/deploy details.
+**iOS (APNs):** in Apple Developer create an **APNs Auth Key** (`.p8`). Set:
+
+- `APNS_KEY` — the full contents of the `AuthKey_XXXXXX.p8`
+- `APNS_KEY_ID` — the key's 10-char id
+- `APNS_TEAM_ID` — your Apple Team id
+- `APNS_BUNDLE_ID` — `nl.artnomad.smpl`
+- `APNS_HOST` — `api.push.apple.com` (TestFlight + App Store) or
+  `api.sandbox.push.apple.com` (a `Debug` build run from Xcode)
+
+In Xcode: add the **Push Notifications** capability (+ Background Modes → Remote
+notifications).
+
+**Android (FCM):** create a Firebase project, add an Android app
+(`nl.artnomad.smpl`), download **`google-services.json`** into `android/app/`,
+and create a **service account** (Project settings → Service accounts → Generate
+key). Set:
+
+- `FCM_SERVICE_ACCOUNT` — the whole service-account JSON (as one env value)
+
+That's it — restart the app (redeploy) and pushes flow to both platforms. Web
+push keeps working in the installed PWA / desktop independently.
+
+See [[smpl_deploy]] for the deploy + env-update steps.

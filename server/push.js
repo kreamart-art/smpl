@@ -1,5 +1,6 @@
 import webpush from 'web-push'
 import { db } from './db.js'
+import { sendNative } from './nativepush.js'
 
 // Web push is configured purely through env (set in Coolify). Generate a keypair
 // once with `npx web-push generate-vapid-keys` and store both halves; with
@@ -38,7 +39,11 @@ export function removeSubscription(endpoint) {
 // Fire-and-forget push to every device a user has registered. Dead endpoints
 // (410 Gone / 404) are pruned so the table self-heals.
 export async function sendPush(userId, payload) {
-  if (!pushConfigured || !userId) return
+  if (!userId) return
+  // native devices (iOS/Android via the app) — graceful no-op if unconfigured
+  sendNative(userId, payload).catch(() => {})
+  // web push (installed PWA / desktop browsers)
+  if (!pushConfigured) return
   const subs = db.prepare('SELECT * FROM push_subscriptions WHERE userId=?').all(userId)
   if (!subs.length) return
   const body = JSON.stringify(payload)

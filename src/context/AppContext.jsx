@@ -347,6 +347,11 @@ export function AppProvider({ children }) {
     (email, message, topic) => api.post('/api/contact', { email, message, topic }),
     [],
   )
+  // native app: hand an APNs/FCM device token to the server for push
+  const registerDevice = useCallback(
+    (token, platform) => api.post('/api/push/native-register', { token, platform }),
+    [],
+  )
 
   // --- account security + deletion -----------------------------------------
   const setup2fa = useCallback(() => api.post('/api/me/2fa/setup'), [])
@@ -544,6 +549,7 @@ export function AppProvider({ children }) {
     verifyEmailToken,
     resendVerification,
     sendContact,
+    registerDevice,
     setup2fa,
     enable2fa,
     disable2fa,
