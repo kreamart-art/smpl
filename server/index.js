@@ -1471,6 +1471,39 @@ app.post(
   },
 )
 
+// ----- SEO: a live sitemap of every public page (marketing + battles + profiles)
+app.get('/sitemap.xml', (req, res) => {
+  const base = (APP_URL || 'https://usesmpl.com').replace(/\/$/, '')
+  const urls = []
+  const add = (path, priority, freq) =>
+    urls.push(
+      `  <url><loc>${base}${path}</loc>${freq ? `<changefreq>${freq}</changefreq>` : ''}${
+        priority ? `<priority>${priority}</priority>` : ''
+      }</url>`,
+    )
+  add('/', '1.0', 'daily')
+  add('/battles', '0.9', 'hourly')
+  add('/people', '0.7', 'daily')
+  add('/signup', '0.6', 'monthly')
+  add('/contact', '0.4', 'yearly')
+  add('/privacy', '0.3', 'yearly')
+  add('/terms', '0.3', 'yearly')
+  add('/guidelines', '0.3', 'yearly')
+  add('/copyright', '0.3', 'yearly')
+  try {
+    for (const b of db.prepare('SELECT id FROM battles').all())
+      add(`/battles/${encodeURIComponent(b.id)}`, '0.8', 'daily')
+    for (const u of db.prepare('SELECT alias FROM users').all())
+      add(`/profile/${encodeURIComponent(u.alias)}`, '0.5', 'weekly')
+  } catch {
+    /* a missing table shouldn't break the sitemap */
+  }
+  res.set('Content-Type', 'application/xml; charset=utf-8')
+  res.send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`,
+  )
+})
+
 // ----- production: serve the built SPA from the same origin ------------------
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 if (existsSync(distDir)) {

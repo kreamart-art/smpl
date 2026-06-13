@@ -15,6 +15,34 @@ import { Grain, Vignette } from './Atmosphere.jsx'
 import { usePlayback } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 
+// Per-route <title> — unique titles help search results + the browser tab.
+const PAGE_TITLES = {
+  '/': 'SMPL — Beat & Verse Battles · Same sample. Different soul.',
+  '/battles': 'Battles — SMPL',
+  '/feed': 'Feed — SMPL',
+  '/people': 'People — SMPL',
+  '/signup': 'Join SMPL — Beat & Verse Battles',
+  '/login': 'Log in — SMPL',
+  '/contact': 'Contact — SMPL',
+  '/privacy': 'Privacy Policy — SMPL',
+  '/terms': 'Terms of Use — SMPL',
+  '/guidelines': 'Community Guidelines — SMPL',
+  '/copyright': 'Copyright — SMPL',
+  '/settings': 'Settings — SMPL',
+  '/dashboard': 'Dashboard — SMPL',
+  '/messages': 'Messages — SMPL',
+  '/notifications': 'Notifications — SMPL',
+}
+function pageTitle(pathname) {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
+  if (pathname.startsWith('/profile/')) {
+    const a = decodeURIComponent(pathname.split('/')[2] || '')
+    return a ? `@${a} — SMPL` : 'Profile — SMPL'
+  }
+  if (pathname.startsWith('/battles/')) return 'Battle — SMPL'
+  return 'SMPL — Same sample. Different soul.'
+}
+
 export default function Layout() {
   const { track } = usePlayback()
   const { standalone } = usePWA()
@@ -22,6 +50,7 @@ export default function Layout() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
+    document.title = pageTitle(pathname)
   }, [pathname])
 
   // ---------- installed app shell (Instagram-style) ----------

@@ -1,0 +1,14 @@
+# SMPL — https://usesmpl.com
+# Public pages are open to crawlers; private/auth pages are not.
+User-agent: *
+Allow: /
+Disallow: /settings
+Disallow: /dashboard
+Disallow: /messages
+Disallow: /notifications
+Disallow: /login
+Disallow: /forgot
+Disallow: /reset
+Disallow: /verify
+
+Sitemap: https://usesmpl.com/sitemap.xml
