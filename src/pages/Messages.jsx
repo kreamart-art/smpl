@@ -7,7 +7,7 @@ import Avatar from '../components/Avatar.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconImage, IconMic } from '../components/icons.jsx'
-import { Btn, inputCls } from '../components/ui.jsx'
+import { Btn, inputCls, textareaCls } from '../components/ui.jsx'
 import { roleLabel } from '../data/kind.js'
 import { mediaUrl } from '../api.js'
 
@@ -311,6 +311,7 @@ function Thread({ alias }) {
   const endRef = useRef(null)
   const recRef = useRef(null)
   const didRefresh = useRef(false)
+  const taRef = useRef(null)
 
   const load = useCallback(
     async (initial) => {
@@ -336,6 +337,14 @@ function Thread({ alias }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [data?.messages?.length])
+
+  // auto-grow the composer as it wraps to multiple lines (shrinks back after send)
+  useEffect(() => {
+    const el = taRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+  }, [body])
 
   if (!currentUser) return <LoginGate />
 
@@ -655,7 +664,7 @@ function Thread({ alias }) {
           </Btn>
         </div>
       ) : (
-        <form onSubmit={onSend} className="flex shrink-0 items-center gap-2 border-t border-line py-3">
+        <form onSubmit={onSend} className="flex shrink-0 items-end gap-2 border-t border-line py-3">
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} />
           <button
             type="button"
@@ -675,11 +684,20 @@ function Thread({ alias }) {
           >
             <IconMic size={18} />
           </button>
-          <input
-            className={`${inputCls} flex-1`}
+          <textarea
+            ref={taRef}
+            rows={1}
+            className={`${textareaCls} max-h-32 flex-1 py-2.5 leading-snug`}
             placeholder={t('messages.placeholder')}
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              // ⌘/Ctrl+Enter sends; plain Enter (incl. the phone return key) makes a new line
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                onSend(e)
+              }
+            }}
             maxLength={2000}
           />
           <Btn type="submit" variant="solid" disabled={sending || !body.trim()}>

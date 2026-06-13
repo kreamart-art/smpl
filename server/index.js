@@ -413,6 +413,12 @@ app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => 
     user.links, user.genres, user.pastHistory, user.avatar, user.joinedAt, user.lastSeenAt,
     user.passwordHash, user.acceptedTerms,
   )
+  // every new member starts out following the house account (@SMPL); they can unfollow later
+  if (id !== 'u_smpl') {
+    try {
+      db.prepare('INSERT OR IGNORE INTO follows (followerId,followeeId,createdAt) VALUES (?,?,?)').run(id, 'u_smpl', now)
+    } catch {}
+  }
   const row = getUserRow(id)
   // kick off email verification (no-op if SMTP isn't configured yet)
   sendVerificationEmail(row, langOf(req)).catch(() => {})

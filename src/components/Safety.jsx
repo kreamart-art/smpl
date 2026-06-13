@@ -159,7 +159,13 @@ export function UserSafetyMenu({ user, className = '', small = false }) {
   const toggleMenu = () => {
     if (open) return close()
     const r = btnRef.current?.getBoundingClientRect()
-    if (r) setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) })
+    if (r) {
+      // anchor under the ⋯ but keep the whole menu on-screen: clamp left, right AND bottom
+      const W = Math.min(240, window.innerWidth - 16)
+      const left = Math.min(Math.max(8, r.right - W), window.innerWidth - W - 8)
+      const top = Math.max(8, Math.min(r.bottom + 8, window.innerHeight - 168))
+      setPos({ top, left, width: W })
+    }
     setOpen(true)
   }
   const close = () => {
@@ -192,8 +198,8 @@ export function UserSafetyMenu({ user, className = '', small = false }) {
           <div className="fixed inset-0 z-[60]" onClick={close} />
           {/* fixed + portaled so the banner's overflow-hidden can't clip it */}
           <div
-            className="fixed z-[61] w-60 border border-line-bright bg-panel shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)]"
-            style={{ top: pos?.top, right: pos?.right }}
+            className="fixed z-[61] border border-line-bright bg-panel shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)]"
+            style={{ top: pos?.top, left: pos?.left, width: pos?.width }}
           >
             {confirmBlock ? (
               <div className="p-4">
