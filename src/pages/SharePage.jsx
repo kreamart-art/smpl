@@ -124,7 +124,9 @@ export default function SharePage() {
   const render = async () => {
     const { toPng } = await import('html-to-image')
     if (document.fonts?.ready) await document.fonts.ready
-    return toPng(cardRef.current, { pixelRatio: 1, cacheBust: true, backgroundColor: '#000000' })
+    // NB: no cacheBust — it appends a query string that corrupts the inlined
+    // data-URL logo (and we inline everything, so there's nothing to bust).
+    return toPng(cardRef.current, { pixelRatio: 1, backgroundColor: '#000000' })
   }
 
   const onDownload = async () => {

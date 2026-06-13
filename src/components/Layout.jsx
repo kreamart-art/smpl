@@ -55,6 +55,9 @@ export default function Layout() {
 
   // ---------- installed app shell (Instagram-style) ----------
   if (standalone) {
+    // inside a DM conversation the composer owns the bottom — hide the tab bar
+    // (and transport) so only the typing bar shows. The inbox keeps the bar.
+    const inThread = /^\/messages\/.+/.test(pathname)
     // leave room for the floating tab bar (+ the transport when playing)
     const pad = (track ? 64 : 0) + 86
     return (
@@ -68,7 +71,7 @@ export default function Layout() {
         <VerifyEmailBanner />
         <main
           className="relative flex-1"
-          style={{ paddingBottom: `calc(${pad}px + env(safe-area-inset-bottom))` }}
+          style={{ paddingBottom: inThread ? 0 : `calc(${pad}px + env(safe-area-inset-bottom))` }}
         >
           <PullToRefresh>
             <div key={pathname} className="fadein">
@@ -76,8 +79,8 @@ export default function Layout() {
             </div>
           </PullToRefresh>
         </main>
-        <TransportBar />
-        <BottomTabBar />
+        {!inThread ? <TransportBar /> : null}
+        {!inThread ? <BottomTabBar /> : null}
       </div>
     )
   }

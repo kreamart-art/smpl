@@ -279,10 +279,10 @@ export default function BattleDetail() {
         </div>
 
         <div className="px-6 py-9 sm:px-8 sm:py-12">
-          <div className="mb-5 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.24em] text-faint">
+          <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.24em] text-faint">
             <span>SMPL·{battle.id.toUpperCase()}</span>
             <span className="h-px w-8 bg-line-bright" />
-            <span className="inline-flex items-center gap-1 text-muted">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap text-muted">
               {t('battleDetail.curatedBy', { alias: curator?.alias || 'SMPL' })}
               {curator?.verified ? <VerifiedBadge size={11} /> : null}
             </span>

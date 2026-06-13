@@ -116,13 +116,19 @@ export default function ShareCard({ cardRef, kind, data, format = 'story', logoS
           <div style={{ height: 140, marginBottom: 36 }}>
             <Waveform seed={data.seed} bars={84} height={140} progress={0.46} baseClass="bg-line-bright" playedClass="bg-ink" />
           </div>
-          <div className="flex items-center justify-between border-t border-line-bright" style={{ paddingTop: 34, gap: 24 }}>
-            <img src={logoSrc} alt="SMPL" style={{ height: 56, width: 'auto' }} />
-            <div className="text-right">
-              <div className="font-mono uppercase text-ink-dim" style={{ fontSize: 28, letterSpacing: '0.14em' }}>
+          <div className="flex items-center justify-between border-t border-line-bright" style={{ paddingTop: 34, gap: 40 }}>
+            <img src={logoSrc} alt="SMPL" style={{ height: 56, width: 'auto', flexShrink: 0 }} />
+            <div className="text-right" style={{ flexShrink: 0 }}>
+              <div
+                className="font-mono uppercase text-ink-dim"
+                style={{ fontSize: 28, letterSpacing: '0.14em', lineHeight: 1.4, whiteSpace: 'nowrap' }}
+              >
                 {data.cta}
               </div>
-              <div className="font-mono text-muted" style={{ fontSize: 28, letterSpacing: '0.1em' }}>
+              <div
+                className="font-mono text-muted"
+                style={{ fontSize: 28, letterSpacing: '0.1em', lineHeight: 1.4, whiteSpace: 'nowrap' }}
+              >
                 usesmpl.com
               </div>
             </div>

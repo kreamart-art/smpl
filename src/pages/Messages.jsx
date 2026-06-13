@@ -457,8 +457,9 @@ function Thread({ alias }) {
     <div
       className="mx-auto flex w-full max-w-[760px] flex-col px-4 sm:px-6"
       style={{
+        // no bottom tab bar inside a thread → only the top bar (48px) is chrome
         height: standalone
-          ? 'calc(100dvh - 134px - env(safe-area-inset-top) - env(safe-area-inset-bottom))'
+          ? 'calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom))'
           : undefined,
         minHeight: standalone ? undefined : 'calc(100dvh - 140px)',
       }}
