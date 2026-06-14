@@ -65,6 +65,7 @@ export default function Dashboard() {
   const [openId, setOpenId] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [libOpen, setLibOpen] = useState(false)
+  const [step, setStep] = useState(1)
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
   const myBattles = battles
@@ -139,6 +140,7 @@ export default function Dashboard() {
     const r = await createBattle(payload)
     if (r.ok) {
       setForm(empty)
+      setStep(1)
       setMsg({
         ok: true,
         text: t('dashboard.msg.created', {
@@ -243,6 +245,20 @@ export default function Dashboard() {
                     ),
                   )}
                 </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em]">
+                    {[1, 2, 3, 4].map((n) => (
+                      <span key={n} className={n === step ? 'text-ink' : 'text-faint'}>
+                        {n} · {t(`dashboard.wizard.step${n}`)}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">{t(`dashboard.wizard.hint${step}`)}</p>
+                </div>
+
+                {step === 1 ? (
+                  <>
                 <Field label={t('dashboard.create.fieldTitle')}>
                   <input
                     className={inputCls}
@@ -276,6 +292,11 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
+                  </>
+                ) : null}
+
+                {step === 2 ? (
+                  <>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <Field
                     label={
@@ -374,6 +395,11 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
+                  </>
+                ) : null}
+
+                {step === 3 ? (
+                  <>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <Field label={t('dashboard.create.maxProducers')}>
                     <input
@@ -425,7 +451,11 @@ export default function Dashboard() {
                 {form.blind ? (
                   <p className="-mt-3 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.blindHint')}</p>
                 ) : null}
+                  </>
+                ) : null}
 
+                {step === 4 ? (
+                  <>
                 <div className="border-t border-line pt-5">
                   <label className="flex items-center gap-3 font-mono text-[11px] text-ink">
                     <input
@@ -486,10 +516,38 @@ export default function Dashboard() {
                     <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.manualHint')}</p>
                   )}
                 </div>
+                  </>
+                ) : null}
 
-                <Btn type="submit" variant="solid" size="lg" full>
-                  {t('dashboard.create.submit')}
-                </Btn>
+                <div className="flex items-center justify-between gap-3 border-t border-line pt-5">
+                  <button
+                    type="button"
+                    disabled={step === 1}
+                    onClick={() => setStep((s) => Math.max(1, s - 1))}
+                    className="border border-line px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink disabled:opacity-30"
+                  >
+                    ◂ {t('common.back')}
+                  </button>
+                  {step < 4 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (step === 1 && !form.title.trim()) {
+                          setMsg({ ok: false, text: t('dashboard.msg.needTitle') })
+                          return
+                        }
+                        setStep((s) => Math.min(4, s + 1))
+                      }}
+                      className="border border-ink bg-ink px-6 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+                    >
+                      {t('dashboard.wizard.next')} ▸
+                    </button>
+                  ) : (
+                    <Btn type="submit" variant="solid">
+                      {t('dashboard.create.submit')}
+                    </Btn>
+                  )}
+                </div>
                 <p className="font-mono text-[10px] leading-relaxed text-muted">
                   {t('dashboard.create.footnote', { status: t(`status.${STATUS.ANNOUNCED}`) })}
                 </p>
