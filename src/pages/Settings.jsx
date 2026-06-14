@@ -718,6 +718,11 @@ export default function Settings() {
               onClick={() => setView('install')}
             />
           ) : null}
+          <Item
+            icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">?</span>}
+            label="Help"
+            onClick={() => navigate('/help')}
+          />
           <Item icon={<IconLogout size={18} />} label={t('common.logout')} onClick={out} />
           {canDelete ? (
             <Item icon={<IconTrash size={18} />} label={t('profile.deleteAccount')} onClick={() => setView('delete')} danger />

@@ -24,6 +24,7 @@ const PAGE_TITLES = {
   '/signup': 'Join SMPL — Beat & Verse Battles',
   '/login': 'Log in — SMPL',
   '/contact': 'Contact — SMPL',
+  '/help': 'How SMPL works — Help',
   '/privacy': 'Privacy Policy — SMPL',
   '/terms': 'Terms of Use — SMPL',
   '/guidelines': 'Community Guidelines — SMPL',

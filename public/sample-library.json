@@ -1,0 +1,162 @@
+[
+  {
+    "genre": "Amapiano",
+    "genreSlug": "amapiano",
+    "name": "AA Solo Guitar Love",
+    "file": "/samples/amapiano/so-aa-113-solo-guitar-love-ebmaj.mp3",
+    "bpm": 113,
+    "key": "Eb maj"
+  },
+  {
+    "genre": "Amapiano",
+    "genreSlug": "amapiano",
+    "name": "TRKTRN Brass Loop Heavy",
+    "file": "/samples/amapiano/trktrn-ajbf-112-brass-loop-heavy-dmin.mp3",
+    "bpm": 112,
+    "key": "D min"
+  },
+  {
+    "genre": "Amapiano",
+    "genreSlug": "amapiano",
+    "name": "Udo6 Color",
+    "file": "/samples/amapiano/rare-adf3-114-udo6-color-eb.mp3",
+    "bpm": 114,
+    "key": "Eb"
+  },
+  {
+    "genre": "Amapiano",
+    "genreSlug": "amapiano",
+    "name": "Vocal Male Kundu Leele Melody Main Wet",
+    "file": "/samples/amapiano/fl-mav-125-vocal-male-kundu-leele-melody-main-wet-ebmin.mp3",
+    "bpm": 125,
+    "key": "Eb min"
+  },
+  {
+    "genre": "Boom Bap",
+    "genreSlug": "boom-bap",
+    "name": "Melodic Stack Resampled Pixilate",
+    "file": "/samples/boom-bap/sm-rjl-75-melodic-stack-resampled-pixilate-gm.mp3",
+    "bpm": 75,
+    "key": "G min"
+  },
+  {
+    "genre": "Boom Bap",
+    "genreSlug": "boom-bap",
+    "name": "Piano Chords Trainwreck",
+    "file": "/samples/boom-bap/os-ss-90-piano-chords-trainwreck-am.mp3",
+    "bpm": 90,
+    "key": "A min"
+  },
+  {
+    "genre": "Boom Bap",
+    "genreSlug": "boom-bap",
+    "name": "Rhh Kit20 Smoke Bass Upright Loop",
+    "file": "/samples/boom-bap/rhh-kit20-smoke-bass-upright-loop-90-dm.mp3",
+    "bpm": 90,
+    "key": "D min"
+  },
+  {
+    "genre": "Boom Bap",
+    "genreSlug": "boom-bap",
+    "name": "Songstarter Tape Vinyl Lofi",
+    "file": "/samples/boom-bap/sm-bss-70-songstarter-tape-vinyl-lofi-gmin.mp3",
+    "bpm": 70,
+    "key": "G min"
+  },
+  {
+    "genre": "Boom Bap",
+    "genreSlug": "boom-bap",
+    "name": "Vinyl Loop Higher",
+    "file": "/samples/boom-bap/rss2-70-vinyl-loop-higher-g-maj.mp3",
+    "bpm": 70,
+    "key": "G# maj"
+  },
+  {
+    "genre": "Boom Bap",
+    "genreSlug": "boom-bap",
+    "name": "Vinyl Loop Thecity",
+    "file": "/samples/boom-bap/rss2-80-vinyl-loop-thecity-dmin.mp3",
+    "bpm": 80,
+    "key": "D min"
+  },
+  {
+    "genre": "Deep House",
+    "genreSlug": "deep-house",
+    "name": "Dh Whirling Full Loop",
+    "file": "/samples/deep-house/dh-kit8-whirling-full-loop-124-f-m.mp3",
+    "bpm": 124,
+    "key": "F# min"
+  },
+  {
+    "genre": "Deep House",
+    "genreSlug": "deep-house",
+    "name": "Dts Syn",
+    "file": "/samples/deep-house/dts-syn-125-08-c.mp3",
+    "bpm": 125,
+    "key": "C"
+  },
+  {
+    "genre": "Deep House",
+    "genreSlug": "deep-house",
+    "name": "Jazz Sax Lead Pt",
+    "file": "/samples/deep-house/os-fa-115-cmin-jazz-sax-lead-pt-2.mp3",
+    "bpm": 115,
+    "key": "C min"
+  },
+  {
+    "genre": "Deep House",
+    "genreSlug": "deep-house",
+    "name": "Synth Loop Tulu",
+    "file": "/samples/deep-house/t-ah-119-synth-loop-tulu-dm.mp3",
+    "bpm": 119,
+    "key": "D min"
+  },
+  {
+    "genre": "Deep House",
+    "genreSlug": "deep-house",
+    "name": "Synth Pluck Broken Porta Evolver",
+    "file": "/samples/deep-house/91v-sf-125-synth-pluck-broken-porta-evolver-am.mp3",
+    "bpm": 125,
+    "key": "A min"
+  },
+  {
+    "genre": "Deep House",
+    "genreSlug": "deep-house",
+    "name": "Vocal Hook Pitched Lost Retro Wet",
+    "file": "/samples/deep-house/91v-sf-128-vocal-hook-pitched-lost-retro-wet-am.mp3",
+    "bpm": 128,
+    "key": "A min"
+  },
+  {
+    "genre": "Lo Fi",
+    "genreSlug": "lo-fi",
+    "name": "Electric Piano Bitcrushed",
+    "file": "/samples/lo-fi/lex-lbsp-76-electric-piano-bitcrushed-amin.mp3",
+    "bpm": 76,
+    "key": "A min"
+  },
+  {
+    "genre": "R&B",
+    "genreSlug": "r-and-b",
+    "name": "KMRBI Melodic Stack Deepsea",
+    "file": "/samples/r-and-b/kmrbi-mni-114-melodic-stack-deepsea-emin.mp3",
+    "bpm": 114,
+    "key": "E min"
+  },
+  {
+    "genre": "R&B",
+    "genreSlug": "r-and-b",
+    "name": "Piano Towel",
+    "file": "/samples/r-and-b/jjp-trnb-110-piano-towel-ebmaj.mp3",
+    "bpm": 110,
+    "key": "Eb maj"
+  },
+  {
+    "genre": "R&B",
+    "genreSlug": "r-and-b",
+    "name": "SOULSURPLUS Jetblack Melodic Loop Electric Piano Soul Bpm",
+    "file": "/samples/r-and-b/soulsurplus-jetblack-melodic-loop-14-electric-piano-soul-120-bpm-ebmin.mp3",
+    "bpm": 120,
+    "key": "Eb min"
+  }
+]

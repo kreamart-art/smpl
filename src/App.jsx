@@ -17,6 +17,7 @@ import Messages from './pages/Messages.jsx'
 import SharePage from './pages/SharePage.jsx'
 import Legal from './pages/Legal.jsx'
 import Contact from './pages/Contact.jsx'
+import Help from './pages/Help.jsx'
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/Recover.jsx'
 import NotFound from './pages/NotFound.jsx'
 
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="/guidelines" element={<Legal doc="guidelines" />} />
         <Route path="/copyright" element={<Legal doc="copyright" />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/help" element={<Help />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

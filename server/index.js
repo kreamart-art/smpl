@@ -726,7 +726,7 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
 app.post('/api/battles/:id/email-source', rateLimit('emailsrc', 12, 30 * 60_000), requireAuth, async (req, res) => {
   const b = getBattleRow(req.params.id)
   if (!b) return fail(res, 404, 'Battle not found.')
-  if (!b.sampleRevealed || !b.sampleUrl || !/^\/?api\/uploads\//.test(b.sampleUrl))
+  if (!b.sampleRevealed || !b.sampleUrl || !/^\/?(api\/uploads|samples)\//.test(b.sampleUrl))
     return fail(res, 400, 'No downloadable source for this battle yet.')
   const role = req.user.role
   const allowed =
@@ -1505,6 +1505,7 @@ app.get('/sitemap.xml', (req, res) => {
   add('/battles', '0.9', 'hourly')
   add('/people', '0.7', 'daily')
   add('/signup', '0.6', 'monthly')
+  add('/help', '0.5', 'monthly')
   add('/contact', '0.4', 'yearly')
   add('/privacy', '0.3', 'yearly')
   add('/terms', '0.3', 'yearly')

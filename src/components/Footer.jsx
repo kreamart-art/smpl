@@ -71,6 +71,7 @@ export default function Footer() {
             <ThemeToggle />
           </div>
           <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.16em] sm:ml-auto">
+            <Link to="/help" className="text-ink-dim transition-colors hover:text-ink">Help</Link>
             <Link to="/contact" className="text-ink-dim transition-colors hover:text-ink">{t('contact.title')}</Link>
             <Link to="/privacy" className="text-ink-dim transition-colors hover:text-ink">{t('legal.privacy')}</Link>
             <Link to="/terms" className="text-ink-dim transition-colors hover:text-ink">{t('legal.terms')}</Link>

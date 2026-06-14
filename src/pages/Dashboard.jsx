@@ -6,6 +6,7 @@ import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import Reveal from '../components/Reveal.jsx'
 import ReportsPanel from '../components/ReportsPanel.jsx'
 import BackupsPanel from '../components/BackupsPanel.jsx'
+import SampleLibrary from '../components/SampleLibrary.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { STATUS, nextStatus } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
@@ -63,6 +64,7 @@ export default function Dashboard() {
   const [msg, setMsg] = useState(null)
   const [openId, setOpenId] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [libOpen, setLibOpen] = useState(false)
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
   const myBattles = battles
@@ -296,6 +298,23 @@ export default function Dashboard() {
                         disabled={uploading}
                       />
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => setLibOpen(true)}
+                      className="border border-line-bright px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                    >
+                      ♪ {t('dashboard.create.fromLibrary')}
+                    </button>
+                    {libOpen ? (
+                      <SampleLibrary
+                        onClose={() => setLibOpen(false)}
+                        onPick={(s) => {
+                          setForm((f) => ({ ...f, sampleUrl: s.file, sampleName: s.name, genre: f.genre || s.genre }))
+                          setLibOpen(false)
+                          setMsg({ ok: true, text: t('dashboard.msg.libraryPicked', { name: s.name }) })
+                        }}
+                      />
+                    ) : null}
                     {form.sampleUrl ? (
                       <span className="flex items-center gap-2 font-mono text-[11px] text-ink">
                         <span className="text-muted">✓</span>
