@@ -1069,6 +1069,101 @@ app.post('/api/me/curator-competes', requireAuth, (req, res) => {
   return ok(res, { me: meUser(getUserRow(req.user.id)) })
 })
 
+// ----- community sample makers (phase 1: apply → review → submit) -------------
+const SAMPLE_MODELS = new Set(['license', 'royalty', 'both'])
+
+// Any member (producer/artist/listener) can apply to become a sample maker.
+app.post('/api/me/sample-maker', requireAuth, (req, res) => {
+  const model = String(req.body?.model || '')
+  if (!SAMPLE_MODELS.has(model)) return fail(res, 400, 'Pick a payout model.')
+  if (!req.body?.agree) return fail(res, 400, 'You must accept the sample-maker terms.')
+  if (req.user.sampleMakerStatus === 'approved') {
+    db.prepare('UPDATE users SET sampleMakerModel = ? WHERE id = ?').run(model, req.user.id)
+  } else {
+    db.prepare('UPDATE users SET sampleMakerStatus = ?, sampleMakerModel = ?, sampleMakerAt = ? WHERE id = ?').run(
+      'pending', model, Date.now(), req.user.id,
+    )
+  }
+  return ok(res, { me: meUser(getUserRow(req.user.id)) })
+})
+
+// An approved maker submits a sample (audio already uploaded) → goes to review.
+app.post('/api/samples', requireAuth, (req, res) => {
+  if (req.user.sampleMakerStatus !== 'approved')
+    return fail(res, 403, 'Only approved sample makers can submit samples.')
+  const b = req.body || {}
+  const name = String(b.name || '').trim().slice(0, 120)
+  const genre = String(b.genre || '').trim().slice(0, 60)
+  const url = String(b.url || '')
+  if (!name || !genre) return fail(res, 400, 'Add a name and a genre.')
+  if (!/^\/?(api\/uploads|samples)\//.test(url)) return fail(res, 400, 'Upload the sample audio first.')
+  const bpm = Number(b.bpm) || null
+  const key = String(b.key || '').trim().slice(0, 12) || null
+  const id = `s_${randomUUID().slice(0, 8)}`
+  db.prepare('INSERT INTO samples (id,makerId,genre,name,bpm,sampleKey,url,status,createdAt) VALUES (?,?,?,?,?,?,?,?,?)').run(
+    id, req.user.id, genre, name, bpm, key, url, 'pending', Date.now(),
+  )
+  return ok(res, { id })
+})
+
+// A maker's own submissions (any status).
+app.get('/api/me/samples', requireAuth, (req, res) => {
+  const rows = db
+    .prepare('SELECT id,genre,name,bpm,sampleKey,url,status,createdAt FROM samples WHERE makerId = ? ORDER BY createdAt DESC')
+    .all(req.user.id)
+  return ok(res, { samples: rows.map((r) => ({ ...r, key: r.sampleKey })) })
+})
+
+// Approved community samples — feeds the curator's library picker.
+app.get('/api/samples', requireAuth, (req, res) => {
+  const rows = db
+    .prepare("SELECT id,makerId,genre,name,bpm,sampleKey,url FROM samples WHERE status = 'approved' ORDER BY genre, name")
+    .all()
+  return ok(res, {
+    samples: rows.map((r) => ({
+      id: r.id,
+      genre: r.genre,
+      name: r.name,
+      bpm: r.bpm,
+      key: r.sampleKey,
+      file: r.url,
+      maker: getUserRow(r.makerId)?.alias || null,
+    })),
+  })
+})
+
+// Admin review queue: pending applicants + pending samples.
+app.get('/api/admin/sample-makers', requireAuth, requireAdmin, (req, res) => {
+  const apps = db
+    .prepare("SELECT id, alias, role, sampleMakerModel, sampleMakerAt FROM users WHERE sampleMakerStatus = 'pending' ORDER BY sampleMakerAt")
+    .all()
+  const subs = db
+    .prepare("SELECT id,makerId,genre,name,bpm,sampleKey,url,createdAt FROM samples WHERE status = 'pending' ORDER BY createdAt")
+    .all()
+  return ok(res, {
+    applicants: apps.map((a) => ({ id: a.id, alias: a.alias, role: a.role, model: a.sampleMakerModel, at: a.sampleMakerAt })),
+    samples: subs.map((s) => ({
+      id: s.id, maker: getUserRow(s.makerId)?.alias || null, genre: s.genre, name: s.name, bpm: s.bpm, key: s.sampleKey, file: s.url, at: s.createdAt,
+    })),
+  })
+})
+
+app.post('/api/admin/sample-makers/:id', requireAuth, requireAdmin, (req, res) => {
+  const status = req.body?.status === 'approved' ? 'approved' : 'rejected'
+  const u = getUserRow(req.params.id)
+  if (!u) return fail(res, 404, 'User not found.')
+  db.prepare('UPDATE users SET sampleMakerStatus = ? WHERE id = ?').run(status, u.id)
+  return ok(res, { status })
+})
+
+app.post('/api/admin/samples/:id', requireAuth, requireAdmin, (req, res) => {
+  const status = req.body?.status === 'approved' ? 'approved' : 'rejected'
+  const s = db.prepare('SELECT * FROM samples WHERE id = ?').get(req.params.id)
+  if (!s) return fail(res, 404, 'Sample not found.')
+  db.prepare('UPDATE samples SET status = ? WHERE id = ?').run(status, s.id)
+  return ok(res, { status })
+})
+
 // AVG/GDPR right to data portability — everything we hold about you, as JSON.
 app.get('/api/me/export', requireAuth, (req, res) => {
   const uid = req.user.id

@@ -481,6 +481,14 @@ export function AppProvider({ children }) {
     (on, agree = false) => mutate(() => api.post('/api/me/curator-competes', { on, agree })),
     [mutate],
   )
+  // community sample makers
+  const applySampleMaker = useCallback((model, agree) => mutate(() => api.post('/api/me/sample-maker', { model, agree })), [mutate])
+  const submitSample = useCallback((payload) => api.post('/api/samples', payload), [])
+  const fetchMySamples = useCallback(() => api.get('/api/me/samples'), [])
+  const fetchCommunitySamples = useCallback(() => api.get('/api/samples'), [])
+  const fetchSampleReview = useCallback(() => api.get('/api/admin/sample-makers'), [])
+  const reviewSampleMaker = useCallback((id, status) => api.post(`/api/admin/sample-makers/${id}`, { status }), [])
+  const reviewSample = useCallback((id, status) => api.post(`/api/admin/samples/${id}`, { status }), [])
   const exportData = useCallback(() => api.get('/api/me/export'), [])
   const fetchFeed = useCallback(() => api.get('/api/feed'), [])
   const fetchNotifications = useCallback(() => api.get('/api/notifications'), [])
@@ -594,6 +602,13 @@ export function AppProvider({ children }) {
     updateProfile,
     updateRole,
     setCuratorCompetes,
+    applySampleMaker,
+    submitSample,
+    fetchMySamples,
+    fetchCommunitySamples,
+    fetchSampleReview,
+    reviewSampleMaker,
+    reviewSample,
     exportData,
     fetchFeed,
     fetchNotifications,

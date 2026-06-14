@@ -7,6 +7,7 @@ import Reveal from '../components/Reveal.jsx'
 import ReportsPanel from '../components/ReportsPanel.jsx'
 import BackupsPanel from '../components/BackupsPanel.jsx'
 import SampleLibrary from '../components/SampleLibrary.jsx'
+import SampleReviewPanel from '../components/SampleReviewPanel.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { STATUS, nextStatus } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
@@ -182,18 +183,27 @@ export default function Dashboard() {
       ) : null}
 
       {isCurator ? (
-        <div className={`mt-8 grid gap-6 ${isAdmin ? 'lg:grid-cols-3' : ''}`}>
-          <div className={isAdmin ? 'lg:col-span-2' : ''}>
-            <Reveal>
-              <ReportsPanel />
-            </Reveal>
+        <>
+          <div className={`mt-8 grid gap-6 ${isAdmin ? 'lg:grid-cols-3' : ''}`}>
+            <div className={isAdmin ? 'lg:col-span-2' : ''}>
+              <Reveal>
+                <ReportsPanel />
+              </Reveal>
+            </div>
+            {isAdmin ? (
+              <Reveal>
+                <BackupsPanel />
+              </Reveal>
+            ) : null}
           </div>
           {isAdmin ? (
-            <Reveal>
-              <BackupsPanel />
-            </Reveal>
+            <div className="mt-6">
+              <Reveal>
+                <SampleReviewPanel />
+              </Reveal>
+            </div>
           ) : null}
-        </div>
+        </>
       ) : null}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-5">

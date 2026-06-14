@@ -12,6 +12,7 @@ import Feed from './pages/Feed.jsx'
 import People from './pages/People.jsx'
 import Settings from './pages/Settings.jsx'
 import EditProfile from './pages/EditProfile.jsx'
+import SampleMaker from './pages/SampleMaker.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Messages from './pages/Messages.jsx'
 import SharePage from './pages/SharePage.jsx'
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/people" element={<People />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/edit-profile" element={<EditProfile />} />
+        <Route path="/sample-maker" element={<SampleMaker />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

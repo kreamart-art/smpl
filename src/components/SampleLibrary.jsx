@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Portal from './Portal.jsx'
+import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 
 // Curator-only picker: choose a battle source from SMPL's bundled sample
@@ -7,22 +8,27 @@ import { useT } from '../i18n/index.jsx'
 // the create-battle form's sample fields.
 export default function SampleLibrary({ onPick, onClose }) {
   const t = useT()
+  const { fetchCommunitySamples } = useApp()
   const [lib, setLib] = useState(null)
   const [playing, setPlaying] = useState(null)
   const audioRef = useRef(null)
 
   useEffect(() => {
     let alive = true
-    fetch('/sample-library.json')
-      .then((r) => r.json())
-      .then((d) => alive && setLib(Array.isArray(d) ? d : []))
-      .catch(() => alive && setLib([]))
+    // the founder's bundled library + approved community samples (with maker)
+    Promise.all([
+      fetch('/sample-library.json').then((r) => r.json()).catch(() => []),
+      fetchCommunitySamples().then((r) => (r?.ok ? r.samples : [])).catch(() => []),
+    ]).then(([base, community]) => {
+      if (!alive) return
+      setLib([...(Array.isArray(base) ? base : []), ...(Array.isArray(community) ? community : [])])
+    })
     const a = audioRef.current
     return () => {
       alive = false
       a?.pause()
     }
-  }, [])
+  }, [fetchCommunitySamples])
 
   const toggle = (s) => {
     const a = audioRef.current
@@ -83,6 +89,7 @@ export default function SampleLibrary({ onPick, onClose }) {
                           {s.bpm ? `${s.bpm} BPM` : ''}
                           {s.bpm && s.key ? ' · ' : ''}
                           {s.key || ''}
+                          {s.maker ? <span className="text-faint"> · @{s.maker}</span> : null}
                         </div>
                       </div>
                       <button

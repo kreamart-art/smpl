@@ -77,6 +77,10 @@ CREATE TABLE IF NOT EXISTS comments (
   id TEXT PRIMARY KEY, submissionId TEXT, battleId TEXT, userId TEXT, body TEXT, createdAt INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_comments_sub ON comments (submissionId, createdAt);
+CREATE TABLE IF NOT EXISTS samples (
+  id TEXT PRIMARY KEY, makerId TEXT, genre TEXT, name TEXT, bpm INTEGER, sampleKey TEXT, url TEXT, status TEXT, createdAt INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_samples_status ON samples (status, genre);
 `)
 
 const J = (v) => JSON.stringify(v ?? [])
@@ -126,6 +130,8 @@ export function meUser(r) {
     twoFactor: !!r.totpEnabled,
     emailVerified: !!r.emailVerified,
     curatorCompetes: !!r.curatorCompetes,
+    sampleMakerStatus: r.sampleMakerStatus || null,
+    sampleMakerModel: r.sampleMakerModel || null,
   }
 }
 
@@ -240,6 +246,10 @@ export function migrate() {
   addColumn('messages', 'photoStamps', 'TEXT')
   // 2026-06-14: a curator who opted to also compete in battles (never their own).
   addColumn('users', 'curatorCompetes', 'INTEGER')
+  // 2026-06-14: community sample makers — apply, get reviewed, submit samples.
+  addColumn('users', 'sampleMakerStatus', 'TEXT') // null | pending | approved | rejected
+  addColumn('users', 'sampleMakerModel', 'TEXT') // license | royalty | both
+  addColumn('users', 'sampleMakerAt', 'INTEGER')
   // 2026-06-12: per-battle blind voting + curator-set auto-running schedule.
   addColumn('battles', 'blind', 'INTEGER')
   addColumn('battles', 'scheduled', 'INTEGER')

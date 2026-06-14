@@ -656,6 +656,16 @@ export default function Settings() {
             onClick={() => setView('identity')}
             right={<span className="max-w-[120px] truncate font-mono text-[10px] text-muted">@{user.alias}</span>}
           />
+          <Item
+            icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">♪</span>}
+            label={t('settings.sampleMaker')}
+            onClick={() => navigate('/sample-maker')}
+            right={
+              user.sampleMakerStatus ? (
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{user.sampleMakerStatus}</span>
+              ) : null
+            }
+          />
           <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
             <IconGlobe size={18} />
             <span>{t('common.language')}</span>
