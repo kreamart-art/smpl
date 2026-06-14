@@ -21,6 +21,8 @@ export default function SharePage() {
   // Inline the wordmark as a data URL so it bakes into the exported PNG
   // (a plain <img src="/logo.png"> can get dropped by html-to-image in prod).
   const [logoUrl, setLogoUrl] = useState('/logo.png')
+  // QR of the deep link, baked into the card so the poster itself is scannable.
+  const [qrUrl, setQrUrl] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -48,6 +50,20 @@ export default function SharePage() {
   const deepLink = `${typeof window !== 'undefined' ? window.location.origin : ''}${
     kind === 'profile' ? `/profile/${encodeURIComponent(id)}` : `/battles/${id}`
   }`
+  // Encode the deep link as a QR (dark-on-white so any camera reads it).
+  useEffect(() => {
+    let alive = true
+    import('qrcode')
+      .then((QR) => QR.toDataURL(deepLink, { margin: 1, width: 280, color: { dark: '#000000', light: '#ffffff' } }))
+      .then((url) => {
+        if (alive) setQrUrl(url)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [deepLink])
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(deepLink)
@@ -220,7 +236,15 @@ export default function SharePage() {
                 style={{ width: 1080 * scale, height: H * scale, overflow: 'hidden' }}
               >
                 <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: 1080 }}>
-                  <ShareCard cardRef={cardRef} kind={kind} data={data} format={format} logoSrc={logoUrl} />
+                  <ShareCard
+                    cardRef={cardRef}
+                    kind={kind}
+                    data={data}
+                    format={format}
+                    logoSrc={logoUrl}
+                    qrSrc={qrUrl}
+                    link={deepLink.replace(/^https?:\/\//, '')}
+                  />
                 </div>
               </div>
             </div>

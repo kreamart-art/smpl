@@ -5,7 +5,7 @@ import { useT } from '../i18n/index.jsx'
 // A poster sized for Instagram (story 9:16 / post 4:5), rendered at true pixel
 // size so html-to-image can export it 1:1. SMPL aesthetic: black, mono, a
 // waveform, the wordmark. Three shapes: battle / profile / win.
-export default function ShareCard({ cardRef, kind, data, format = 'story', logoSrc = '/logo.png' }) {
+export default function ShareCard({ cardRef, kind, data, format = 'story', logoSrc = '/logo.png', qrSrc, link }) {
   const t = useT()
   const H = format === 'story' ? 1920 : 1350
 
@@ -116,22 +116,33 @@ export default function ShareCard({ cardRef, kind, data, format = 'story', logoS
           <div style={{ height: 140, marginBottom: 36 }}>
             <Waveform seed={data.seed} bars={84} height={140} progress={0.46} baseClass="bg-line-bright" playedClass="bg-ink" />
           </div>
-          <div className="flex items-center justify-between border-t border-line-bright" style={{ paddingTop: 34, gap: 40 }}>
-            <img src={logoSrc} alt="SMPL" style={{ height: 56, width: 'auto', flexShrink: 0 }} />
-            <div className="text-right" style={{ flexShrink: 0 }}>
+          <div className="flex items-end justify-between border-t border-line-bright" style={{ paddingTop: 34, gap: 36 }}>
+            <div className="flex flex-col" style={{ gap: 18 }}>
+              <img src={logoSrc} alt="SMPL" style={{ height: 56, width: 'auto' }} />
               <div
                 className="font-mono uppercase text-ink-dim"
-                style={{ fontSize: 28, letterSpacing: '0.14em', lineHeight: 1.4, whiteSpace: 'nowrap' }}
+                style={{ fontSize: 28, letterSpacing: '0.14em', lineHeight: 1.3, whiteSpace: 'nowrap' }}
               >
                 {data.cta}
               </div>
               <div
                 className="font-mono text-muted"
-                style={{ fontSize: 28, letterSpacing: '0.1em', lineHeight: 1.4, whiteSpace: 'nowrap' }}
+                style={{ fontSize: 26, letterSpacing: '0.04em', lineHeight: 1.3, whiteSpace: 'nowrap' }}
               >
-                usesmpl.com
+                {link || 'usesmpl.com'}
               </div>
             </div>
+            {qrSrc ? (
+              <div className="flex flex-col items-center" style={{ gap: 12, flexShrink: 0 }}>
+                <img src={qrSrc} alt="" style={{ width: 150, height: 150, display: 'block' }} />
+                <span
+                  className="font-mono uppercase text-faint"
+                  style={{ fontSize: 20, letterSpacing: '0.2em', whiteSpace: 'nowrap' }}
+                >
+                  {t('share.scan')}
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
