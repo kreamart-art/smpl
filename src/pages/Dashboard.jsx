@@ -8,6 +8,7 @@ import ReportsPanel from '../components/ReportsPanel.jsx'
 import BackupsPanel from '../components/BackupsPanel.jsx'
 import SampleLibrary from '../components/SampleLibrary.jsx'
 import SampleReviewPanel from '../components/SampleReviewPanel.jsx'
+import EditBattleModal from '../components/EditBattleModal.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { STATUS, nextStatus } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
@@ -66,6 +67,7 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false)
   const [libOpen, setLibOpen] = useState(false)
   const [step, setStep] = useState(1)
+  const [editBattle, setEditBattle] = useState(null)
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
   const myBattles = battles
@@ -610,6 +612,12 @@ export default function Dashboard() {
                             </span>
                           )}
                           <button
+                            onClick={() => setEditBattle(b)}
+                            className="h-9 border border-line px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
+                          >
+                            {t('dashboard.manage.edit')}
+                          </button>
+                          <button
                             onClick={() => setOpenId(isOpen ? null : b.id)}
                             className="h-9 border border-line px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
                           >
@@ -689,6 +697,17 @@ export default function Dashboard() {
           </Reveal>
         </div>
       </div>
+
+      {editBattle ? (
+        <EditBattleModal
+          battle={editBattle}
+          onClose={() => setEditBattle(null)}
+          onSaved={() => {
+            setEditBattle(null)
+            setMsg({ ok: true, text: t('dashboard.manage.editSaved') })
+          }}
+        />
+      ) : null}
     </div>
   )
 }

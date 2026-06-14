@@ -523,6 +523,55 @@ app.get('/api/battles/:id', (req, res) => {
 })
 
 // ----- battles (curator) -----------------------------------------------------
+// Edit a battle you curate (title, source, slots, options + the schedule/dates).
+app.patch('/api/battles/:id', requireAuth, (req, res) => {
+  const row = getBattleRow(req.params.id)
+  if (!row) return fail(res, 404, 'Battle not found.')
+  if (row.curatorId !== req.user.id && !isStaff(req.user)) return fail(res, 403, 'That isn’t your battle.')
+  const d = req.body || {}
+  const fields = []
+  const vals = []
+  const set = (k, v) => {
+    fields.push(`${k} = ?`)
+    vals.push(v)
+  }
+  if (typeof d.title === 'string') set('title', d.title.trim() || 'UNTITLED BATTLE')
+  if (typeof d.sampleArtist === 'string') set('sampleArtist', d.sampleArtist.trim() || 'Unknown')
+  if (typeof d.sampleSong === 'string') set('sampleSong', d.sampleSong.trim() || 'Untitled sample')
+  if (typeof d.sampleUrl === 'string') set('sampleUrl', d.sampleUrl)
+  if (typeof d.description === 'string') set('description', d.description.trim())
+  if (typeof d.genre === 'string') set('genre', d.genre.trim())
+  if (d.maxProducers !== undefined) set('maxProducers', Math.max(2, Math.min(64, Number(d.maxProducers) || 8)))
+  if (d.sampleRevealed !== undefined) set('sampleRevealed', d.sampleRevealed ? 1 : 0)
+  if (d.blind !== undefined) set('blind', d.blind ? 1 : 0)
+  if (d.scheduled !== undefined) {
+    const sched = d.scheduled ? 1 : 0
+    set('scheduled', sched)
+    if (sched) {
+      const s = Number(d.signupStart)
+      const so = Number(d.submissionsOpen)
+      const vo = Number(d.votingOpens)
+      const vc = Number(d.votingCloses)
+      if (![s, so, vo, vc].every(Number.isFinite)) return fail(res, 400, 'Fill in the full schedule.')
+      if (!(s < so && so < vo && vo < vc))
+        return fail(res, 400, 'The schedule must run in order: signup → submissions → voting → close.')
+      set('signupStart', s)
+      set('signupEnd', so)
+      set('submitStart', so)
+      set('submitEnd', vo)
+      set('voteStart', vo)
+      set('voteEnd', vc)
+      // re-derive the phase from the new dates (never un-crown a declared winner)
+      if (row.status !== STATUS.WINNER_DECLARED) set('status', scheduledStatus(Date.now(), s, so, vo))
+    }
+  }
+  if (fields.length) {
+    vals.push(row.id)
+    db.prepare(`UPDATE battles SET ${fields.join(', ')} WHERE id = ?`).run(...vals)
+  }
+  return ok(res, { battle: rowToBattle(getBattleRow(row.id)) })
+})
+
 app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req, res) => {
   const d = req.body || {}
   const kind = d.kind === 'VERSES' ? 'VERSES' : 'BEATS'
