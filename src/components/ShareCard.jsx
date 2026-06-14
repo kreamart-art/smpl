@@ -71,9 +71,9 @@ export default function ShareCard({ cardRef, kind, data, format = 'story', logoS
             ) : null}
             <div
               className="inline-flex w-fit items-center border border-line-bright font-mono uppercase text-ink"
-              style={{ gap: 14, padding: '12px 22px', fontSize: 26, letterSpacing: '0.18em' }}
+              style={{ gap: 14, padding: '12px 22px', fontSize: 26, letterSpacing: '0.18em', whiteSpace: 'nowrap' }}
             >
-              <span className="block bg-ink" style={{ width: 14, height: 14 }} />
+              <span className="block bg-ink" style={{ width: 14, height: 14, flexShrink: 0 }} />
               {t(`status.${data.status}`)}
             </div>
           </div>

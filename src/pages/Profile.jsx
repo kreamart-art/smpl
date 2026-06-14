@@ -66,7 +66,7 @@ function StatCell({ label, value, sub }) {
   )
 }
 
-function Editor({ user, onClose }) {
+export function Editor({ user, onClose }) {
   const { updateProfile } = useApp()
   const t = useT()
   const [form, setForm] = useState({
@@ -202,18 +202,18 @@ export default function Profile() {
   const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified } =
     useApp()
   const base = getUserByAlias(alias)
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [editing, setEditing] = useState(false)
   const [followView, setFollowView] = useState(null) // null | 'followers' | 'following'
 
-  // arriving from Settings → "Edit profile" opens the inline editor once
+  // old deep link (?edit=1) → the dedicated edit page
   useEffect(() => {
     if (base && currentUser?.id === base.id && searchParams.get('edit') === '1') {
-      setEditing(true)
       searchParams.delete('edit')
       setSearchParams(searchParams, { replace: true })
+      navigate('/edit-profile')
     }
-  }, [base, currentUser, searchParams, setSearchParams])
+  }, [base, currentUser, searchParams, setSearchParams, navigate])
 
   if (!base) {
     return (
@@ -310,13 +310,10 @@ export default function Profile() {
                     </Link>
                   ) : null}
                   <button
-                    onClick={() => {
-                      setSettingsOpen(false)
-                      setEditing((v) => !v)
-                    }}
+                    onClick={() => navigate('/edit-profile')}
                     className="h-12 border border-line-bright px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
                   >
-                    {editing ? t('common.close') : t('common.edit')}
+                    {t('common.edit')}
                   </button>
                   <Link
                     to="/settings"
@@ -429,13 +426,6 @@ export default function Profile() {
       {!isSelf && isBlocked(user.id) ? (
         <div className="mt-4 border border-line bg-panel px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
           {t('safety.blockedNote', { alias: user.alias })}
-        </div>
-      ) : null}
-
-      {/* EDITOR (self) */}
-      {isSelf && editing ? (
-        <div className="mt-6">
-          <Editor user={user} onClose={() => setEditing(false)} />
         </div>
       ) : null}
 

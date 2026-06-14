@@ -648,7 +648,7 @@ export default function Settings() {
           <Item
             icon={<IconSettings size={18} />}
             label={t('profile.editProfile')}
-            onClick={() => navigate(`/profile/${encodeURIComponent(user.alias)}?edit=1`)}
+            onClick={() => navigate('/edit-profile')}
           />
           <Item
             icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">@</span>}

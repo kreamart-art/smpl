@@ -140,9 +140,19 @@ export default function SharePage() {
   const render = async () => {
     const { toPng } = await import('html-to-image')
     if (document.fonts?.ready) await document.fonts.ready
-    // NB: no cacheBust — it appends a query string that corrupts the inlined
-    // data-URL logo (and we inline everything, so there's nothing to bust).
-    return toPng(cardRef.current, { pixelRatio: 1, backgroundColor: '#000000' })
+    const node = cardRef.current
+    // Make sure every <img> (logo, QR, avatar) is fully decoded first —
+    // html-to-image exports images blank otherwise, and its FIRST pass often
+    // drops them entirely, so we warm up once and return the second pass.
+    // (no cacheBust: it appends a query string that corrupts inlined data-URLs.)
+    await Promise.all(
+      [...node.querySelectorAll('img')].map((img) =>
+        img.complete && img.naturalWidth ? Promise.resolve() : img.decode().catch(() => {}),
+      ),
+    )
+    const opts = { pixelRatio: 1, backgroundColor: '#000000' }
+    await toPng(node, opts).catch(() => {})
+    return toPng(node, opts)
   }
 
   const onDownload = async () => {
