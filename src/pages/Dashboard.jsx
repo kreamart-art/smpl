@@ -25,10 +25,9 @@ const empty = {
   sampleRevealed: true,
   blind: false,
   scheduled: false,
-  signupStart: '',
-  submissionsOpen: '',
-  votingOpens: '',
-  votingCloses: '',
+  signupDays: 2,
+  submissionDays: 5,
+  votingDays: 3,
 }
 
 function PanelHead({ index, title, note }) {
@@ -126,19 +125,16 @@ export default function Dashboard() {
     }
     const payload = { ...form, kind: isCurator ? form.kind : 'VERSES' }
     if (form.scheduled) {
-      const toMs = (v) => (v ? new Date(v).getTime() : NaN)
-      payload.signupStart = toMs(form.signupStart)
-      payload.submissionsOpen = toMs(form.submissionsOpen)
-      payload.votingOpens = toMs(form.votingOpens)
-      payload.votingCloses = toMs(form.votingCloses)
-      if (
-        [payload.signupStart, payload.submissionsOpen, payload.votingOpens, payload.votingCloses].some(
-          (x) => !Number.isFinite(x),
-        )
-      ) {
-        setMsg({ ok: false, text: t('dashboard.schedule.fillAll') })
-        return
-      }
+      // durations in days, stacked from now → signup opens immediately
+      const DAY = 86_400_000
+      const now = Date.now()
+      const sd = Math.max(1, Math.round(Number(form.signupDays) || 0))
+      const subd = Math.max(1, Math.round(Number(form.submissionDays) || 0))
+      const vd = Math.max(1, Math.round(Number(form.votingDays) || 0))
+      payload.signupStart = now
+      payload.submissionsOpen = now + sd * DAY
+      payload.votingOpens = now + (sd + subd) * DAY
+      payload.votingCloses = now + (sd + subd + vd) * DAY
     }
     const r = await createBattle(payload)
     if (r.ok) {
@@ -183,6 +179,26 @@ export default function Dashboard() {
       ) : null}
 
       {isCurator ? (
+        <div className={`mt-8 border bg-panel px-6 py-6 sm:px-8 ${myBattles.length ? 'border-line' : 'border-line-bright'}`}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">{t('dashboard.cta.kicker')}</div>
+              <h2 className="mt-2 font-sans text-[clamp(1.5rem,4vw,2.2rem)] font-bold uppercase leading-tight tracking-tight">
+                {myBattles.length ? t('dashboard.cta.title') : t('dashboard.empty.title')}
+              </h2>
+              <p className="mt-2 max-w-lg font-mono text-[12px] leading-relaxed text-muted">{t('dashboard.cta.body')}</p>
+            </div>
+            <a
+              href="#create-battle"
+              className="shrink-0 border border-ink bg-ink px-5 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-bg transition-colors hover:bg-bright"
+            >
+              + {t('dashboard.cta.button')}
+            </a>
+          </div>
+        </div>
+      ) : null}
+
+      {isCurator ? (
         <>
           <div className={`mt-8 grid gap-6 ${isAdmin ? 'lg:grid-cols-3' : ''}`}>
             <div className={isAdmin ? 'lg:col-span-2' : ''}>
@@ -208,7 +224,7 @@ export default function Dashboard() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-5">
         {/* CREATE */}
-        <div className="lg:col-span-2">
+        <div id="create-battle" className="scroll-mt-24 lg:col-span-2">
           <Reveal>
             <div className="border border-line bg-panel">
               <PanelHead
@@ -217,6 +233,16 @@ export default function Dashboard() {
                 note={t('dashboard.create.note', { status: t(`status.${STATUS.ANNOUNCED}`) })}
               />
               <form onSubmit={onCreate} className="space-y-5 px-6 py-6">
+                <div className="flex flex-wrap items-center gap-1.5 border border-line bg-bg px-3 py-2.5 font-mono text-[9px] uppercase tracking-[0.12em] text-muted">
+                  {[STATUS.ANNOUNCED, STATUS.OPEN_FOR_SIGNUP, STATUS.SUBMISSION_PHASE, STATUS.VOTING_PHASE, STATUS.WINNER_DECLARED].map(
+                    (st, i) => (
+                      <span key={st} className="flex items-center gap-1.5">
+                        {i ? <span className="text-faint">→</span> : null}
+                        <span>{t(`status.${st}`)}</span>
+                      </span>
+                    ),
+                  )}
+                </div>
                 <Field label={t('dashboard.create.fieldTitle')}>
                   <input
                     className={inputCls}
@@ -308,22 +334,26 @@ export default function Dashboard() {
                         disabled={uploading}
                       />
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setLibOpen(true)}
-                      className="border border-line-bright px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
-                    >
-                      ♪ {t('dashboard.create.fromLibrary')}
-                    </button>
-                    {libOpen ? (
-                      <SampleLibrary
-                        onClose={() => setLibOpen(false)}
-                        onPick={(s) => {
-                          setForm((f) => ({ ...f, sampleUrl: s.file, sampleName: s.name, genre: f.genre || s.genre }))
-                          setLibOpen(false)
-                          setMsg({ ok: true, text: t('dashboard.msg.libraryPicked', { name: s.name }) })
-                        }}
-                      />
+                    {form.kind === 'BEATS' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setLibOpen(true)}
+                          className="border border-line-bright px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                        >
+                          ♪ {t('dashboard.create.fromLibrary')}
+                        </button>
+                        {libOpen ? (
+                          <SampleLibrary
+                            onClose={() => setLibOpen(false)}
+                            onPick={(s) => {
+                              setForm((f) => ({ ...f, sampleUrl: s.file, sampleName: s.name, genre: f.genre || s.genre }))
+                              setLibOpen(false)
+                              setMsg({ ok: true, text: t('dashboard.msg.libraryPicked', { name: s.name }) })
+                            }}
+                          />
+                        ) : null}
+                      </>
                     ) : null}
                     {form.sampleUrl ? (
                       <span className="flex items-center gap-2 font-mono text-[11px] text-ink">
@@ -407,22 +437,50 @@ export default function Dashboard() {
                     {t('dashboard.create.scheduled')}
                   </label>
                   {form.scheduled ? (
-                    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      {[
-                        ['signupStart', 'dashboard.schedule.signupOpens'],
-                        ['submissionsOpen', 'dashboard.schedule.submissionsOpen'],
-                        ['votingOpens', 'dashboard.schedule.votingOpens'],
-                        ['votingCloses', 'dashboard.schedule.votingCloses'],
-                      ].map(([key, label]) => (
-                        <Field key={key} label={t(label)}>
-                          <input
-                            type="datetime-local"
-                            className={inputCls}
-                            value={form[key]}
-                            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                          />
-                        </Field>
-                      ))}
+                    <div className="mt-3 space-y-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{t('dashboard.schedule.preset')}</span>
+                        {[
+                          ['dashboard.schedule.presetQuick', 2, 5, 3],
+                          ['dashboard.schedule.presetWeekend', 1, 2, 2],
+                          ['dashboard.schedule.presetLong', 3, 7, 5],
+                        ].map(([label, s, sub, v]) => (
+                          <button
+                            type="button"
+                            key={label}
+                            onClick={() => setForm((f) => ({ ...f, signupDays: s, submissionDays: sub, votingDays: v }))}
+                            className="border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
+                          >
+                            {t(label)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          ['signupDays', 'dashboard.schedule.signupDays'],
+                          ['submissionDays', 'dashboard.schedule.submissionDays'],
+                          ['votingDays', 'dashboard.schedule.votingDays'],
+                        ].map(([key, label]) => (
+                          <Field key={key} label={t(label)}>
+                            <input
+                              type="number"
+                              min={1}
+                              max={60}
+                              className={inputCls}
+                              value={form[key]}
+                              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                            />
+                          </Field>
+                        ))}
+                      </div>
+                      <p className="font-mono text-[10px] leading-relaxed text-muted">
+                        {t('dashboard.schedule.summary', {
+                          total:
+                            (Number(form.signupDays) || 0) +
+                            (Number(form.submissionDays) || 0) +
+                            (Number(form.votingDays) || 0),
+                        })}
+                      </p>
                     </div>
                   ) : (
                     <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.manualHint')}</p>
