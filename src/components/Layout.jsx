@@ -17,31 +17,31 @@ import { usePWA } from '../context/PWAContext.jsx'
 
 // Per-route <title> — unique titles help search results + the browser tab.
 const PAGE_TITLES = {
-  '/': 'SMPL — Beat & Verse Battles · Same sample. Different soul.',
-  '/battles': 'Battles — SMPL',
-  '/feed': 'Feed — SMPL',
-  '/people': 'People — SMPL',
-  '/signup': 'Join SMPL — Beat & Verse Battles',
-  '/login': 'Log in — SMPL',
-  '/contact': 'Contact — SMPL',
-  '/help': 'How SMPL works — Help',
-  '/privacy': 'Privacy Policy — SMPL',
-  '/terms': 'Terms of Use — SMPL',
-  '/guidelines': 'Community Guidelines — SMPL',
-  '/copyright': 'Copyright — SMPL',
-  '/settings': 'Settings — SMPL',
-  '/dashboard': 'Dashboard — SMPL',
-  '/messages': 'Messages — SMPL',
-  '/notifications': 'Notifications — SMPL',
+  '/': 'SMPL: Beat & Verse Battles · Same sample. Different soul.',
+  '/battles': 'Battles: SMPL',
+  '/feed': 'Feed: SMPL',
+  '/people': 'People: SMPL',
+  '/signup': 'Join SMPL: Beat & Verse Battles',
+  '/login': 'Log in: SMPL',
+  '/contact': 'Contact: SMPL',
+  '/help': 'How SMPL works: Help',
+  '/privacy': 'Privacy Policy: SMPL',
+  '/terms': 'Terms of Use: SMPL',
+  '/guidelines': 'Community Guidelines: SMPL',
+  '/copyright': 'Copyright: SMPL',
+  '/settings': 'Settings: SMPL',
+  '/dashboard': 'Dashboard: SMPL',
+  '/messages': 'Messages: SMPL',
+  '/notifications': 'Notifications: SMPL',
 }
 function pageTitle(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
   if (pathname.startsWith('/profile/')) {
     const a = decodeURIComponent(pathname.split('/')[2] || '')
-    return a ? `@${a} — SMPL` : 'Profile — SMPL'
+    return a ? `@${a}: SMPL` : 'Profile: SMPL'
   }
-  if (pathname.startsWith('/battles/')) return 'Battle — SMPL'
-  return 'SMPL — Same sample. Different soul.'
+  if (pathname.startsWith('/battles/')) return 'Battle: SMPL'
+  return 'SMPL: Same sample. Different soul.'
 }
 
 export default function Layout() {

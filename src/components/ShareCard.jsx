@@ -118,7 +118,7 @@ export default function ShareCard({ cardRef, kind, data, format = 'story', logoS
           </div>
           <div className="flex items-end justify-between border-t border-line-bright" style={{ paddingTop: 34, gap: 36 }}>
             <div className="flex flex-col" style={{ gap: 18 }}>
-              <img src={logoSrc} alt="SMPL" style={{ height: 56, width: 'auto' }} />
+              <img src={logoSrc} alt="SMPL" style={{ height: 56, width: 'auto', alignSelf: 'flex-start' }} />
               <div
                 className="font-mono uppercase text-ink-dim"
                 style={{ fontSize: 28, letterSpacing: '0.14em', lineHeight: 1.3, whiteSpace: 'nowrap' }}

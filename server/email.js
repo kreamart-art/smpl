@@ -61,11 +61,11 @@ export function resetEmail(link, lang = 'en') {
       subject: 'Stel je SMPL-wachtwoord opnieuw in',
       text: `Stel je SMPL-wachtwoord opnieuw in via deze link (1 uur geldig):\n${link}\n\nNiet aangevraagd? Dan kun je deze mail negeren.`,
       html: shell(
-        `<p style="margin:0 0 16px">Je hebt gevraagd om je wachtwoord opnieuw in te stellen. Klik hieronder — de link is <strong>1 uur</strong> geldig.</p>
+        `<p style="margin:0 0 16px">Je hebt gevraagd om je wachtwoord opnieuw in te stellen. Klik hieronder. De link is <strong>1 uur</strong> geldig.</p>
          <p style="margin:0 0 22px">${button(link, 'Wachtwoord resetten')}</p>
          <p style="margin:0 0 8px;color:#999">Werkt de knop niet? Plak deze link in je browser:</p>
          <p style="margin:0 0 18px;word-break:break-all;color:#7aa7ff;font-size:12px">${link}</p>
-         <p style="margin:0;color:#777">Heb je dit niet aangevraagd? Negeer deze mail dan — je wachtwoord blijft ongewijzigd.</p>`,
+         <p style="margin:0;color:#777">Heb je dit niet aangevraagd? Negeer deze mail dan; je wachtwoord blijft ongewijzigd.</p>`,
       ),
     }
   }
@@ -73,11 +73,11 @@ export function resetEmail(link, lang = 'en') {
     subject: 'Reset your SMPL password',
     text: `Reset your SMPL password using this link (valid for 1 hour):\n${link}\n\nDidn’t request this? You can ignore this email.`,
     html: shell(
-      `<p style="margin:0 0 16px">You asked to reset your password. Tap below — the link is valid for <strong>1 hour</strong>.</p>
+      `<p style="margin:0 0 16px">You asked to reset your password. Tap below. The link is valid for <strong>1 hour</strong>.</p>
        <p style="margin:0 0 22px">${button(link, 'Reset password')}</p>
        <p style="margin:0 0 8px;color:#999">Button not working? Paste this link into your browser:</p>
        <p style="margin:0 0 18px;word-break:break-all;color:#7aa7ff;font-size:12px">${link}</p>
-       <p style="margin:0;color:#777">Didn’t request this? Just ignore this email — your password stays the same.</p>`,
+       <p style="margin:0;color:#777">Didn’t request this? Just ignore this email; your password stays the same.</p>`,
     ),
   }
 }
@@ -90,7 +90,7 @@ export function sourceEmail(link, battle, lang = 'en') {
       subject: `Je download voor "${battle.title || 'SMPL battle'}"`,
       text: `Hier is je ${what} voor de battle "${battle.title}":\n${link}`,
       html: shell(
-        `<p style="margin:0 0 16px">Hier is je ${what} voor de battle <strong>${title}</strong> — open ’m op je computer en ga aan de slag.</p>
+        `<p style="margin:0 0 16px">Hier is je ${what} voor de battle <strong>${title}</strong>. Open ’m op je computer en ga aan de slag.</p>
          <p style="margin:0 0 22px">${button(link, 'Download')}</p>
          <p style="margin:0;word-break:break-all;color:#7aa7ff;font-size:12px">${link}</p>`,
       ),
@@ -100,7 +100,7 @@ export function sourceEmail(link, battle, lang = 'en') {
     subject: `Your download for "${battle.title || 'SMPL battle'}"`,
     text: `Here is your ${what} for the battle "${battle.title}":\n${link}`,
     html: shell(
-      `<p style="margin:0 0 16px">Here is your ${what} for the battle <strong>${title}</strong> — open it on your computer and get to work.</p>
+      `<p style="margin:0 0 16px">Here is your ${what} for the battle <strong>${title}</strong>. Open it on your computer and get to work.</p>
        <p style="margin:0 0 22px">${button(link, 'Download')}</p>
        <p style="margin:0;word-break:break-all;color:#7aa7ff;font-size:12px">${link}</p>`,
     ),

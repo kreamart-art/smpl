@@ -37,19 +37,19 @@ export const auth = {
     'auth.signupArrow': 'Sign up ▸',
 
     // —— signup: hero
-    'auth.signup.eyebrow': 'SMPL — enrolment',
+    'auth.signup.eyebrow': 'SMPL: enrolment',
     'auth.signup.intro1': 'Two layers: a',
     'auth.signup.introPublic': 'public file',
     'auth.signup.intro2': 'the room sees, and a',
     'auth.signup.introPrivate': 'private identity',
     'auth.signup.intro3':
-      'only you see. In battle you are only your alias — never your name.',
+      'only you see. In battle you are only your alias, never your name.',
 
     // —— signup: section 01 role
     'auth.signup.roleTitle': 'Choose a role',
     'auth.signup.roleProducerBlurb': 'Flip the sample, submit beats, build a battle record.',
     'auth.signup.roleArtistBlurb':
-      'Drop verses or vocals on the beat. Rap, sing, spoken word — one take, the crowd decides.',
+      'Drop verses or vocals on the beat. Rap, sing, spoken word. One take, the crowd decides.',
     'auth.signup.roleListenerBlurb':
       'Attend, play the room, vote for your favourite. No drops needed.',
 
@@ -75,7 +75,7 @@ export const auth = {
     'auth.signup.privateTitle': 'Private identity',
     'auth.signup.privateNote': 'Never shown publicly',
     'auth.signup.privateBanner':
-      'Verified on file · kept private — legal name, date of birth & email never reach the room.',
+      'Verified on file · kept private: legal name, date of birth & email never reach the room.',
     'auth.field.legalName': 'Legal name',
     'auth.field.legalNameHint': 'private',
     'auth.field.legalNamePlaceholder': 'Your real name',
@@ -125,19 +125,19 @@ export const auth = {
     'auth.signupArrow': 'Aanmelden ▸',
 
     // —— signup: hero
-    'auth.signup.eyebrow': 'SMPL — inschrijving',
+    'auth.signup.eyebrow': 'SMPL: inschrijving',
     'auth.signup.intro1': 'Twee lagen: een',
     'auth.signup.introPublic': 'publiek dossier',
     'auth.signup.intro2': 'dat de room ziet, en een',
     'auth.signup.introPrivate': 'privé-identiteit',
     'auth.signup.intro3':
-      'die alleen jij ziet. In de battle ben je alleen je alias — nooit je naam.',
+      'die alleen jij ziet. In de battle ben je alleen je alias, nooit je naam.',
 
     // —— signup: section 01 role
     'auth.signup.roleTitle': 'Kies een rol',
     'auth.signup.roleProducerBlurb': 'Flip de sample, stuur beats in, bouw een battle-record op.',
     'auth.signup.roleArtistBlurb':
-      'Drop verses of vocals op de beat. Rap, zang, spoken word — één take, de crowd beslist.',
+      'Drop verses of vocals op de beat. Rap, zang, spoken word. Één take, de crowd beslist.',
     'auth.signup.roleListenerBlurb':
       'Kom langs, voel de room, stem op je favoriet. Geen drops nodig.',
 
@@ -163,7 +163,7 @@ export const auth = {
     'auth.signup.privateTitle': 'Privé-identiteit',
     'auth.signup.privateNote': 'Nooit publiek zichtbaar',
     'auth.signup.privateBanner':
-      'Geverifieerd in dossier · privé gehouden — wettelijke naam, geboortedatum & e-mail bereiken de room nooit.',
+      'Geverifieerd in dossier · privé gehouden: wettelijke naam, geboortedatum & e-mail bereiken de room nooit.',
     'auth.field.legalName': 'Wettelijke naam',
     'auth.field.legalNameHint': 'privé',
     'auth.field.legalNamePlaceholder': 'Je echte naam',

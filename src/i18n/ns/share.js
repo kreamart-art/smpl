@@ -20,7 +20,7 @@ export const share = {
     'share.copyLink': 'Copy link',
     'share.linkCopied': '✓ Link copied',
     'share.linkHint':
-      'The card is an image — to make it tappable, add Instagram’s Link sticker and paste the battle link (copied for you when you share).',
+      'The card is an image. To make it tappable, add Instagram’s Link sticker and paste the battle link (copied for you when you share).',
   },
   nl: {
     'share.title': 'Deelkaart',
@@ -43,6 +43,6 @@ export const share = {
     'share.copyLink': 'Kopieer link',
     'share.linkCopied': '✓ Link gekopieerd',
     'share.linkHint':
-      'De kaart is een afbeelding — maak hem tikbaar met Instagram’s Link-sticker en plak de battle-link (bij Delen automatisch gekopieerd).',
+      'De kaart is een afbeelding. Maak hem tikbaar met Instagram’s Link-sticker en plak de battle-link (bij Delen automatisch gekopieerd).',
   },
 }

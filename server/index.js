@@ -311,9 +311,9 @@ const requireAdmin = (req, res, next) =>
 // each other without re-login. Restricted so ordinary users can't farm accounts.
 const isHouse = (u) => !!u && (u.role === 'admin' || u.alias === 'SMPL')
 
-// Staff manage any battle; the battle's own curator manages theirs.
+// A curator manages only the battles they created; admins keep oversight of all.
 const canManageBattle = (user, battle) =>
-  !!user && (isStaff(user) || (battle && battle.curatorId === user.id))
+  !!user && !!battle && (user.role === 'admin' || battle.curatorId === user.id)
 
 // ----- simple in-memory rate limiting (fixed window per IP + route group) ----
 const clientIp = (req) =>
@@ -327,7 +327,7 @@ const rateLimit = (name, max, windowMs) => (req, res, next) => {
     e = { count: 0, reset: now + windowMs }
     rlHits.set(key, e)
   }
-  if (++e.count > max) return fail(res, 429, 'Too many requests — slow down and try again shortly.')
+  if (++e.count > max) return fail(res, 429, 'Too many requests. Slow down and try again shortly.')
   next()
 }
 setInterval(() => {
@@ -442,7 +442,7 @@ app.post('/api/auth/login', rateLimit('login', 25, 5 * 60_000), (req, res) => {
 app.post('/api/auth/2fa', (req, res) => {
   const { ticket, code } = req.body || {}
   const p = verifyToken(ticket)
-  if (!p || !p.twofa || !p.uid) return fail(res, 401, 'Your 2FA session expired — log in again.')
+  if (!p || !p.twofa || !p.uid) return fail(res, 401, 'Your 2FA session expired. Log in again.')
   const row = getUserRow(p.uid)
   if (!row || !row.totpEnabled) return fail(res, 400, '2FA is not active on this account.')
   let valid = verifyTotp(row.totpSecret, code)
@@ -527,7 +527,7 @@ app.get('/api/battles/:id', (req, res) => {
 app.patch('/api/battles/:id', requireAuth, (req, res) => {
   const row = getBattleRow(req.params.id)
   if (!row) return fail(res, 404, 'Battle not found.')
-  if (row.curatorId !== req.user.id && !isStaff(req.user)) return fail(res, 403, 'That isn’t your battle.')
+  if (row.curatorId !== req.user.id && req.user.role !== 'admin') return fail(res, 403, 'That isn’t your battle.')
   const d = req.body || {}
   const fields = []
   const vals = []
@@ -673,7 +673,7 @@ app.post('/api/battles/:id/register', requireAuth, (req, res) => {
   if (!req.body?.agreeRules) return fail(res, 400, 'You must accept the battle rules to enter.')
   // hard rule: nobody competes in a battle they curate (conflict of interest)
   if (b.curatorId === req.user.id)
-    return fail(res, 403, 'You curate this battle — you can’t compete in it.')
+    return fail(res, 403, 'You curate this battle, so you can’t compete in it.')
   const need = b.kind === 'VERSES' ? 'artist' : 'producer'
   // a dual-role competitor (producer + artist) may enter either battle type;
   // a curator/admin who opted into competing may enter any battle that isn't theirs
@@ -755,7 +755,7 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Voting has closed.')
   // anyone may vote on a battle — except the producers/artists competing in it
   if (b.signups.includes(req.user.id))
-    return fail(res, 403, 'You’re competing in this battle — you can’t vote here.')
+    return fail(res, 403, 'You’re competing in this battle, so you can’t vote here.')
   const already = db
     .prepare('SELECT 1 FROM votes WHERE battleId = ? AND userId = ?')
     .get(b.id, req.user.id)
@@ -787,7 +787,7 @@ app.post('/api/battles/:id/email-source', rateLimit('emailsrc', 12, 30 * 60_000)
   const link = `${APP_URL}${b.sampleUrl.startsWith('/') ? '' : '/'}${b.sampleUrl}`
   const tpl = sourceEmail(link, b, langOf(req))
   const r = await sendEmail({ to: req.user.email, subject: tpl.subject, text: tpl.text, html: tpl.html })
-  if (!r.ok) return fail(res, 502, 'Could not send the email — try again.')
+  if (!r.ok) return fail(res, 502, 'Could not send the email. Try again.')
   return ok(res, { sent: true, to: req.user.email })
 })
 
@@ -1015,14 +1015,14 @@ app.post('/api/contact', rateLimit('contact', 5, 30 * 60_000), async (req, res) 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(from)) return fail(res, 400, 'Enter a valid email so we can reply.')
   if (msg.length < 5) return fail(res, 400, 'Write a short message first.')
   if (msg.length > 5000) return fail(res, 400, 'That message is too long.')
-  if (!mailConfigured) return fail(res, 503, 'Contact isn’t set up yet — email us directly.')
+  if (!mailConfigured) return fail(res, 503, 'Contact isn’t set up yet. Email us directly.')
   const r = await sendEmail({
     to: CONTACT_TO,
     replyTo: from,
-    subject: `SMPL contact${topic ? ` · ${topic}` : ''} — ${from}`,
-    text: `From: ${from}\nTopic: ${topic || '—'}\n\n${msg}`,
+    subject: `SMPL contact${topic ? ` · ${topic}` : ''} from ${from}`,
+    text: `From: ${from}\nTopic: ${topic || 'none'}\n\n${msg}`,
   })
-  if (!r.ok) return fail(res, 502, 'Could not send — try again or email us directly.')
+  if (!r.ok) return fail(res, 502, 'Could not send. Try again or email us directly.')
   return ok(res, { sent: true })
 })
 
@@ -1036,7 +1036,7 @@ const RESERVED_ALIASES = new Set([
 app.patch('/api/me', requireAuth, (req, res) => {
   const b = req.body || {}
   if (typeof b.avatar === 'string' && b.avatar.length > 1_500_000)
-    return fail(res, 413, 'Image too large — pick something smaller.')
+    return fail(res, 413, 'Image too large. Pick something smaller.')
   const fields = []
   const vals = []
   const set = (k, v) => {
@@ -1068,7 +1068,7 @@ app.patch('/api/me', requireAuth, (req, res) => {
   if (typeof b.alias === 'string' && b.alias.trim() !== req.user.alias) {
     const a = b.alias.trim()
     if (!/^[A-Za-z0-9_.]{2,20}$/.test(a))
-      return fail(res, 400, 'Handle must be 2–20 characters: letters, numbers, “_” or “.”.')
+      return fail(res, 400, 'Handle must be 2 to 20 characters: letters, numbers, “_” or “.”.')
     if (RESERVED_ALIASES.has(a.toLowerCase())) return fail(res, 409, 'That handle is reserved.')
     const taken = getUserByAliasRow(a)
     if (taken && taken.id !== req.user.id) return fail(res, 409, 'That handle is taken.')
@@ -1243,7 +1243,7 @@ app.post('/api/me/2fa/enable', requireAuth, (req, res) => {
   if (req.user.totpEnabled) return fail(res, 400, '2FA is already on.')
   if (!req.user.totpSecret) return fail(res, 400, 'Start setup first.')
   if (!verifyTotp(req.user.totpSecret, req.body?.code))
-    return fail(res, 401, 'That code is not right — check your authenticator and try again.')
+    return fail(res, 401, 'That code is not right. Check your authenticator and try again.')
   const codes = makeBackupCodes(8)
   db.prepare('UPDATE users SET totpEnabled = 1, backupCodes = ? WHERE id = ?').run(
     JSON.stringify(codes.map(hashBackup)), req.user.id,
@@ -1597,7 +1597,7 @@ app.post(
     if (!buf || !buf.length) return fail(res, 400, 'No audio received.')
     const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
     const ext = AUDIO_EXT[ct]
-    if (!ext) return fail(res, 415, 'Unsupported audio — use mp3, wav, m4a, aac, ogg or flac.')
+    if (!ext) return fail(res, 415, 'Unsupported audio. Use mp3, wav, m4a, aac, ogg or flac.')
     const name = `a_${randomUUID().slice(0, 12)}.${ext}`
     try {
       writeFileSync(path.join(UPLOAD_DIR, name), stripAudioMetadata(buf))
@@ -1624,7 +1624,7 @@ app.post(
     if (!buf || !buf.length) return fail(res, 400, 'No image received.')
     const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
     const ext = IMAGE_EXT[ct]
-    if (!ext) return fail(res, 415, 'Unsupported image — use jpg, png, webp or gif.')
+    if (!ext) return fail(res, 415, 'Unsupported image. Use jpg, png, webp or gif.')
     const name = `i_${randomUUID().slice(0, 12)}.${ext}`
     try {
       writeFileSync(path.join(UPLOAD_DIR, name), buf)

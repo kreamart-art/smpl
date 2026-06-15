@@ -6,7 +6,7 @@ import { useI18n, useT } from '../i18n/index.jsx'
 // the real legal entity + inbox.
 const CONTACT = 'info@artnomad.nl'
 const OPERATOR = 'ART NOMAD'
-const UPDATED = '2026-06-13'
+const UPDATED = '2026-06-15'
 
 const CONTENT = {
   privacy: {
@@ -22,11 +22,11 @@ const CONTENT = {
           h: 'Welke gegevens we verzamelen',
           p: [
             'Account: je alias, e-mailadres en een versleuteld (gehasht) wachtwoord.',
-            'Identiteit: je volledige naam, geboortedatum en optioneel telefoonnummer, land en woonplaats — de geboortedatum gebruiken we om te bevestigen dat je oud genoeg bent. Deze velden zijn privé en alleen voor jou zichtbaar.',
+            'Identiteit: je volledige naam, geboortedatum en optioneel telefoonnummer, land en woonplaats. De geboortedatum gebruiken we om te bevestigen dat je oud genoeg bent. Deze velden zijn privé en alleen voor jou zichtbaar.',
             'Profiel: bio, locatie, genres, links, profielfoto en een optioneel openbaar contact-e-mailadres dat je zelf kiest.',
             'Jouw content: audio-inzendingen, stemmen, reacties, berichten (incl. foto’s en spraakclips) en wie je volgt.',
             'Meldingen: als je pushmeldingen aanzet, een apparaat-token om je die meldingen te kunnen sturen (via Apple of Google).',
-            'Technische gegevens: je IP-adres en serverlogs, kort bewaard voor beveiliging en anti-spam.',
+            'Technische gegevens: je IP-adres en serverlogs, doorgaans niet langer dan 90 dagen bewaard voor beveiliging en anti-spam.',
           ],
         },
         {
@@ -34,7 +34,7 @@ const CONTENT = {
           p: [
             'Om je account en de dienst te leveren (uitvoering van de overeenkomst met jou).',
             'Voor beveiliging en het voorkomen van fraude en spam (ons gerechtvaardigd belang).',
-            'Optionele velden, zoals je openbare contact-e-mail, gebruiken we alleen met jouw toestemming — je kunt ze altijd weghalen.',
+            'Optionele velden, zoals je openbare contact-e-mail, gebruiken we alleen met jouw toestemming. Je kunt ze altijd weghalen.',
           ],
         },
         {
@@ -46,13 +46,20 @@ const CONTENT = {
         {
           h: 'Delen met anderen',
           p: [
-            'We verkopen je gegevens nooit. We delen ze alleen met de partijen die nodig zijn om de dienst te laten werken: onze hostingprovider (servers in een datacenter in de EU), onze e-mailprovider voor systeemmails zoals wachtwoordherstel, en — als je meldingen aanzet — Apple en/of Google om pushmeldingen aan je apparaat te bezorgen.',
+            'We verkopen je gegevens nooit. We delen ze alleen met de partijen die nodig zijn om de dienst te laten werken: onze hostingprovider (Hetzner, met servers in een datacenter in de EU), onze e-mailprovider (Fastmail) voor systeemmails zoals wachtwoordherstel, en (als je meldingen aanzet) Apple en/of Google om pushmeldingen aan je apparaat te bezorgen.',
+          ],
+        },
+        {
+          h: 'Doorgifte buiten de EU',
+          p: [
+            'Onze servers en e-mail staan in de EU. Sommige diensten verwerken gegevens buiten de EU: pushmeldingen lopen via Apple (VS) en Google (VS), en onze e-mailprovider kan gegevens buiten de EU verwerken.',
+            'Voor die doorgifte leunen we op een geldige grondslag, zoals het EU-VS Data Privacy Framework of de standaard contractbepalingen (SCC’s) van de Europese Commissie.',
           ],
         },
         {
           h: 'Hoe lang we ze bewaren',
           p: [
-            'We bewaren je gegevens zolang je een account hebt. Verwijder je je account, dan verwijderen we je persoonsgegevens — behalve wat we wettelijk moeten bewaren of kort nodig hebben om misbruik te voorkomen.',
+            'We bewaren je gegevens zolang je een account hebt. Verwijder je je account, dan verwijderen we je persoonsgegevens, behalve wat we wettelijk moeten bewaren of kort nodig hebben om misbruik te voorkomen.',
           ],
         },
         {
@@ -90,11 +97,11 @@ const CONTENT = {
           h: 'What we collect',
           p: [
             'Account: your alias, email address and an encrypted (hashed) password.',
-            'Identity: your legal name, date of birth and optional phone number, country and city — we use the date of birth to confirm you are old enough. These fields are private and visible only to you.',
+            'Identity: your legal name, date of birth and optional phone number, country and city. We use the date of birth to confirm you are old enough. These fields are private and visible only to you.',
             'Profile: bio, location, genres, links, profile photo and an optional public contact email you choose yourself.',
             'Your content: audio submissions, votes, comments, messages (incl. photos and voice clips) and who you follow.',
             'Notifications: if you enable push, a device token so we can send you those notifications (via Apple or Google).',
-            'Technical data: your IP address and server logs, kept briefly for security and anti-spam.',
+            'Technical data: your IP address and server logs, kept for no longer than 90 days for security and anti-spam.',
           ],
         },
         {
@@ -102,7 +109,7 @@ const CONTENT = {
           p: [
             'To provide your account and the service (performing our agreement with you).',
             'For security and to prevent fraud and spam (our legitimate interest).',
-            'Optional fields, such as your public contact email, are used only with your consent — you can remove them at any time.',
+            'Optional fields, such as your public contact email, are used only with your consent. You can remove them at any time.',
           ],
         },
         {
@@ -114,13 +121,20 @@ const CONTENT = {
         {
           h: 'Sharing',
           p: [
-            'We never sell your data. We share it only with the parties needed to run the service: our hosting provider (servers in an EU data centre), our email provider for system emails such as password resets, and — if you enable notifications — Apple and/or Google to deliver push notifications to your device.',
+            'We never sell your data. We share it only with the parties needed to run the service: our hosting provider (Hetzner, with servers in an EU data centre), our email provider (Fastmail) for system emails such as password resets, and (if you enable notifications) Apple and/or Google to deliver push notifications to your device.',
+          ],
+        },
+        {
+          h: 'Transfers outside the EU',
+          p: [
+            'Our servers and email are in the EU. Some services process data outside the EU: push notifications run via Apple (US) and Google (US), and our email provider may process data outside the EU.',
+            'For those transfers we rely on a valid mechanism, such as the EU-US Data Privacy Framework or the European Commission’s Standard Contractual Clauses (SCCs).',
           ],
         },
         {
           h: 'How long we keep it',
           p: [
-            'We keep your data while you have an account. If you delete your account, we delete your personal data — except what we are legally required to keep or briefly need to prevent abuse.',
+            'We keep your data while you have an account. If you delete your account, we delete your personal data, except what we are legally required to keep or briefly need to prevent abuse.',
           ],
         },
         {
@@ -150,7 +164,7 @@ const CONTENT = {
   terms: {
     nl: {
       title: 'Gebruiksvoorwaarden',
-      intro: 'Deze voorwaarden gelden voor iedereen die SMPL gebruikt. Lees ze even door — door SMPL te gebruiken ga je ermee akkoord.',
+      intro: 'Deze voorwaarden gelden voor iedereen die SMPL gebruikt. Lees ze even door; door SMPL te gebruiken ga je ermee akkoord.',
       sections: [
         {
           h: 'Akkoord',
@@ -172,8 +186,9 @@ const CONTENT = {
         {
           h: 'Jouw content en rechten',
           p: [
-            'Je behoudt alle rechten op wat je uploadt. Je geeft SMPL alleen een niet-exclusieve licentie om je inzending op het platform op te slaan, af te spelen en te tonen, zodat de battle en het stemmen kunnen werken.',
-            'Je garandeert dat je de rechten hebt op alles wat je uploadt — inclusief samples en opnames — of dat jouw gebruik is toegestaan. Plaats geen materiaal waarvoor je geen toestemming hebt.',
+            'Je behoudt alle rechten op wat je uploadt. Je geeft SMPL een niet-exclusieve, royaltyvrije licentie om je inzending op te slaan, af te spelen en te tonen zodat de battle en het stemmen werken, en om de dienst te promoten (bijvoorbeeld in deelbare battle-kaarten en op onze eigen kanalen).',
+            'Je garandeert dat je de rechten hebt op alles wat je uploadt, inclusief samples en opnames, of dat jouw gebruik is toegestaan. Plaats geen materiaal waarvoor je geen toestemming hebt.',
+            `Je vrijwaart SMPL en ${OPERATOR} voor claims van derden die voortvloeien uit het materiaal dat je plaatst of uit jouw schending van deze voorwaarden, voor zover wettelijk toegestaan.`,
           ],
         },
         {
@@ -212,6 +227,10 @@ const CONTENT = {
           p: ['Op deze voorwaarden is Nederlands recht van toepassing.'],
         },
         {
+          h: 'Wijzigingen',
+          p: ['We kunnen deze voorwaarden bijwerken. De datum bovenaan toont wanneer ze voor het laatst zijn gewijzigd; blijf je SMPL gebruiken, dan ga je akkoord met de nieuwe versie.'],
+        },
+        {
           h: 'Contact',
           p: [`Vragen over deze voorwaarden? Mail ${CONTACT}.`],
         },
@@ -219,7 +238,7 @@ const CONTENT = {
     },
     en: {
       title: 'Terms of Service',
-      intro: 'These terms apply to everyone who uses SMPL. Please read them — by using SMPL you agree to them.',
+      intro: 'These terms apply to everyone who uses SMPL. Please read them; by using SMPL you agree to them.',
       sections: [
         {
           h: 'Agreement',
@@ -241,8 +260,9 @@ const CONTENT = {
         {
           h: 'Your content and rights',
           p: [
-            'You keep all rights to what you upload. You only grant SMPL a non-exclusive licence to store, play and display your submission on the platform so the battle and voting can work.',
-            'You warrant that you hold the rights to everything you upload — including samples and recordings — or that your use is permitted. Do not post material you have no permission for.',
+            'You keep all rights to what you upload. You grant SMPL a non-exclusive, royalty-free licence to store, play and display your submission so the battle and voting can work, and to promote the service (for example in shareable battle cards and on our own channels).',
+            'You warrant that you hold the rights to everything you upload, including samples and recordings, or that your use is permitted. Do not post material you have no permission for.',
+            `You indemnify SMPL and ${OPERATOR} against third-party claims arising from the material you post or from your breach of these terms, to the extent permitted by law.`,
           ],
         },
         {
@@ -281,6 +301,10 @@ const CONTENT = {
           p: ['These terms are governed by the laws of the Netherlands.'],
         },
         {
+          h: 'Changes',
+          p: ['We may update these terms. The date at the top shows when they were last changed; if you keep using SMPL, you agree to the updated version.'],
+        },
+        {
           h: 'Contact',
           p: [`Questions about these terms? Email ${CONTACT}.`],
         },
@@ -307,7 +331,7 @@ const CONTENT = {
         {
           h: 'Eerlijk battlen',
           p: [
-            'Gebruik de officiële sample en lever je eigen, originele werk in — geen plagiaat of gejatte content.',
+            'Gebruik de officiële sample en lever je eigen, originele werk in. Geen plagiaat of gejatte content.',
             'Wie de regels overtreedt kan door de curator worden gediskwalificeerd; de inzending gaat dan uit de stemming en kan niet winnen.',
           ],
         },
@@ -315,7 +339,7 @@ const CONTENT = {
           h: 'Rapporteren en blokkeren',
           p: [
             'Zie je iets wat niet hoort? Gebruik de rapporteer-knop, of blokkeer iemand om alle contact te stoppen.',
-            'We bekijken meldingen en grijpen in waar nodig — doorgaans binnen 24 uur.',
+            'We bekijken meldingen en grijpen in waar nodig, doorgaans binnen 24 uur.',
           ],
         },
         {
@@ -345,7 +369,7 @@ const CONTENT = {
         {
           h: 'Battle fairly',
           p: [
-            'Use the official sample and submit your own original work — no plagiarism or stolen content.',
+            'Use the official sample and submit your own original work. No plagiarism or stolen content.',
             'Breaking the rules can get you disqualified by the curator; the entry is then pulled from voting and can’t win.',
           ],
         },
@@ -353,7 +377,7 @@ const CONTENT = {
           h: 'Reporting and blocking',
           p: [
             'See something off? Use the report button, or block someone to stop all contact.',
-            'We review reports and act where needed — usually within 24 hours.',
+            'We review reports and act where needed, usually within 24 hours.',
           ],
         },
         {

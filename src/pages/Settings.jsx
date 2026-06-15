@@ -594,10 +594,10 @@ export default function Settings() {
     <div className="mx-auto max-w-[640px] px-4 py-10 sm:px-6 sm:py-12">
       <div className="mb-6 flex items-center justify-between">
         <button
-          onClick={() => navigate(`/profile/${encodeURIComponent(user.alias)}`)}
+          onClick={() => (view === 'menu' ? navigate(`/profile/${encodeURIComponent(user.alias)}`) : setView('menu'))}
           className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink"
         >
-          ◂ {t('common.profile')}
+          ◂ {view === 'menu' ? t('common.profile') : t('common.settings')}
         </button>
         <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-faint">{t('common.settings')}</span>
       </div>

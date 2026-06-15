@@ -150,7 +150,7 @@ export default function BattleDetail() {
 
   const sampleMeta = {
     id: `sample-${battle.id}`,
-    label: battle.sampleRevealed ? `${battle.sampleArtist} — ${battle.sampleSong}` : t('battleDetail.sealedSample'),
+    label: battle.sampleRevealed ? `${battle.sampleArtist}, ${battle.sampleSong}` : t('battleDetail.sealedSample'),
     sub: battle.title,
     duration: battle.sampleDuration || 10,
     seed: `sample-${battle.id}`,

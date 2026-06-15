@@ -49,7 +49,7 @@ async function req(method, path, body) {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
-    return { ok: false, error: 'Network error — is the server running?' }
+    return { ok: false, error: 'Network error. Is the server running?' }
   }
 
   let data = null
@@ -73,7 +73,7 @@ async function upload(path, file) {
   try {
     res = await fetch(API_BASE + path, { method: 'POST', headers, body: file })
   } catch {
-    return { ok: false, error: 'Network error — is the server running?' }
+    return { ok: false, error: 'Network error. Is the server running?' }
   }
   let data = null
   try {

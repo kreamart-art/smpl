@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
+import Avatar from '../components/Avatar.jsx'
 import Reveal from '../components/Reveal.jsx'
 import ReportsPanel from '../components/ReportsPanel.jsx'
 import BackupsPanel from '../components/BackupsPanel.jsx'
@@ -70,7 +71,8 @@ export default function Dashboard() {
   const [editBattle, setEditBattle] = useState(null)
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
-  const myBattles = battles
+  // a curator manages only the battles they created; admin keeps oversight of all
+  const myBattles = isAdmin ? battles : battles.filter((b) => b.curatorId === currentUser.id)
 
   const onPickSample = async (e) => {
     const file = e.target.files?.[0]
@@ -640,7 +642,17 @@ export default function Dashboard() {
                                     className="flex flex-wrap items-center justify-between gap-2 border border-line px-3 py-2"
                                   >
                                     <div className="flex items-center gap-2 font-mono text-[11px]">
-                                      <span className="text-ink">{p?.alias || t('dashboard.manage.unknown')}</span>
+                                      {p ? (
+                                        <Link
+                                          to={`/profile/${encodeURIComponent(p.alias)}`}
+                                          className="flex items-center gap-2 transition-opacity hover:opacity-70"
+                                        >
+                                          <Avatar alias={p.alias} src={p.avatar} size={24} />
+                                          <span className="text-ink">{p.alias}</span>
+                                        </Link>
+                                      ) : (
+                                        <span className="text-ink">{t('dashboard.manage.unknown')}</span>
+                                      )}
                                       {isWinner ? <span className="text-ink">★</span> : null}
                                       <span className={s.approved ? 'text-muted' : 'text-ink'}>
                                         {s.approved
@@ -680,12 +692,30 @@ export default function Dashboard() {
                               <p className="font-mono text-[11px] text-muted">{t('dashboard.manage.noSubmissions')}</p>
                             )}
                           </div>
-                          <div className="mt-3 font-mono text-[10px] text-muted">
-                            {t('dashboard.manage.registered', {
-                              names:
-                                b.signups.map((id) => getUser(id)?.alias).filter(Boolean).join(', ') ||
-                                '—',
-                            })}
+                          <div className="mt-4 border-t border-line pt-3">
+                            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
+                              {t('dashboard.manage.registeredLabel')}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {b.signups.length ? (
+                                b.signups.map((id) => {
+                                  const u = getUser(id)
+                                  if (!u) return null
+                                  return (
+                                    <Link
+                                      key={id}
+                                      to={`/profile/${encodeURIComponent(u.alias)}`}
+                                      className="flex items-center gap-1.5 border border-line px-2 py-1 transition-colors hover:border-line-bright"
+                                    >
+                                      <Avatar alias={u.alias} src={u.avatar} size={20} />
+                                      <span className="font-mono text-[10px] text-ink">@{u.alias}</span>
+                                    </Link>
+                                  )
+                                })
+                              ) : (
+                                <span className="font-mono text-[10px] text-muted">—</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ) : null}

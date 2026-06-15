@@ -9,7 +9,7 @@ export const profile = {
     'profile.curatorFile': 'SMPL Curator File',
     'profile.memberSince': 'Member since {month}',
     'profile.badge.curator': 'Curator · curates the room',
-    'profile.badge.anon': 'Real name on file — kept private',
+    'profile.badge.anon': 'Real name on file, kept private',
 
     // editor panel
     'profile.editProfile': 'Edit profile',
@@ -94,7 +94,7 @@ export const profile = {
 
     // share
     'profile.share.title': '@{alias} on SMPL',
-    'profile.share.text': '@{alias} · {role} on SMPL — same sample, different soul.',
+    'profile.share.text': '@{alias} · {role} on SMPL. same sample, different soul.',
 
     // ----- security: two-factor -----
     'profile.tfa.onLabel': '2FA is ON',
@@ -107,11 +107,11 @@ export const profile = {
     'profile.tfa.turnOff': 'Turn off 2FA',
     'profile.tfa.starting': 'Starting…',
     'profile.tfa.setUp': 'Set up 2FA',
-    'profile.tfa.step1': '1 — Scan this in your authenticator app, or enter the key by hand.',
+    'profile.tfa.step1': '1. Scan this in your authenticator app, or enter the key by hand.',
     'profile.tfa.qrAlt': '2FA QR code',
     'profile.tfa.qrLoading': 'QR…',
     'profile.tfa.manualKey': 'Manual key',
-    'profile.tfa.step2': '2 — Enter the 6-digit code it shows.',
+    'profile.tfa.step2': '2. Enter the 6-digit code it shows.',
     'profile.tfa.wrongCode': 'Wrong code.',
     'profile.tfa.verifying': 'Verifying…',
     'profile.tfa.verifyEnable': 'Verify & enable',
@@ -127,7 +127,7 @@ export const profile = {
 
     // ----- security: delete account -----
     'profile.del.warning':
-      'This is permanent. Your profile, photo and follows are removed. Past battle results stay, but anonymised — your name is wiped from them. This can’t be undone.',
+      'This is permanent. Your profile, photo and follows are removed. Past battle results stay, but anonymised: your name is wiped from them. This can’t be undone.',
     'profile.del.password': 'Password',
     'profile.del.typeToConfirm': 'Type DELETE to confirm',
     'profile.del.confirmWord': 'DELETE',
@@ -141,7 +141,7 @@ export const profile = {
     'profile.curatorFile': 'SMPL Curator File',
     'profile.memberSince': 'lid sinds {month}',
     'profile.badge.curator': 'curator · cureert de room',
-    'profile.badge.anon': 'echte naam vastgelegd — blijft privé',
+    'profile.badge.anon': 'echte naam vastgelegd, blijft privé',
 
     // editor panel
     'profile.editProfile': 'profiel bewerken',
@@ -226,7 +226,7 @@ export const profile = {
 
     // share
     'profile.share.title': '@{alias} op SMPL',
-    'profile.share.text': '@{alias} · {role} op SMPL — same sample, different soul.',
+    'profile.share.text': '@{alias} · {role} op SMPL. same sample, different soul.',
 
     // ----- security: two-factor -----
     'profile.tfa.onLabel': '2FA staat AAN',
@@ -239,11 +239,11 @@ export const profile = {
     'profile.tfa.turnOff': '2FA uitzetten',
     'profile.tfa.starting': 'bezig…',
     'profile.tfa.setUp': '2FA instellen',
-    'profile.tfa.step1': '1 — Scan dit in je authenticator-app, of voer de sleutel handmatig in.',
+    'profile.tfa.step1': '1. Scan dit in je authenticator-app, of voer de sleutel handmatig in.',
     'profile.tfa.qrAlt': '2FA QR-code',
     'profile.tfa.qrLoading': 'QR…',
     'profile.tfa.manualKey': 'handmatige sleutel',
-    'profile.tfa.step2': '2 — Voer de 6-cijferige code in die hij toont.',
+    'profile.tfa.step2': '2. Voer de 6-cijferige code in die hij toont.',
     'profile.tfa.wrongCode': 'verkeerde code.',
     'profile.tfa.verifying': 'verifiëren…',
     'profile.tfa.verifyEnable': 'verifiëren & inschakelen',
@@ -259,7 +259,7 @@ export const profile = {
 
     // ----- security: delete account -----
     'profile.del.warning':
-      'Dit is definitief. Je profiel, foto en follows worden verwijderd. Eerdere battle-uitslagen blijven, maar geanonimiseerd — je naam wordt eruit gewist. Dit kan niet ongedaan worden gemaakt.',
+      'Dit is definitief. Je profiel, foto en follows worden verwijderd. Eerdere battle-uitslagen blijven, maar geanonimiseerd: je naam wordt eruit gewist. Dit kan niet ongedaan worden gemaakt.',
     'profile.del.password': 'wachtwoord',
     'profile.del.typeToConfirm': 'Typ DELETE om te bevestigen',
     'profile.del.confirmWord': 'DELETE',

@@ -104,7 +104,7 @@ export default function SharePage() {
           kind: b.kind,
           title: b.title,
           curator: app.getUser(b.curatorId)?.alias || 'SMPL',
-          sampleLine: b.sampleRevealed ? `${b.sampleArtist} — ${b.sampleSong}` : null,
+          sampleLine: b.sampleRevealed ? `${b.sampleArtist}, ${b.sampleSong}` : null,
           genre: b.genre || '',
           description: desc.length > 150 ? `${desc.slice(0, 150).trim()}…` : desc,
           status: b.status,
@@ -206,7 +206,7 @@ export default function SharePage() {
           <button onClick={() => navigate(-1)} className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
             ◂ {t('common.back')}
           </button>
-          <Link to="/" aria-label="SMPL — home">
+          <Link to="/" aria-label="SMPL, home">
             <img src="/logo.png" alt="SMPL" className="logo-chrome h-5 w-auto" />
           </Link>
         </div>

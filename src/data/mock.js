@@ -203,7 +203,7 @@ export const seedBattles = [
     sampleDuration: 9,
     sampleRevealed: true,
     description:
-      'One harp loop, sixteen seconds, no drums supplied. Flip it into something that haunts. Voting is live — back your favourite.',
+      'One harp loop, sixteen seconds, no drums supplied. Flip it into something that haunts. Voting is live. Back your favourite.',
     curatorId: 'curator',
     maxProducers: 8,
     signupStart: now - 9 * DAY,
@@ -224,11 +224,11 @@ export const seedBattles = [
     title: '808 EXORCISM',
     sampleUrl: '',
     sampleArtist: 'Unknown',
-    sampleSong: 'Field recording — cathedral organ',
+    sampleSong: 'Field recording: cathedral organ',
     sampleDuration: 11,
     sampleRevealed: true,
     description:
-      'A single sustained organ chord recorded inside an empty cathedral. Twelve slots. Bring drums or do not. Signups close soon — claim a slot to compete.',
+      'A single sustained organ chord recorded inside an empty cathedral. Twelve slots. Bring drums or do not. Signups close soon, claim a slot to compete.',
     curatorId: 'curator',
     maxProducers: 12,
     signupStart: now - 1 * DAY,
@@ -278,7 +278,7 @@ export const seedBattles = [
     sampleDuration: 14,
     sampleRevealed: true,
     description:
-      'One beat by KODER. Drop a verse — sixteen bars, one take. Voting is live — back your favourite.',
+      'One beat by KODER. Drop a verse: sixteen bars, one take. Voting is live. Back your favourite.',
     curatorId: 'curator',
     maxProducers: 8,
     signupStart: now - 8 * DAY,

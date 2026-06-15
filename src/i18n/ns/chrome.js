@@ -8,7 +8,7 @@ export const chrome = {
     'chrome.livePill': '{n} live',
     'chrome.yourProfile': 'Your profile',
 
-    'chrome.footer.masthead': 'SMPL — Vol. 001 / Beats & verses · open battles',
+    'chrome.footer.masthead': 'SMPL · Vol. 001 / Beats & verses · open battles',
     'chrome.footer.sameSample': 'Same sample.',
     'chrome.footer.differentSoul': 'Different soul.',
 
@@ -32,10 +32,10 @@ export const chrome = {
     'chrome.install.iosStep1Tap': 'Tap',
     'chrome.install.iosStep1In': 'in Safari',
     'chrome.install.iosStep2': 'Choose “Add to Home Screen”',
-    'chrome.install.iosStep3': 'Open SMPL from your home screen — full app.',
+    'chrome.install.iosStep3': 'Open SMPL from your home screen. Full app.',
     'chrome.install.androidStep1': 'Open the browser menu (⋮)',
     'chrome.install.androidStep2': 'Tap “Install app” / “Add to Home screen”',
-    'chrome.install.androidStep3': 'Open SMPL from your home screen — full app.',
+    'chrome.install.androidStep3': 'Open SMPL from your home screen. Full app.',
     'chrome.install.gotIt': 'Got it',
   },
   nl: {
@@ -44,7 +44,7 @@ export const chrome = {
     'chrome.livePill': '{n} live',
     'chrome.yourProfile': 'Jouw profiel',
 
-    'chrome.footer.masthead': 'SMPL — Vol. 001 / Beats & verses · open battles',
+    'chrome.footer.masthead': 'SMPL · Vol. 001 / Beats & verses · open battles',
     'chrome.footer.sameSample': 'Same sample.',
     'chrome.footer.differentSoul': 'Different soul.',
 
@@ -68,10 +68,10 @@ export const chrome = {
     'chrome.install.iosStep1Tap': 'Tik op',
     'chrome.install.iosStep1In': 'in Safari',
     'chrome.install.iosStep2': 'Kies “Zet op beginscherm”',
-    'chrome.install.iosStep3': 'Open SMPL vanaf je beginscherm — volledige app.',
+    'chrome.install.iosStep3': 'Open SMPL vanaf je beginscherm. volledige app.',
     'chrome.install.androidStep1': 'Open het browsermenu (⋮)',
     'chrome.install.androidStep2': 'Tik op “App installeren” / “Zet op beginscherm”',
-    'chrome.install.androidStep3': 'Open SMPL vanaf je beginscherm — volledige app.',
+    'chrome.install.androidStep3': 'Open SMPL vanaf je beginscherm. volledige app.',
     'chrome.install.gotIt': 'Begrepen',
   },
 }

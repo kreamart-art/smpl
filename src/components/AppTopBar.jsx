@@ -20,7 +20,7 @@ export default function AppTopBar() {
         <span className="flex w-12 items-center">
           <MessagesLink />
         </span>
-        <Link to="/battles" aria-label="SMPL — home">
+        <Link to="/battles" aria-label="SMPL, home">
           <img src="/logo.png" alt="SMPL" className="logo-chrome h-5 w-auto" />
         </Link>
         <span className="flex w-12 items-center justify-end gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">

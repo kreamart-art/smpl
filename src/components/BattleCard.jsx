@@ -61,7 +61,7 @@ export default function BattleCard({ battle }) {
           {battle.title}
         </h3>
         <div className="mt-3 truncate font-mono text-[11px] tracking-[0.04em] text-muted">
-          <span className="text-faint">{sourceLabel} —</span>{' '}
+          <span className="text-faint">{sourceLabel}:</span>{' '}
           {battle.sampleRevealed ? (
             <span className="text-ink-dim">
               {battle.sampleArtist} / {battle.sampleSong}

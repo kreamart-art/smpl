@@ -19,11 +19,11 @@ export const dashboard = {
     'dashboard.console.title': 'Dashboard',
 
     // status messages
-    'dashboard.msg.over30': 'That audio is over 30 MB — trim or bounce it smaller.',
+    'dashboard.msg.over30': 'That audio is over 30 MB. Trim or bounce it smaller.',
     'dashboard.msg.uploaded': 'Uploaded {name}.',
     'dashboard.msg.uploadFailed': 'Upload failed.',
     'dashboard.msg.needTitle': 'Give the battle a title.',
-    'dashboard.msg.created': 'Created "{title}" — now in {status}.',
+    'dashboard.msg.created': 'Created "{title}". Now in {status}.',
 
     // create-battle panel
     'dashboard.create.title': 'Create battle',
@@ -45,7 +45,7 @@ export const dashboard = {
     'dashboard.cta.kicker': 'Curator console',
     'dashboard.cta.title': 'Run a battle',
     'dashboard.cta.button': 'Create a battle',
-    'dashboard.cta.body': 'You set the source and the timeline — producers & artists flip it, the crowd votes the winner.',
+    'dashboard.cta.body': 'You set the source and the timeline. Producers & artists flip it, the crowd votes the winner.',
     'dashboard.empty.title': 'Create your first battle',
     'dashboard.schedule.preset': 'Preset',
     'dashboard.schedule.presetQuick': 'Quick · 2/5/3',
@@ -61,9 +61,9 @@ export const dashboard = {
     'dashboard.wizard.step4': 'Timeline',
     'dashboard.wizard.next': 'Next',
     'dashboard.wizard.hint1': 'Pick beats or verses, and give the battle a name.',
-    'dashboard.wizard.hint2': 'The source everyone flips — credits + the audio (or pick from the library).',
+    'dashboard.wizard.hint2': 'The source everyone flips: credits + the audio (or pick from the library).',
     'dashboard.wizard.hint3': 'Slots, genre, a short brief, and blind voting if you want it.',
-    'dashboard.wizard.hint4': 'When it runs — set durations in days, or leave it manual.',
+    'dashboard.wizard.hint4': 'When it runs: set durations in days, or leave it manual.',
     'dashboard.manage.edit': 'Edit',
     'dashboard.manage.editSaved': 'Battle updated.',
     'dashboard.library.title': 'Sample library',
@@ -98,6 +98,7 @@ export const dashboard = {
     'dashboard.manage.winner': '★ Winner',
     'dashboard.manage.noSubmissions': 'No submissions yet.',
     'dashboard.manage.registered': 'Registered: {names}',
+    'dashboard.manage.registeredLabel': 'Registered',
   },
   nl: {
     // restricted (non-curator) screen
@@ -114,11 +115,11 @@ export const dashboard = {
     'dashboard.console.title': 'Dashboard',
 
     // status messages
-    'dashboard.msg.over30': 'die audio is groter dan 30 MB — knip of bounce hem kleiner.',
+    'dashboard.msg.over30': 'die audio is groter dan 30 MB. knip of bounce hem kleiner.',
     'dashboard.msg.uploaded': '{name} geüpload.',
     'dashboard.msg.uploadFailed': 'uploaden mislukt.',
     'dashboard.msg.needTitle': 'geef de battle een titel.',
-    'dashboard.msg.created': '"{title}" aangemaakt — nu in {status}.',
+    'dashboard.msg.created': '"{title}" aangemaakt. nu in {status}.',
 
     // create-battle panel
     'dashboard.create.title': 'battle aanmaken',
@@ -140,7 +141,7 @@ export const dashboard = {
     'dashboard.cta.kicker': 'Curator-console',
     'dashboard.cta.title': 'Start een battle',
     'dashboard.cta.button': 'Maak een battle',
-    'dashboard.cta.body': 'Jij bepaalt de bron en de tijdlijn — producers & artiesten geven er hun draai aan, de crowd kiest de winnaar.',
+    'dashboard.cta.body': 'Jij bepaalt de bron en de tijdlijn. Producers & artiesten geven er hun draai aan, de crowd kiest de winnaar.',
     'dashboard.empty.title': 'Maak je eerste battle',
     'dashboard.schedule.preset': 'Preset',
     'dashboard.schedule.presetQuick': 'Snel · 2/5/3',
@@ -156,9 +157,9 @@ export const dashboard = {
     'dashboard.wizard.step4': 'Tijdlijn',
     'dashboard.wizard.next': 'Volgende',
     'dashboard.wizard.hint1': 'Kies beats of verses en geef de battle een naam.',
-    'dashboard.wizard.hint2': 'De bron die iedereen flipt — credits + de audio (of kies uit de bibliotheek).',
+    'dashboard.wizard.hint2': 'De bron die iedereen flipt: credits + de audio (of kies uit de bibliotheek).',
     'dashboard.wizard.hint3': 'Plekken, genre, een korte beschrijving, en blind stemmen als je wilt.',
-    'dashboard.wizard.hint4': 'Wanneer het loopt — duur in dagen, of laat het handmatig.',
+    'dashboard.wizard.hint4': 'Wanneer het loopt: duur in dagen, of laat het handmatig.',
     'dashboard.manage.edit': 'Bewerken',
     'dashboard.manage.editSaved': 'Battle bijgewerkt.',
     'dashboard.library.title': 'Samplebibliotheek',
@@ -193,5 +194,6 @@ export const dashboard = {
     'dashboard.manage.winner': '★ winnaar',
     'dashboard.manage.noSubmissions': 'nog geen inzendingen.',
     'dashboard.manage.registered': 'ingeschreven: {names}',
+    'dashboard.manage.registeredLabel': 'ingeschreven',
   },
 }

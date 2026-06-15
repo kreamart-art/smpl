@@ -42,7 +42,7 @@ export default function FeaturedBattle({ battle }) {
               {battle.title}
             </h3>
             <div className="mt-5 font-mono text-[12px] tracking-[0.04em] text-muted">
-              <span className="text-faint">{c.sourceLabel} —</span>{' '}
+              <span className="text-faint">{c.sourceLabel}:</span>{' '}
               <span className="text-ink-dim">
                 {battle.sampleRevealed ? `${battle.sampleArtist} / ${battle.sampleSong}` : '[ SEALED ]'}
               </span>

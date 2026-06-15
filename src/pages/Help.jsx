@@ -6,19 +6,19 @@ const CONTENT = {
   en: {
     title: 'How SMPL works',
     intro:
-      'SMPL is a beat & verse battle platform. A curator drops one source — a sample to flip or a beat to rhyme over — and producers and artists each put their own spin on it. The crowd votes, and the best take wins.',
+      'SMPL is a beat & verse battle platform. A curator drops one source (a sample to flip or a beat to rhyme over) and producers and artists each put their own spin on it. The crowd votes, and the best take wins.',
     sections: [
       {
         h: 'The idea',
-        b: 'Everyone works from the same source, so it’s purely about interpretation. One sample, many takes — same sample, different soul. The room decides the winner by voting.',
+        b: 'Everyone works from the same source, so it’s purely about interpretation. One sample, many takes. Same sample, different soul. The room decides the winner by voting.',
       },
       {
         h: 'The roles',
-        b: 'Listener — follow makers, vote and comment. Producer — enter beat battles (flip the sample). Artist — enter verse battles (rhyme over the beat). Curator — runs battles and picks the source. You can be both a producer and an artist (turn it on in Settings → Account type).',
+        b: 'Listener: follow makers, vote and comment. Producer: enter beat battles (flip the sample). Artist: enter verse battles (rhyme over the beat). Curator: runs battles and picks the source. You can be both a producer and an artist (turn it on in Settings → Account type).',
       },
       {
         h: 'A battle’s phases',
-        b: '1) Announced — a battle appears. 2) Open for signup — claim a slot. 3) Submission — upload your beat or verse. 4) Voting — the crowd picks its favourite. 5) Winner — the result is crowned.',
+        b: '1) Announced: a battle appears. 2) Open for signup: claim a slot. 3) Submission: upload your beat or verse. 4) Voting: the crowd picks its favourite. 5) Winner: the result is crowned.',
       },
       {
         h: 'How do I enter a battle?',
@@ -26,7 +26,7 @@ const CONTENT = {
       },
       {
         h: 'How does voting work?',
-        b: 'Anyone — listeners, producers and artists — can vote on any battle. The only exception: producers and artists can’t vote in a battle they’re competing in. One vote per battle, and never for your own entry.',
+        b: 'Anyone (listeners, producers and artists) can vote on any battle. The only exception: producers and artists can’t vote in a battle they’re competing in. One vote per battle, and never for your own entry.',
       },
       {
         h: 'Blind / anonymous voting',
@@ -34,11 +34,11 @@ const CONTENT = {
       },
       {
         h: 'Can a curator also compete?',
-        b: 'Yes — a curator can switch it on in Settings → “Compete in battles”. The one hard rule: you can never enter a battle you curate yourself.',
+        b: 'Yes, a curator can switch it on in Settings → “Compete in battles”. The one hard rule: you can never enter a battle you curate yourself.',
       },
       {
         h: 'Following, messages & sharing',
-        b: 'Follow anyone — including listeners. You can message people, reply to and react on messages, send photos and voice clips, and share a profile or battle straight into a DM.',
+        b: 'Follow anyone, including listeners. You can message people, reply to and react on messages, send photos and voice clips, and share a profile or battle straight into a DM.',
       },
       {
         h: 'The verified badge',
@@ -58,19 +58,19 @@ const CONTENT = {
   nl: {
     title: 'Hoe SMPL werkt',
     intro:
-      'SMPL is een beat- & verse-battleplatform. Een curator levert één bron — een sample om te flippen of een beat om overheen te rappen — en producers en artiesten geven er allemaal hun eigen draai aan. De crowd stemt, en de beste versie wint.',
+      'SMPL is een beat- & verse-battleplatform. Een curator levert één bron (een sample om te flippen of een beat om overheen te rappen) en producers en artiesten geven er allemaal hun eigen draai aan. De crowd stemt, en de beste versie wint.',
     sections: [
       {
         h: 'Het idee',
-        b: 'Iedereen werkt vanuit dezelfde bron, dus het draait puur om interpretatie. Eén sample, veel versies — same sample, different soul. De zaal bepaalt de winnaar door te stemmen.',
+        b: 'Iedereen werkt vanuit dezelfde bron, dus het draait puur om interpretatie. Eén sample, veel versies. Same sample, different soul. De zaal bepaalt de winnaar door te stemmen.',
       },
       {
         h: 'De rollen',
-        b: 'Luisteraar — volg makers, stem en reageer. Producer — doe mee aan beat-battles (flip de sample). Artiest — doe mee aan verse-battles (rap over de beat). Curator — organiseert battles en kiest de bron. Je kunt zowel producer als artiest zijn (zet aan bij Instellingen → Accounttype).',
+        b: 'Luisteraar: volg makers, stem en reageer. Producer: doe mee aan beat-battles (flip de sample). Artiest: doe mee aan verse-battles (rap over de beat). Curator: organiseert battles en kiest de bron. Je kunt zowel producer als artiest zijn (zet aan bij Instellingen → Accounttype).',
       },
       {
         h: 'De fases van een battle',
-        b: '1) Aangekondigd — een battle verschijnt. 2) Open voor inschrijving — claim een plek. 3) Inzenden — upload je beat of verse. 4) Stemmen — de crowd kiest z’n favoriet. 5) Winnaar — het resultaat wordt gekroond.',
+        b: '1) Aangekondigd: een battle verschijnt. 2) Open voor inschrijving: claim een plek. 3) Inzenden: upload je beat of verse. 4) Stemmen: de crowd kiest z’n favoriet. 5) Winnaar: het resultaat wordt gekroond.',
       },
       {
         h: 'Hoe doe ik mee aan een battle?',
@@ -78,7 +78,7 @@ const CONTENT = {
       },
       {
         h: 'Hoe werkt stemmen?',
-        b: 'Iedereen — luisteraars, producers én artiesten — kan op elke battle stemmen. De enige uitzondering: producers en artiesten kunnen niet stemmen in een battle waar ze zelf aan meedoen. Eén stem per battle, en nooit op je eigen inzending.',
+        b: 'Iedereen (luisteraars, producers én artiesten) kan op elke battle stemmen. De enige uitzondering: producers en artiesten kunnen niet stemmen in een battle waar ze zelf aan meedoen. Eén stem per battle, en nooit op je eigen inzending.',
       },
       {
         h: 'Blind / anoniem stemmen',
@@ -86,11 +86,11 @@ const CONTENT = {
       },
       {
         h: 'Mag een curator ook meedoen?',
-        b: 'Ja — een curator kan dit aanzetten bij Instellingen → “Meedoen aan battles”. De enige harde regel: je mag nooit meedoen aan een battle die jij zelf cureert.',
+        b: 'Ja, een curator kan dit aanzetten bij Instellingen → “Meedoen aan battles”. De enige harde regel: je mag nooit meedoen aan een battle die jij zelf cureert.',
       },
       {
         h: 'Volgen, berichten & delen',
-        b: 'Volg iedereen — ook luisteraars. Je kunt mensen berichten, reageren op berichten, foto’s en spraakclips sturen, en een profiel of battle direct in een DM delen.',
+        b: 'Volg iedereen, ook luisteraars. Je kunt mensen berichten, reageren op berichten, foto’s en spraakclips sturen, en een profiel of battle direct in een DM delen.',
       },
       {
         h: 'De geverifieerd-badge',

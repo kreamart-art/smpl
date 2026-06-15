@@ -10,7 +10,7 @@ export const battleDetail = {
     'battleDetail.attend': "I'm in",
     'battleDetail.attending': "✓ I'm in",
     'battleDetail.curatedBy': 'Curated by {alias}',
-    'battleDetail.shareTitle': 'SMPL — {title}',
+    'battleDetail.shareTitle': 'SMPL · {title}',
     'battleDetail.shareText': '{title} · same sample, different soul. Battle on SMPL.',
 
     // sample caption (above the always-visible sample player)
@@ -38,19 +38,19 @@ export const battleDetail = {
     'battleDetail.fb.action.attend': 'mark your presence',
     'battleDetail.fb.action.slot': 'claim a slot',
     'battleDetail.fb.action.vote': 'vote',
-    'battleDetail.fb.slotClaimed': 'Slot claimed — you are in this battle.',
+    'battleDetail.fb.slotClaimed': 'Slot claimed. You are in this battle.',
     'battleDetail.fb.submissionUpdated': 'Submission updated.',
     'battleDetail.fb.beatSubmitted': 'Beat submitted. Good luck.',
-    'battleDetail.fb.voteCast': 'Vote cast. One per battle — that is final.',
+    'battleDetail.fb.voteCast': 'Vote cast. One per battle, that is final.',
 
     // ANNOUNCED panel
     'battleDetail.announced.title': 'Announced',
     'battleDetail.announced.sub': 'Signups not open yet.',
     'battleDetail.announced.bodyBefore': 'This battle is locked in. Hit ',
     'battleDetail.announced.bodyAfter.BEATS':
-      ' to join the room and be ready when slots open. Producers — sharpen up.',
+      ' to join the room and be ready when slots open. Producers, sharpen up.',
     'battleDetail.announced.bodyAfter.VERSES':
-      ' to join the room and be ready when slots open. Artists — sharpen up.',
+      ' to join the room and be ready when slots open. Artists, sharpen up.',
 
     // OPEN_FOR_SIGNUP panel
     'battleDetail.signup.title': 'Open for signup',
@@ -72,9 +72,9 @@ export const battleDetail = {
     'battleDetail.submission.sub.BEATS': '{n} beats in so far',
     'battleDetail.submission.sub.VERSES': '{n} verses in so far',
     'battleDetail.submission.brief.BEATS':
-      'Drop a link to your beat. One submission — overwrite it until the phase closes.',
+      'Drop a link to your beat. One submission: overwrite it until the phase closes.',
     'battleDetail.submission.brief.VERSES':
-      'Drop a link to your verse. One submission — overwrite it until the phase closes.',
+      'Drop a link to your verse. One submission: overwrite it until the phase closes.',
     'battleDetail.submission.field.audio': 'Audio / file URL',
     'battleDetail.submission.field.soundcloud': 'SoundCloud',
     'battleDetail.submission.field.youtube': 'YouTube',
@@ -82,9 +82,9 @@ export const battleDetail = {
     'battleDetail.submission.submit.BEATS': 'Submit beat',
     'battleDetail.submission.submit.VERSES': 'Drop verse',
     'battleDetail.submission.waiting.BEATS':
-      'Beats are rolling in from registered producers. Voting opens when this phase closes — stick around.',
+      'Beats are rolling in from registered producers. Voting opens when this phase closes. Stick around.',
     'battleDetail.submission.waiting.VERSES':
-      'Verses are rolling in from registered artists. Voting opens when this phase closes — stick around.',
+      'Verses are rolling in from registered artists. Voting opens when this phase closes. Stick around.',
 
     // VOTING_PHASE panel
     'battleDetail.voting.title': 'Voting phase',
@@ -110,7 +110,7 @@ export const battleDetail = {
     'battleDetail.attend': 'ik ben erbij',
     'battleDetail.attending': '✓ ik ben erbij',
     'battleDetail.curatedBy': 'gecureerd door {alias}',
-    'battleDetail.shareTitle': 'SMPL — {title}',
+    'battleDetail.shareTitle': 'SMPL · {title}',
     'battleDetail.shareText': '{title} · zelfde sample, andere ziel. Battle op SMPL.',
 
     // sample caption (above the always-visible sample player)
@@ -138,19 +138,19 @@ export const battleDetail = {
     'battleDetail.fb.action.attend': 'je aanwezigheid te tonen',
     'battleDetail.fb.action.slot': 'een slot te claimen',
     'battleDetail.fb.action.vote': 'stemmen',
-    'battleDetail.fb.slotClaimed': 'slot geclaimd — je zit in deze battle.',
+    'battleDetail.fb.slotClaimed': 'slot geclaimd. je zit in deze battle.',
     'battleDetail.fb.submissionUpdated': 'inzending bijgewerkt.',
     'battleDetail.fb.beatSubmitted': 'beat ingezonden. succes.',
-    'battleDetail.fb.voteCast': 'stem uitgebracht. één per battle — en dat is definitief.',
+    'battleDetail.fb.voteCast': 'stem uitgebracht. één per battle, en dat is definitief.',
 
     // ANNOUNCED panel
     'battleDetail.announced.title': 'aangekondigd',
     'battleDetail.announced.sub': 'inschrijving nog niet open.',
     'battleDetail.announced.bodyBefore': 'deze battle staat vast. tik ',
     'battleDetail.announced.bodyAfter.BEATS':
-      ' om de room te joinen en klaar te staan als de slots opengaan. producers — slijp je bij.',
+      ' om de room te joinen en klaar te staan als de slots opengaan. producers, slijp je bij.',
     'battleDetail.announced.bodyAfter.VERSES':
-      ' om de room te joinen en klaar te staan als de slots opengaan. artists — slijp je bij.',
+      ' om de room te joinen en klaar te staan als de slots opengaan. artists, slijp je bij.',
 
     // OPEN_FOR_SIGNUP panel
     'battleDetail.signup.title': 'inschrijving open',
@@ -172,9 +172,9 @@ export const battleDetail = {
     'battleDetail.submission.sub.BEATS': '{n} beats tot nu toe binnen',
     'battleDetail.submission.sub.VERSES': '{n} verses tot nu toe binnen',
     'battleDetail.submission.brief.BEATS':
-      'drop een link naar je beat. één inzending — overschrijf hem tot de fase sluit.',
+      'drop een link naar je beat. één inzending: overschrijf hem tot de fase sluit.',
     'battleDetail.submission.brief.VERSES':
-      'drop een link naar je verse. één inzending — overschrijf hem tot de fase sluit.',
+      'drop een link naar je verse. één inzending: overschrijf hem tot de fase sluit.',
     'battleDetail.submission.field.audio': 'audio / bestand-URL',
     'battleDetail.submission.field.soundcloud': 'SoundCloud',
     'battleDetail.submission.field.youtube': 'YouTube',
@@ -182,9 +182,9 @@ export const battleDetail = {
     'battleDetail.submission.submit.BEATS': 'beat inzenden',
     'battleDetail.submission.submit.VERSES': 'verse droppen',
     'battleDetail.submission.waiting.BEATS':
-      'beats stromen binnen van ingeschreven producers. stemmen opent zodra deze fase sluit — blijf hangen.',
+      'beats stromen binnen van ingeschreven producers. stemmen opent zodra deze fase sluit. blijf hangen.',
     'battleDetail.submission.waiting.VERSES':
-      'verses stromen binnen van ingeschreven artists. stemmen opent zodra deze fase sluit — blijf hangen.',
+      'verses stromen binnen van ingeschreven artists. stemmen opent zodra deze fase sluit. blijf hangen.',
 
     // VOTING_PHASE panel
     'battleDetail.voting.title': 'stemfase',
