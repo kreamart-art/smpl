@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission } from './db.js'
+import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission, normalizeHandle } from './db.js'
 import {
   hashPassword,
   verifyPassword,
@@ -395,9 +395,9 @@ app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => 
   const { alias, email, role, name, dob, location, bio, genres, links, avatar, password, acceptTerms } =
     req.body || {}
   if (!acceptTerms) return fail(res, 400, 'You must accept the Terms and Privacy Policy to sign up.')
-  const cleanAlias = String(alias || '').trim()
+  const cleanAlias = normalizeHandle(alias)
   const cleanEmail = String(email || '').trim().toLowerCase()
-  if (!cleanAlias || !cleanEmail) return fail(res, 400, 'Alias and email are required.')
+  if (cleanAlias.length < 2 || !cleanEmail) return fail(res, 400, 'A handle (2+ letters or numbers) and email are required.')
   if (!password || String(password).length < 4) return fail(res, 400, 'Choose a password (min 4 chars).')
   // SMPL is 16+ (Terms + AVG digital-consent age) — enforce it on the dob.
   const age = ageFromDob(String(dob || '').trim())
@@ -1172,14 +1172,15 @@ app.patch('/api/me', requireAuth, (req, res) => {
   }
   // self-service identity: change your handle (alias) and/or login email
   let reverify = false
-  if (typeof b.alias === 'string' && b.alias.trim() !== req.user.alias) {
-    const a = b.alias.trim()
-    if (!/^[A-Za-z0-9_.]{2,20}$/.test(a))
-      return fail(res, 400, 'Handle must be 2 to 20 characters: letters, numbers, “_” or “.”.')
-    if (RESERVED_ALIASES.has(a.toLowerCase())) return fail(res, 409, 'That handle is reserved.')
-    const taken = getUserByAliasRow(a)
-    if (taken && taken.id !== req.user.id) return fail(res, 409, 'That handle is taken.')
-    set('alias', a)
+  if (typeof b.alias === 'string') {
+    const a = normalizeHandle(b.alias)
+    if (a !== req.user.alias) {
+      if (a.length < 2) return fail(res, 400, 'Handle needs at least 2 letters or numbers.')
+      if (RESERVED_ALIASES.has(a.toLowerCase())) return fail(res, 409, 'That handle is reserved.')
+      const taken = getUserByAliasRow(a)
+      if (taken && taken.id !== req.user.id) return fail(res, 409, 'That handle is taken.')
+      set('alias', a)
+    }
   }
   if (typeof b.email === 'string' && b.email.trim().toLowerCase() !== String(req.user.email || '').toLowerCase()) {
     const e = b.email.trim()

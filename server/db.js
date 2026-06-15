@@ -211,6 +211,16 @@ function addColumn(table, col, decl) {
 }
 
 // Idempotent migrations applied on every boot (safe to re-run on an existing db).
+// Handles are normalised to ALL CAPS with no spaces or odd characters: only
+// A-Z, 0-9, dot, underscore and hyphen, max 20 chars (Instagram-style, upper).
+export function normalizeHandle(s) {
+  return String(s || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9._-]/g, '')
+    .replace(/^[._-]+|[._-]+$/g, '')
+    .slice(0, 20)
+}
+
 export function migrate() {
   // 2026-06-12: the verses-competitor role "vocalist" was renamed to "artist".
   db.exec("UPDATE users SET role = 'artist' WHERE role = 'vocalist'")
@@ -266,4 +276,15 @@ export function migrate() {
   // admins are masked as curators publicly, so give them the verified badge
   // explicitly (the badge now keys off `verified`, not the hidden role).
   db.prepare("UPDATE users SET verified = 1 WHERE role = 'admin'").run()
+  // 2026-06-16: handles are ALL CAPS, no spaces or odd chars (A-Z 0-9 . _ -).
+  for (const u of db.prepare('SELECT id, alias FROM users').all()) {
+    const norm = normalizeHandle(u.alias)
+    if (norm && norm !== u.alias) {
+      try {
+        db.prepare('UPDATE users SET alias = ? WHERE id = ?').run(norm, u.id)
+      } catch {
+        /* unique collision: keep the original handle rather than crash */
+      }
+    }
+  }
 }

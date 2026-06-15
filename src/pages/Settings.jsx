@@ -373,14 +373,14 @@ function IdentityPanel({ user, onBack }) {
             className={inputCls}
             value={alias}
             onChange={(e) => {
-              setAlias(e.target.value)
+              setAlias(e.target.value.toUpperCase().replace(/[^A-Z0-9._-]/g, ''))
               clear()
             }}
             maxLength={20}
-            autoCapitalize="none"
+            autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
-            placeholder="jouwnaam"
+            placeholder="JOUWNAAM"
           />
         </Field>
         <Field label={t('profile.email')} hint={t('settings.emailHint')}>

@@ -198,7 +198,10 @@ export default function Signup() {
                   className={inputCls}
                   placeholder={t('auth.field.aliasPlaceholder')}
                   value={form.alias}
-                  onChange={set('alias')}
+                  onChange={(e) => setForm({ ...form, alias: e.target.value.toUpperCase().replace(/[^A-Z0-9._-]/g, '') })}
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </Field>
               <Field label={t('auth.field.location')} hint={t('auth.field.locationHint')}>
