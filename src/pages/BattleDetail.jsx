@@ -132,6 +132,7 @@ export default function BattleDetail() {
 
   const { ts } = countdownTarget(battle)
   const curator = getUser(battle.curatorId)
+  const isOwner = !!currentUser && battle.curatorId === currentUser.id
   const isCommunity = !!curator && curator.role !== 'curator'
   const c = kindCopy(battle.kind)
   const attending = currentUser && battle.attendees.includes(currentUser.id)
@@ -523,7 +524,7 @@ export default function BattleDetail() {
                       verified={!battle.blind && !!getUser(s.producerId)?.verified}
                       rightSlot={btn}
                     />
-                    {isCurator ? (
+                    {isOwner ? (
                       <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
                         <button
                           onClick={() => disqualifySubmission(s.id)}

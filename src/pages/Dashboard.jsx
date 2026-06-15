@@ -71,8 +71,8 @@ export default function Dashboard() {
   const [editBattle, setEditBattle] = useState(null)
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
-  // a curator manages only the battles they created; admin keeps oversight of all
-  const myBattles = isAdmin ? battles : battles.filter((b) => b.curatorId === currentUser.id)
+  // strict ownership: you only see and manage battles you created yourself
+  const myBattles = battles.filter((b) => b.curatorId === currentUser.id)
 
   const onPickSample = async (e) => {
     const file = e.target.files?.[0]

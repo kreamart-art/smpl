@@ -335,9 +335,10 @@ const requireAdmin = (req, res, next) =>
 // each other without re-login. Restricted so ordinary users can't farm accounts.
 const isHouse = (u) => !!u && (u.role === 'admin' || u.alias === 'SMPL')
 
-// A curator manages only the battles they created; admins keep oversight of all.
+// Strict ownership: only the battle's own curator manages it — not other curators,
+// not admins (the founder switches to the @SMPL account to manage its battles).
 const canManageBattle = (user, battle) =>
-  !!user && !!battle && (user.role === 'admin' || battle.curatorId === user.id)
+  !!user && !!battle && battle.curatorId === user.id
 
 // ----- simple in-memory rate limiting (fixed window per IP + route group) ----
 const clientIp = (req) =>
@@ -551,7 +552,7 @@ app.get('/api/battles/:id', (req, res) => {
 app.patch('/api/battles/:id', requireAuth, (req, res) => {
   const row = getBattleRow(req.params.id)
   if (!row) return fail(res, 404, 'Battle not found.')
-  if (row.curatorId !== req.user.id && req.user.role !== 'admin') return fail(res, 403, 'That isn’t your battle.')
+  if (row.curatorId !== req.user.id) return fail(res, 403, 'That isn’t your battle.')
   const d = req.body || {}
   const fields = []
   const vals = []
