@@ -72,9 +72,9 @@ export const battleDetail = {
     'battleDetail.submission.sub.BEATS': '{n} beats in so far',
     'battleDetail.submission.sub.VERSES': '{n} verses in so far',
     'battleDetail.submission.brief.BEATS':
-      'Drop a link to your beat. One submission: overwrite it until the phase closes.',
+      'Upload your beat. One submission: overwrite it until the phase closes.',
     'battleDetail.submission.brief.VERSES':
-      'Drop a link to your verse. One submission: overwrite it until the phase closes.',
+      'Upload your verse. One submission: overwrite it until the phase closes.',
     'battleDetail.submission.field.audio': 'Audio / file URL',
     'battleDetail.submission.field.soundcloud': 'SoundCloud',
     'battleDetail.submission.field.youtube': 'YouTube',
@@ -172,9 +172,9 @@ export const battleDetail = {
     'battleDetail.submission.sub.BEATS': '{n} beats tot nu toe binnen',
     'battleDetail.submission.sub.VERSES': '{n} verses tot nu toe binnen',
     'battleDetail.submission.brief.BEATS':
-      'drop een link naar je beat. één inzending: overschrijf hem tot de fase sluit.',
+      'upload je beat. één inzending: overschrijf hem tot de fase sluit.',
     'battleDetail.submission.brief.VERSES':
-      'drop een link naar je verse. één inzending: overschrijf hem tot de fase sluit.',
+      'upload je verse. één inzending: overschrijf hem tot de fase sluit.',
     'battleDetail.submission.field.audio': 'audio / bestand-URL',
     'battleDetail.submission.field.soundcloud': 'SoundCloud',
     'battleDetail.submission.field.youtube': 'YouTube',

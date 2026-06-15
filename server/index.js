@@ -96,18 +96,42 @@ function scheduledStatus(now, signupStart, signupEnd, submitEnd) {
 
 // Roll scheduled battles forward to match their timeline (forward-only, runs on
 // an interval). Manual battles (scheduled = 0) are untouched.
-// Nudge everyone who opted into push when a battle opens for signups or voting.
+// Phase-change push: a broad "new battle" for discovery, a targeted "submissions
+// open" to the entrants, and a "vote now" only to listeners who joined the room.
 function pushBattlePhase(battle, target) {
-  if (target !== STATUS.OPEN_FOR_SIGNUP && target !== STATUS.VOTING_PHASE) return
-  const open = target === STATUS.OPEN_FOR_SIGNUP
-  const ids = db.prepare('SELECT DISTINCT userId FROM push_subscriptions').all().map((r) => r.userId)
-  for (const uid of ids) {
-    sendPush(uid, {
-      title: open ? 'New battle open' : 'Voting is open',
-      body: open ? `“${battle.title}” is open for signups` : `Vote now on “${battle.title}”`,
-      tag: `battle-${battle.id}-${target}`,
-      url: `/battles/${battle.id}`,
-    }).catch(() => {})
+  const b = rowToBattle(getBattleRow(battle.id))
+  if (!b) return
+  if (target === STATUS.OPEN_FOR_SIGNUP) {
+    const ids = db.prepare('SELECT DISTINCT userId FROM push_subscriptions').all().map((r) => r.userId)
+    for (const uid of ids) {
+      sendPush(uid, {
+        title: 'New battle open',
+        body: `“${b.title}” is open for signups`,
+        tag: `battle-${b.id}-${target}`,
+        url: `/battles/${b.id}`,
+      }).catch(() => {})
+    }
+  } else if (target === STATUS.SUBMISSION_PHASE) {
+    for (const uid of b.signups) {
+      sendPush(uid, {
+        title: 'Submissions open',
+        body: `Upload your beat for “${b.title}”`,
+        tag: `battle-${b.id}-${target}`,
+        url: `/battles/${b.id}`,
+      }).catch(() => {})
+    }
+  } else if (target === STATUS.VOTING_PHASE) {
+    for (const uid of b.attendees) {
+      const u = getUserRow(uid)
+      if (u && u.role === 'listener') {
+        sendPush(uid, {
+          title: 'Voting is open',
+          body: `You’re in “${b.title}”, vote now`,
+          tag: `battle-${b.id}-${target}`,
+          url: `/battles/${b.id}`,
+        }).catch(() => {})
+      }
+    }
   }
 }
 
@@ -652,6 +676,26 @@ app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
   db.prepare('UPDATE battles SET status = ?, winnerSubmissionId = ? WHERE id = ?').run(
     STATUS.WINNER_DECLARED, sub.id, b.id,
   )
+  // notify the winner, then the other entrants and everyone who was in the room
+  const winnerAlias = getUserRow(sub.producerId)?.alias || 'a maker'
+  sendPush(sub.producerId, {
+    title: 'You won 🏆',
+    body: `Your beat won “${b.title}”`,
+    tag: `win-${b.id}`,
+    url: `/battles/${b.id}`,
+  }).catch(() => {})
+  const reached = new Set([sub.producerId])
+  const entrants = db.prepare('SELECT DISTINCT producerId FROM submissions WHERE battleId = ?').all(b.id).map((r) => r.producerId)
+  for (const uid of [...entrants, ...rowToBattle(getBattleRow(b.id)).attendees]) {
+    if (reached.has(uid)) continue
+    reached.add(uid)
+    sendPush(uid, {
+      title: 'Winner declared',
+      body: `@${winnerAlias} won “${b.title}”`,
+      tag: `win-${b.id}`,
+      url: `/battles/${b.id}`,
+    }).catch(() => {})
+  }
   return ok(res, { battle: rowToBattle(getBattleRow(b.id)) })
 })
 
@@ -704,7 +748,8 @@ app.post('/api/battles/:id/submissions', requireAuth, (req, res) => {
   if (!b.signups.includes(req.user.id)) return fail(res, 403, 'You are not registered for this battle.')
   if (b.status !== STATUS.SUBMISSION_PHASE) return fail(res, 400, 'Submissions are not open.')
   const { audioUrl, soundcloudUrl, youtubeUrl } = req.body || {}
-  if (!audioUrl && !soundcloudUrl && !youtubeUrl) return fail(res, 400, 'Add at least one link to your beat.')
+  // upload-only: the beat must be a file uploaded to SMPL (keeps playback in-app, no external links)
+  if (!audioUrl || !/^\/?(api\/uploads|samples)\//.test(audioUrl)) return fail(res, 400, 'Upload your beat first.')
   const existing = db
     .prepare('SELECT * FROM submissions WHERE battleId = ? AND producerId = ?')
     .get(b.id, req.user.id)
@@ -721,6 +766,15 @@ app.post('/api/battles/:id/submissions', requireAuth, (req, res) => {
     `s_${randomUUID().slice(0, 8)}`, b.id, req.user.id,
     audioUrl || '', soundcloudUrl || '', youtubeUrl || '', 15, Date.now(),
   )
+  // tell the curator a new beat landed
+  if (b.curatorId && b.curatorId !== req.user.id) {
+    sendPush(b.curatorId, {
+      title: 'New submission',
+      body: `@${req.user.alias} submitted to “${b.title}”`,
+      tag: `newsub-${b.id}`,
+      url: `/battles/${b.id}`,
+    }).catch(() => {})
+  }
   return ok(res, {})
 })
 
@@ -729,6 +783,16 @@ app.patch('/api/submissions/:id/approve', requireAuth, (req, res) => {
   if (!s) return fail(res, 404, 'Beat not found.')
   if (!canManageBattle(req.user, getBattleRow(s.battleId))) return fail(res, 403, 'You do not host this battle.')
   db.prepare('UPDATE submissions SET approved = ? WHERE id = ?').run(s.approved ? 0 : 1, s.id)
+  if (!s.approved) {
+    // just approved (it wasn't approved before)
+    const bt = getBattleRow(s.battleId)
+    sendPush(s.producerId, {
+      title: 'Beat approved',
+      body: `Your beat is in “${bt?.title || 'the battle'}”`,
+      tag: `appr-${s.id}`,
+      url: `/battles/${s.battleId}`,
+    }).catch(() => {})
+  }
   return ok(res, {})
 })
 
@@ -743,6 +807,14 @@ app.post('/api/submissions/:id/disqualify', requireAuth, (req, res) => {
   // a disqualified entry can't stand as the declared winner
   if (next && b.winnerSubmissionId === s.id) {
     db.prepare('UPDATE battles SET winnerSubmissionId = NULL WHERE id = ?').run(b.id)
+  }
+  if (next) {
+    sendPush(s.producerId, {
+      title: 'Entry disqualified',
+      body: `Your entry in “${b.title || 'the battle'}” was disqualified`,
+      tag: `dq-${s.id}`,
+      url: `/battles/${b.id}`,
+    }).catch(() => {})
   }
   return ok(res, { disqualified: !!next })
 })
@@ -767,6 +839,28 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   db.prepare('INSERT INTO votes (id,battleId,submissionId,userId) VALUES (?,?,?,?)').run(
     `v_${randomUUID().slice(0, 8)}`, b.id, sub.id, req.user.id,
   )
+  // vote & lead milestones for the producer (skip blind battles so counts stay hidden)
+  if (!b.blind) {
+    const counts = db.prepare('SELECT submissionId, COUNT(*) n FROM votes WHERE battleId = ? GROUP BY submissionId').all(b.id)
+    const mine = counts.find((c) => c.submissionId === sub.id)?.n || 0
+    const others = counts.filter((c) => c.submissionId !== sub.id).map((c) => c.n)
+    const maxOther = others.length ? Math.max(...others) : 0
+    if ([5, 10, 25, 50, 100].includes(mine)) {
+      sendPush(sub.producerId, {
+        title: `${mine} votes 🔥`,
+        body: `Your beat hit ${mine} votes in “${b.title}”`,
+        tag: `votes-${sub.id}-${mine}`,
+        url: `/battles/${b.id}`,
+      }).catch(() => {})
+    } else if (maxOther >= 1 && mine > maxOther && mine - 1 <= maxOther) {
+      sendPush(sub.producerId, {
+        title: 'You’re in the lead',
+        body: `Your beat just took 1st in “${b.title}”`,
+        tag: `lead-${b.id}-${sub.id}`,
+        url: `/battles/${b.id}`,
+      }).catch(() => {})
+    }
+  }
   return ok(res, {})
 })
 
@@ -911,6 +1005,10 @@ app.post('/api/reports', rateLimit('report', 12, 60 * 60_000), requireAuth, (req
     `r_${randomUUID().slice(0, 10)}`, req.user.id, targetType, String(targetId),
     String(reason || '').trim().slice(0, 1000), String(context || '').slice(0, 200), Date.now(),
   )
+  // alert moderators so reports get actioned within the 24h commitment
+  for (const a of db.prepare("SELECT id FROM users WHERE role = 'admin'").all()) {
+    sendPush(a.id, { title: 'New report', body: `A ${targetType} was reported`, tag: 'report', url: '/dashboard' }).catch(() => {})
+  }
   return ok(res, {})
 })
 
@@ -957,6 +1055,14 @@ app.post('/api/admin/users/:id/verify', requireAuth, requireAdmin, (req, res) =>
   if (!target) return fail(res, 404, 'User not found.')
   const next = req.body?.verified === undefined ? !target.verified : !!req.body.verified
   db.prepare('UPDATE users SET verified = ? WHERE id = ?').run(next ? 1 : 0, target.id)
+  if (next && !target.verified) {
+    sendPush(target.id, {
+      title: 'You’re verified ✓',
+      body: 'Your SMPL account is now verified',
+      tag: 'verified',
+      url: `/profile/${target.alias}`,
+    }).catch(() => {})
+  }
   return ok(res, { user: pubUser(getUserRow(target.id)) })
 })
 
@@ -1202,6 +1308,12 @@ app.post('/api/admin/sample-makers/:id', requireAuth, requireAdmin, (req, res) =
   const u = getUserRow(req.params.id)
   if (!u) return fail(res, 404, 'User not found.')
   db.prepare('UPDATE users SET sampleMakerStatus = ? WHERE id = ?').run(status, u.id)
+  sendPush(u.id, {
+    title: status === 'approved' ? 'Sample maker approved ✓' : 'Sample maker update',
+    body: status === 'approved' ? 'You can now submit samples to the library' : 'Your sample maker application wasn’t approved',
+    tag: 'samplemaker',
+    url: '/sample-maker',
+  }).catch(() => {})
   return ok(res, { status })
 })
 
@@ -1210,6 +1322,12 @@ app.post('/api/admin/samples/:id', requireAuth, requireAdmin, (req, res) => {
   const s = db.prepare('SELECT * FROM samples WHERE id = ?').get(req.params.id)
   if (!s) return fail(res, 404, 'Sample not found.')
   db.prepare('UPDATE samples SET status = ? WHERE id = ?').run(status, s.id)
+  sendPush(s.makerId, {
+    title: status === 'approved' ? 'Sample approved ✓' : 'Sample update',
+    body: status === 'approved' ? `“${s.name}” is live in the library` : `“${s.name}” wasn’t approved`,
+    tag: `sample-${s.id}`,
+    url: '/sample-maker',
+  }).catch(() => {})
   return ok(res, { status })
 })
 

@@ -447,35 +447,7 @@ export default function BattleDetail() {
                     ) : null}
                   </div>
                 </div>
-                {!beatName ? (
-                  <Field label={t('submit.orLink')} hint={t('battleDetail.submission.hint.optional')}>
-                    <input
-                      className={inputCls}
-                      placeholder="https://…"
-                      value={form.audioUrl}
-                      onChange={(e) => setForm({ ...form, audioUrl: e.target.value })}
-                    />
-                  </Field>
-                ) : null}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label={t('battleDetail.submission.field.soundcloud')} hint={t('battleDetail.submission.hint.optional')}>
-                    <input
-                      className={inputCls}
-                      placeholder="soundcloud.com/…"
-                      value={form.soundcloudUrl}
-                      onChange={(e) => setForm({ ...form, soundcloudUrl: e.target.value })}
-                    />
-                  </Field>
-                  <Field label={t('battleDetail.submission.field.youtube')} hint={t('battleDetail.submission.hint.optional')}>
-                    <input
-                      className={inputCls}
-                      placeholder="youtu.be/…"
-                      value={form.youtubeUrl}
-                      onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
-                    />
-                  </Field>
-                </div>
-                <Btn type="submit" variant="solid" size="lg">{t(`battleDetail.submission.submit.${battle.kind}`)}</Btn>
+                <Btn type="submit" variant="solid" size="lg" disabled={!form.audioUrl}>{t(`battleDetail.submission.submit.${battle.kind}`)}</Btn>
               </form>
             ) : (
               <p className="font-mono text-[12px] leading-relaxed text-muted">
