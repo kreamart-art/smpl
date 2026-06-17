@@ -14,6 +14,7 @@ import NativeBoot from './NativeBoot.jsx'
 import { Grain, Vignette } from './Atmosphere.jsx'
 import { usePlayback } from '../context/AppContext.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
+import { AnnouncementPopup } from './AnnouncementVideo.jsx'
 
 // Per-route <title> — unique titles help search results + the browser tab.
 const PAGE_TITLES = {
@@ -82,6 +83,7 @@ export default function Layout() {
         </main>
         {!inThread ? <TransportBar /> : null}
         {!inThread ? <BottomTabBar /> : null}
+        <AnnouncementPopup />
       </div>
     )
   }

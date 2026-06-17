@@ -8,6 +8,8 @@ import { DustField } from '../components/Atmosphere.jsx'
 import { Btn } from '../components/ui.jsx'
 import { STATUS_GROUP } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
+import { usePWA } from '../context/PWAContext.jsx'
+import { AnnouncementSection } from '../components/AnnouncementVideo.jsx'
 
 function Marquee() {
   const t = useT()
@@ -61,6 +63,7 @@ const buildHow = (t) => [
 export default function Landing() {
   const t = useT()
   const { battles } = useApp()
+  const { standalone } = usePWA()
   const active = battles.filter((b) => STATUS_GROUP[b.status] === 'active')
   const upcoming = battles.filter((b) => STATUS_GROUP[b.status] === 'upcoming')
   const featured = active[0]
@@ -122,6 +125,8 @@ export default function Landing() {
       </section>
 
       <Marquee />
+
+      {!standalone ? <AnnouncementSection /> : null}
 
       {/* ============================ ACTIVE ============================ */}
       <section className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-28">
