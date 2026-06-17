@@ -548,6 +548,18 @@ app.get('/api/battles/:id', (req, res) => {
 })
 
 // ----- battles (curator) -----------------------------------------------------
+// Delete a battle you made, with its entries, votes and comments. Owner-only.
+app.delete('/api/battles/:id', requireAuth, (req, res) => {
+  const row = getBattleRow(req.params.id)
+  if (!row) return fail(res, 404, 'Battle not found.')
+  if (row.curatorId !== req.user.id) return fail(res, 403, 'That isn’t your battle.')
+  db.prepare('DELETE FROM votes WHERE battleId = ?').run(row.id)
+  db.prepare('DELETE FROM comments WHERE battleId = ?').run(row.id)
+  db.prepare('DELETE FROM submissions WHERE battleId = ?').run(row.id)
+  db.prepare('DELETE FROM battles WHERE id = ?').run(row.id)
+  return ok(res, {})
+})
+
 // Edit a battle you curate (title, source, slots, options + the schedule/dates).
 app.patch('/api/battles/:id', requireAuth, (req, res) => {
   const row = getBattleRow(req.params.id)

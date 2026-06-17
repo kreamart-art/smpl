@@ -736,6 +736,10 @@ export default function Dashboard() {
             setEditBattle(null)
             setMsg({ ok: true, text: t('dashboard.manage.editSaved') })
           }}
+          onDeleted={() => {
+            setEditBattle(null)
+            setMsg({ ok: true, text: t('dashboard.manage.deleted') })
+          }}
         />
       ) : null}
     </div>

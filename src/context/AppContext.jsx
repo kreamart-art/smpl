@@ -449,6 +449,7 @@ export function AppProvider({ children }) {
     [mutate],
   )
   const updateBattle = useCallback((id, data) => mutate(() => api.patch(`/api/battles/${id}`, data)), [mutate])
+  const deleteBattle = useCallback((id) => mutate(() => api.del(`/api/battles/${id}`)), [mutate])
   const advanceStatus = useCallback(
     (battleId) => mutate(() => api.patch(`/api/battles/${battleId}/status`)),
     [mutate],
@@ -593,6 +594,7 @@ export function AppProvider({ children }) {
     removeSession,
     createBattle,
     updateBattle,
+    deleteBattle,
     advanceStatus,
     declareWinner,
     approveSubmission,

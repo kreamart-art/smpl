@@ -13,9 +13,9 @@ const toLocal = (ms) => {
 
 // Curator edits a battle they made — title, source credits, slots, options and
 // (for scheduled battles) the actual dates.
-export default function EditBattleModal({ battle, onClose, onSaved }) {
+export default function EditBattleModal({ battle, onClose, onSaved, onDeleted }) {
   const t = useT()
-  const { updateBattle } = useApp()
+  const { updateBattle, deleteBattle } = useApp()
   const [form, setForm] = useState({
     title: battle.title || '',
     sampleArtist: battle.sampleArtist || '',
@@ -63,6 +63,16 @@ export default function EditBattleModal({ battle, onClose, onSaved }) {
     const r = await updateBattle(battle.id, payload)
     setBusy(false)
     if (r.ok) onSaved()
+    else setErr(r.error || t('profile.saveError'))
+  }
+
+  const [confirmDel, setConfirmDel] = useState(false)
+  const del = async () => {
+    setErr('')
+    setBusy(true)
+    const r = await deleteBattle(battle.id)
+    setBusy(false)
+    if (r.ok) (onDeleted || onClose)()
     else setErr(r.error || t('profile.saveError'))
   }
 
@@ -142,6 +152,39 @@ export default function EditBattleModal({ battle, onClose, onSaved }) {
                 </div>
               ) : (
                 <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.manualHint')}</p>
+              )}
+            </div>
+
+            <div className="border-t border-line pt-4">
+              {!confirmDel ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDel(true)}
+                  className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+                >
+                  {t('dashboard.manage.delete')}
+                </button>
+              ) : (
+                <div className="space-y-3 border border-line-bright p-4">
+                  <p className="font-mono text-[11px] leading-relaxed text-ink">{t('dashboard.manage.deleteConfirm')}</p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={del}
+                      disabled={busy}
+                      className="border border-ink bg-ink px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright disabled:opacity-50"
+                    >
+                      {busy ? '…' : t('dashboard.manage.deleteYes')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDel(false)}
+                      className="border border-line-bright px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-bg"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
