@@ -515,6 +515,11 @@ export function AppProvider({ children }) {
   const stampPhoto = useCallback((id, { emoji, x, y }) => api.post(`/api/messages/${id}/stamp`, { emoji, x, y }), [])
   const unstampPhoto = useCallback((id, stampId) => api.del(`/api/messages/${id}/stamp/${stampId}`), [])
   const uploadImage = useCallback((file) => api.upload('/api/uploads/image', file), [])
+  const uploadVideo = useCallback((file) => api.upload('/api/uploads/video', file), [])
+  const saveWaveformVideo = useCallback((data) => api.post('/api/me/waveform-video', data), [])
+  const fetchWaveformVideos = useCallback((userId) => api.get(`/api/users/${userId}/waveform-videos`), [])
+  const fetchWaveformVideo = useCallback((id) => api.get(`/api/waveform-videos/${id}`), [])
+  const deleteWaveformVideo = useCallback((id) => api.del(`/api/me/waveform-video/${id}`), [])
   const markNotificationsSeen = useCallback(async () => {
     await api.post('/api/notifications/seen')
     await refresh()
@@ -599,6 +604,11 @@ export function AppProvider({ children }) {
     declareWinner,
     approveSubmission,
     uploadAudio,
+    uploadVideo,
+    saveWaveformVideo,
+    fetchWaveformVideos,
+    fetchWaveformVideo,
+    deleteWaveformVideo,
     emailSource,
     fetchComments,
     postComment,

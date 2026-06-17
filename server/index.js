@@ -1767,6 +1767,69 @@ app.post(
   },
 )
 
+const VIDEO_EXT = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' }
+
+// Generated waveform share clips (MediaRecorder output). Stored under /api/uploads.
+app.post(
+  '/api/uploads/video',
+  rateLimit('upload', 20, 60 * 60_000),
+  requireAuth,
+  express.raw({ type: ['video/*', 'application/octet-stream'], limit: '60mb' }),
+  (req, res) => {
+    const buf = req.body
+    if (!buf || !buf.length) return fail(res, 400, 'No video received.')
+    const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+    const ext = VIDEO_EXT[ct] || 'webm'
+    const name = `v_${randomUUID().slice(0, 12)}.${ext}`
+    try {
+      writeFileSync(path.join(UPLOAD_DIR, name), buf)
+    } catch {
+      return fail(res, 500, 'Could not store the video.')
+    }
+    return ok(res, { url: `/api/uploads/${name}` })
+  },
+)
+
+// ----- waveform clips on the profile -----------------------------------------
+// Save a generated clip to the producer's own profile (a portfolio of flips).
+app.post('/api/me/waveform-video', requireAuth, (req, res) => {
+  const { url, battleId, tag } = req.body || {}
+  if (!url || !/^\/?(api\/uploads)\//.test(url)) return fail(res, 400, 'Upload the clip first.')
+  const id = `wv_${randomUUID().slice(0, 10)}`
+  const createdAt = Date.now()
+  db.prepare('INSERT INTO waveform_videos (id,userId,battleId,url,tag,createdAt) VALUES (?,?,?,?,?,?)').run(
+    id, req.user.id, String(battleId || ''), url, String(tag || '').slice(0, 120), createdAt,
+  )
+  return ok(res, { video: { id, userId: req.user.id, battleId: battleId || '', url, tag: tag || '', createdAt } })
+})
+
+// A producer's saved waveform clips (public profile content).
+app.get('/api/users/:id/waveform-videos', (req, res) => {
+  const videos = db
+    .prepare('SELECT * FROM waveform_videos WHERE userId = ? ORDER BY createdAt DESC')
+    .all(req.params.id)
+  return ok(res, { videos })
+})
+
+// A single clip, with its producer, for the clip page.
+app.get('/api/waveform-videos/:id', (req, res) => {
+  const video = db.prepare('SELECT * FROM waveform_videos WHERE id = ?').get(req.params.id)
+  if (!video) return fail(res, 404, 'Clip not found.')
+  const u = getUserRow(video.userId)
+  return ok(res, {
+    video,
+    producer: u ? { id: u.id, alias: u.alias, avatar: u.avatar || '', verified: !!u.verified } : null,
+  })
+})
+
+app.delete('/api/me/waveform-video/:id', requireAuth, (req, res) => {
+  const row = db.prepare('SELECT * FROM waveform_videos WHERE id = ?').get(req.params.id)
+  if (!row) return fail(res, 404, 'Clip not found.')
+  if (row.userId !== req.user.id) return fail(res, 403, 'That clip is not yours.')
+  db.prepare('DELETE FROM waveform_videos WHERE id = ?').run(row.id)
+  return ok(res, {})
+})
+
 // ----- SEO: a live sitemap of every public page (marketing + battles + profiles)
 app.get('/sitemap.xml', (req, res) => {
   const base = (APP_URL || 'https://usesmpl.com').replace(/\/$/, '')

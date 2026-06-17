@@ -16,6 +16,7 @@ import SampleMaker from './pages/SampleMaker.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Messages from './pages/Messages.jsx'
 import SharePage from './pages/SharePage.jsx'
+import ClipPage from './pages/ClipPage.jsx'
 import Legal from './pages/Legal.jsx'
 import Contact from './pages/Contact.jsx'
 import Help from './pages/Help.jsx'
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/battles" element={<Battles />} />
         <Route path="/battles/:id" element={<BattleDetail />} />
+        <Route path="/clip/:id" element={<ClipPage />} />
         <Route path="/profile/:alias" element={<Profile />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/notifications" element={<Notifications />} />

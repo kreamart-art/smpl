@@ -10,6 +10,7 @@ import ShareButton from '../components/ShareButton.jsx'
 import ShareToDM from '../components/ShareToDM.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import FollowList from '../components/FollowList.jsx'
+import WaveformClips from '../components/WaveformClips.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconSettings, IconPoster } from '../components/icons.jsx'
@@ -199,12 +200,27 @@ export function Editor({ user, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, deleteWaveformVideo } =
     useApp()
   const base = getUserByAlias(alias)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [followView, setFollowView] = useState(null) // null | 'followers' | 'following'
+  const [clips, setClips] = useState([])
+
+  useEffect(() => {
+    if (!base?.id) {
+      setClips([])
+      return
+    }
+    let alive = true
+    fetchWaveformVideos(base.id).then((r) => {
+      if (alive && r.ok) setClips(r.videos || [])
+    })
+    return () => {
+      alive = false
+    }
+  }, [base?.id, fetchWaveformVideos])
 
   // old deep link (?edit=1) → the dedicated edit page
   useEffect(() => {
@@ -427,6 +443,20 @@ export default function Profile() {
         <div className="mt-4 border border-line bg-panel px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
           {t('safety.blockedNote', { alias: user.alias })}
         </div>
+      ) : null}
+
+      {clips.length ? (
+        <Reveal className="mt-14">
+          <SectionHead index="F0" kicker="Clips" title="Waveform clips" />
+          <WaveformClips
+            clips={clips}
+            self={isSelf}
+            onDelete={async (id) => {
+              const r = await deleteWaveformVideo(id)
+              if (r.ok) setClips((cs) => cs.filter((x) => x.id !== id))
+            }}
+          />
+        </Reveal>
       ) : null}
 
       {/* STATS */}

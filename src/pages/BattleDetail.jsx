@@ -10,6 +10,7 @@ import ShareToDM from '../components/ShareToDM.jsx'
 import { ReportButton } from '../components/Safety.jsx'
 import CommentThread from '../components/CommentThread.jsx'
 import BattleRulesModal from '../components/BattleRulesModal.jsx'
+import WaveformVideo from '../components/WaveformVideo.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
@@ -107,6 +108,7 @@ export default function BattleDetail() {
   const [beatName, setBeatName] = useState('')
   const [uploadingBeat, setUploadingBeat] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [waveVideo, setWaveVideo] = useState(null)
 
   const approvedSubs = useMemo(
     () => (battle ? battleSubmissions(battle.id).filter((s) => s.approved) : []),
@@ -534,6 +536,23 @@ export default function BattleDetail() {
                         </button>
                       </div>
                     ) : null}
+                    {s.mine && s.audioUrl ? (
+                      <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
+                        <button
+                          onClick={() =>
+                            setWaveVideo({
+                              audioUrl: mediaUrl(s.audioUrl),
+                              producer: currentUser?.alias || '',
+                              tag: `${battle.title} · ${c.drop.toUpperCase()} ${index}/${shuffled.length}`,
+                              battleId: battle.id,
+                            })
+                          }
+                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+                        >
+                          Waveform video
+                        </button>
+                      </div>
+                    ) : null}
                     {!battle.blind ? <CommentThread submissionId={s.id} producerId={s.producerId} /> : null}
                   </div>
                 )
@@ -580,6 +599,8 @@ export default function BattleDetail() {
       <div className="mt-10 flex justify-center border-t border-line pt-6">
         <ReportButton targetType="battle" targetId={battle.id} label={battle.title} />
       </div>
+
+      {waveVideo ? <WaveformVideo {...waveVideo} onClose={() => setWaveVideo(null)} /> : null}
     </div>
   )
 }

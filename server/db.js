@@ -276,6 +276,10 @@ export function migrate() {
   // admins are masked as curators publicly, so give them the verified badge
   // explicitly (the badge now keys off `verified`, not the hidden role).
   db.prepare("UPDATE users SET verified = 1 WHERE role = 'admin'").run()
+  // 2026-06-17: producer-saved waveform share clips, shown on the profile.
+  db.exec(
+    'CREATE TABLE IF NOT EXISTS waveform_videos (id TEXT PRIMARY KEY, userId TEXT, battleId TEXT, url TEXT, tag TEXT, createdAt INTEGER)',
+  )
   // 2026-06-16: handles are ALL CAPS, no spaces or odd chars (A-Z 0-9 . _ -).
   for (const u of db.prepare('SELECT id, alias FROM users').all()) {
     const norm = normalizeHandle(u.alias)
