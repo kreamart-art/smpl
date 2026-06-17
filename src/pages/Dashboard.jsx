@@ -30,6 +30,7 @@ const empty = {
   signupDays: 2,
   submissionDays: 5,
   votingDays: 3,
+  startAt: '',
 }
 
 function PanelHead({ index, title, note }) {
@@ -130,16 +131,17 @@ export default function Dashboard() {
     }
     const payload = { ...form, kind: isCurator ? form.kind : 'VERSES' }
     if (form.scheduled) {
-      // durations in days, stacked from now → signup opens immediately
+      // durations in days, stacked from the chosen start (default: now)
       const DAY = 86_400_000
-      const now = Date.now()
+      const startMs = form.startAt ? new Date(form.startAt).getTime() : Date.now()
+      const base = Number.isFinite(startMs) ? startMs : Date.now()
       const sd = Math.max(1, Math.round(Number(form.signupDays) || 0))
       const subd = Math.max(1, Math.round(Number(form.submissionDays) || 0))
       const vd = Math.max(1, Math.round(Number(form.votingDays) || 0))
-      payload.signupStart = now
-      payload.submissionsOpen = now + sd * DAY
-      payload.votingOpens = now + (sd + subd) * DAY
-      payload.votingCloses = now + (sd + subd + vd) * DAY
+      payload.signupStart = base
+      payload.submissionsOpen = base + sd * DAY
+      payload.votingOpens = base + (sd + subd) * DAY
+      payload.votingCloses = base + (sd + subd + vd) * DAY
     }
     const r = await createBattle(payload)
     if (r.ok) {
@@ -472,6 +474,14 @@ export default function Dashboard() {
                   </label>
                   {form.scheduled ? (
                     <div className="mt-3 space-y-4">
+                      <Field label={t('dashboard.schedule.startAt')} hint={t('dashboard.schedule.startHint')}>
+                        <input
+                          type="datetime-local"
+                          className={inputCls}
+                          value={form.startAt}
+                          onChange={(e) => setForm({ ...form, startAt: e.target.value })}
+                        />
+                      </Field>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{t('dashboard.schedule.preset')}</span>
                         {[
