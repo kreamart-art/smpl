@@ -680,7 +680,7 @@ app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
   // notify the winner, then the other entrants and everyone who was in the room
   const winnerAlias = getUserRow(sub.producerId)?.alias || 'a maker'
   sendPush(sub.producerId, {
-    title: 'You won 🏆',
+    title: 'You won',
     body: `Your beat won “${b.title}”`,
     tag: `win-${b.id}`,
     url: `/battles/${b.id}`,
@@ -848,7 +848,7 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
     const maxOther = others.length ? Math.max(...others) : 0
     if ([5, 10, 25, 50, 100].includes(mine)) {
       sendPush(sub.producerId, {
-        title: `${mine} votes 🔥`,
+        title: `${mine} votes`,
         body: `Your beat hit ${mine} votes in “${b.title}”`,
         tag: `votes-${sub.id}-${mine}`,
         url: `/battles/${b.id}`,
@@ -1058,7 +1058,7 @@ app.post('/api/admin/users/:id/verify', requireAuth, requireAdmin, (req, res) =>
   db.prepare('UPDATE users SET verified = ? WHERE id = ?').run(next ? 1 : 0, target.id)
   if (next && !target.verified) {
     sendPush(target.id, {
-      title: 'You’re verified ✓',
+      title: 'You’re verified',
       body: 'Your SMPL account is now verified',
       tag: 'verified',
       url: `/profile/${target.alias}`,
@@ -1311,7 +1311,7 @@ app.post('/api/admin/sample-makers/:id', requireAuth, requireAdmin, (req, res) =
   if (!u) return fail(res, 404, 'User not found.')
   db.prepare('UPDATE users SET sampleMakerStatus = ? WHERE id = ?').run(status, u.id)
   sendPush(u.id, {
-    title: status === 'approved' ? 'Sample maker approved ✓' : 'Sample maker update',
+    title: status === 'approved' ? 'Sample maker approved' : 'Sample maker update',
     body: status === 'approved' ? 'You can now submit samples to the library' : 'Your sample maker application wasn’t approved',
     tag: 'samplemaker',
     url: '/sample-maker',
@@ -1325,7 +1325,7 @@ app.post('/api/admin/samples/:id', requireAuth, requireAdmin, (req, res) => {
   if (!s) return fail(res, 404, 'Sample not found.')
   db.prepare('UPDATE samples SET status = ? WHERE id = ?').run(status, s.id)
   sendPush(s.makerId, {
-    title: status === 'approved' ? 'Sample approved ✓' : 'Sample update',
+    title: status === 'approved' ? 'Sample approved' : 'Sample update',
     body: status === 'approved' ? `“${s.name}” is live in the library` : `“${s.name}” wasn’t approved`,
     tag: `sample-${s.id}`,
     url: '/sample-maker',

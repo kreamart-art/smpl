@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Btn } from './ui.jsx'
 import { useI18n } from '../i18n/index.jsx'
+import { IconVolume, IconMuted, IconPlay } from './icons.jsx'
 
 // The promo reel + its poster live in /public (compressed for web).
 const SRC = '/announcement.mp4'
@@ -50,8 +51,8 @@ export default function AnnouncementVideo({ className = '' }) {
           aria-label="Play"
           className="absolute inset-0 flex items-center justify-center bg-black/35"
         >
-          <span className="flex h-16 w-16 items-center justify-center border border-white/40 bg-black/40 text-2xl text-white backdrop-blur">
-            ▶
+          <span className="flex h-16 w-16 items-center justify-center border border-white/40 bg-black/40 text-white backdrop-blur">
+            <IconPlay size={26} />
           </span>
         </button>
       ) : null}
@@ -61,7 +62,7 @@ export default function AnnouncementVideo({ className = '' }) {
         aria-label={muted ? 'Unmute' : 'Mute'}
         className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center border border-white/30 bg-black/50 text-[15px] text-white backdrop-blur transition-colors hover:bg-black/70"
       >
-        {muted ? '🔇' : '🔊'}
+        {muted ? <IconMuted size={18} /> : <IconVolume size={18} />}
       </button>
     </div>
   )

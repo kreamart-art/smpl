@@ -57,6 +57,34 @@ export function IconMic(props) {
   )
 }
 
+export function IconVolume(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+      <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 6a8.5 8.5 0 0 1 0 12" />
+    </Svg>
+  )
+}
+
+export function IconMuted(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+      <path d="M16 9l5 6" />
+      <path d="M21 9l-5 6" />
+    </Svg>
+  )
+}
+
+export function IconPlay(props) {
+  return (
+    <Svg {...props}>
+      <path d="M7 4.8l12 7.2-12 7.2Z" fill="currentColor" stroke="currentColor" />
+    </Svg>
+  )
+}
+
 export function IconFeed(props) {
   return (
     <Svg {...props}>
