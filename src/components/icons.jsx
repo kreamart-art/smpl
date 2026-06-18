@@ -26,6 +26,16 @@ export function IconBattles(props) {
   )
 }
 
+export function IconStats(props) {
+  return (
+    <Svg {...props}>
+      <rect x="4" y="12" width="4" height="8" />
+      <rect x="10" y="7" width="4" height="13" />
+      <rect x="16" y="4" width="4" height="16" />
+    </Svg>
+  )
+}
+
 export function IconPeople(props) {
   return (
     <Svg {...props}>

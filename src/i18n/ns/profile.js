@@ -55,6 +55,13 @@ export const profile = {
     'profile.stats.kickerCurator': 'Curation figures',
     'profile.stats.kickerCareer': 'Career figures',
     'profile.stats.title': 'Statistics',
+    // profile tabs (instagram/tiktok-style)
+    'profile.tab.clips': 'Clips',
+    'profile.tab.stats': 'Stats',
+    'profile.tab.history': 'History',
+    'profile.tab.battles': 'Battles',
+    'profile.clips.empty': 'No clips yet.',
+    'profile.clips.emptySelf': 'Turn one of your battle flips into a shareable clip from the battle page.',
     // competitor stats
     'profile.stats.battles': 'Battles',
     'profile.stats.battlesSub': 'played',
@@ -187,6 +194,13 @@ export const profile = {
     'profile.stats.kickerCurator': 'curatiecijfers',
     'profile.stats.kickerCareer': 'carrièrecijfers',
     'profile.stats.title': 'statistieken',
+    // profile tabs (instagram/tiktok-style)
+    'profile.tab.clips': 'Clips',
+    'profile.tab.stats': 'Stats',
+    'profile.tab.history': 'Historie',
+    'profile.tab.battles': 'Battles',
+    'profile.clips.empty': 'Nog geen clips.',
+    'profile.clips.emptySelf': 'Maak van een van je battle-flips een deelbare clip vanaf de battlepagina.',
     // competitor stats
     'profile.stats.battles': 'battles',
     'profile.stats.battlesSub': 'gespeeld',
