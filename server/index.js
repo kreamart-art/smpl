@@ -150,6 +150,55 @@ function autoAdvance() {
   }
 }
 
+// ----- submission-deadline reminders -----------------------------------------
+// Nudge entrants who registered but haven't submitted yet as the deadline
+// (submitEnd) nears: two relative pings (2 days + a few hours before) plus an
+// optional one-off custom time (battles.reminderAt). Each reminder fires once.
+const REMINDER_WINDOW = 2 * 60 * 60 * 1000 // catch a threshold within 2h of it
+const RELATIVE_REMINDERS = [
+  { kind: '2d', before: 48 * 60 * 60 * 1000, left: 'in 2 days' },
+  { kind: 'soon', before: 3 * 60 * 60 * 1000, left: 'in a few hours' },
+]
+
+function reminderSent(battleId, kind) {
+  return !!db.prepare('SELECT 1 FROM reminders_sent WHERE battleId = ? AND kind = ?').get(battleId, kind)
+}
+
+function notifyNonSubmitters(b, body, kind) {
+  // mark first so a slow loop can't double-send
+  db.prepare('INSERT OR IGNORE INTO reminders_sent (battleId, kind, sentAt) VALUES (?,?,?)').run(b.id, kind, Date.now())
+  const submitted = new Set(
+    db.prepare('SELECT DISTINCT producerId FROM submissions WHERE battleId = ?').all(b.id).map((r) => r.producerId),
+  )
+  for (const uid of b.signups || []) {
+    if (uid && !submitted.has(uid)) {
+      sendPush(uid, {
+        title: 'Submission deadline',
+        body,
+        tag: `remind-${b.id}-${kind}`,
+        url: `/battles/${b.id}`,
+      }).catch(() => {})
+    }
+  }
+}
+
+function submissionReminders(now = Date.now()) {
+  const rows = db.prepare('SELECT id FROM battles WHERE status = ? AND submitEnd > 0').all(STATUS.SUBMISSION_PHASE)
+  for (const { id } of rows) {
+    const b = rowToBattle(getBattleRow(id))
+    if (!b || !b.submitEnd || now >= b.submitEnd) continue
+    for (const r of RELATIVE_REMINDERS) {
+      const at = b.submitEnd - r.before
+      if (now >= at && now <= at + REMINDER_WINDOW && !reminderSent(b.id, r.kind)) {
+        notifyNonSubmitters(b, `“${b.title}” closes ${r.left}. Upload your beat.`, r.kind)
+      }
+    }
+    if (b.reminderAt && now >= b.reminderAt && now <= b.reminderAt + REMINDER_WINDOW && !reminderSent(b.id, 'custom')) {
+      notifyNonSubmitters(b, `Reminder — “${b.title}” submissions close soon. Upload your beat.`, 'custom')
+    }
+  }
+}
+
 // Serialise a submission with phase-aware anonymity. Identity + tallies are
 // only exposed once the winner is declared; otherwise just a `mine` flag.
 function serSub(s, battle, uid, counts) {
@@ -2016,7 +2065,11 @@ if (existsSync(distDir)) {
 
 // Run scheduled battles forward on boot + every minute.
 autoAdvance()
-setInterval(autoAdvance, 60_000)
+submissionReminders()
+setInterval(() => {
+  autoAdvance()
+  submissionReminders()
+}, 60_000)
 
 // Automated daily DB snapshots — on in production, opt-in elsewhere.
 if (process.env.NODE_ENV === 'production' || process.env.SMPL_BACKUPS === '1') {

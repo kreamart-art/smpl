@@ -294,6 +294,12 @@ export function migrate() {
     'CREATE TABLE IF NOT EXISTS crate_items (id TEXT PRIMARY KEY, userId TEXT, submissionId TEXT, battleId TEXT, createdAt INTEGER)',
   )
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS crate_uniq ON crate_items (userId, submissionId)')
+  // 2026-06-18: submission-deadline reminders. Optional one-off custom reminder
+  // time per battle + a dedup table so each reminder fires only once.
+  addColumn('battles', 'reminderAt', 'INTEGER')
+  db.exec(
+    'CREATE TABLE IF NOT EXISTS reminders_sent (battleId TEXT, kind TEXT, sentAt INTEGER, PRIMARY KEY (battleId, kind))',
+  )
   // 2026-06-16: handles are ALL CAPS, no spaces or odd chars (A-Z 0-9 . _ -).
   for (const u of db.prepare('SELECT id, alias FROM users').all()) {
     const norm = normalizeHandle(u.alias)
