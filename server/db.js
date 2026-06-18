@@ -126,6 +126,8 @@ export function meUser(r) {
     phone: r.phone || '',
     country: r.country || '',
     city: r.city || '',
+    gender: r.gender || '', // private; never in pubUser
+    genderText: r.genderText || '', // free text when gender = 'self'
     lastSeenAt: r.lastSeenAt || 0,
     twoFactor: !!r.totpEnabled,
     emailVerified: !!r.emailVerified,
@@ -241,6 +243,8 @@ export function migrate() {
   addColumn('users', 'phone', 'TEXT')
   addColumn('users', 'country', 'TEXT')
   addColumn('users', 'city', 'TEXT')
+  addColumn('users', 'gender', 'TEXT')
+  addColumn('users', 'genderText', 'TEXT')
   // 2026-06-13: share a profile/battle/event into a DM as a card.
   addColumn('messages', 'shareKind', 'TEXT')
   addColumn('messages', 'shareRef', 'TEXT')

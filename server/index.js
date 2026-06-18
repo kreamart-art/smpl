@@ -1174,12 +1174,17 @@ app.patch('/api/me', requireAuth, (req, res) => {
   if (typeof b.phone === 'string') set('phone', b.phone.trim().slice(0, 40))
   if (typeof b.country === 'string') set('country', b.country.trim().slice(0, 80))
   if (typeof b.city === 'string') set('city', b.city.trim().slice(0, 80))
+  if (typeof b.gender === 'string') {
+    const g = ['', 'woman', 'man', 'nonbinary', 'self', 'undisclosed'].includes(b.gender) ? b.gender : ''
+    set('gender', g)
+    // the free-text description only matters for "prefer to self-describe"
+    set('genderText', g === 'self' ? String(b.genderText || '').trim().slice(0, 60) : '')
+  }
   if (typeof b.avatar === 'string') set('avatar', b.avatar)
   if (Array.isArray(b.links)) set('links', JSON.stringify(b.links))
   if (b.genres !== undefined) {
-    const list = Array.isArray(b.genres)
-      ? b.genres
-      : String(b.genres || '').split(',').map((g) => g.trim()).filter(Boolean)
+    const raw = Array.isArray(b.genres) ? b.genres : String(b.genres || '').split(',')
+    const list = raw.map((g) => String(g).trim()).filter(Boolean).slice(0, 12) // anti-abuse ceiling
     set('genres', JSON.stringify(list))
   }
   // self-service identity: change your handle (alias) and/or login email

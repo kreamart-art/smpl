@@ -89,6 +89,7 @@ function PersonalDataPanel({ user, onBack }) {
     URL.revokeObjectURL(url)
   }
   const age = ageFrom(user.dob, Date.now())
+  const navigate = useNavigate()
   const [form, setForm] = useState({
     name: user.name || '',
     phone: user.phone || '',
@@ -101,6 +102,11 @@ function PersonalDataPanel({ user, onBack }) {
     setForm((f) => ({ ...f, [k]: e.target.value }))
     setSaved(false)
   }
+  const genderLabel = user.gender
+    ? user.gender === 'self'
+      ? user.genderText || t('profile.gender.self')
+      : t(`profile.gender.${user.gender}`)
+    : '—'
   const save = async () => {
     setBusy(true)
     const r = await updateProfile(form)
@@ -132,6 +138,18 @@ function PersonalDataPanel({ user, onBack }) {
         </div>
         <Field label={t('profile.city')}>
           <input className={inputCls} value={form.city} onChange={upd('city')} placeholder="Amsterdam" />
+        </Field>
+
+        {/* gender — private; opens its own page */}
+        <Field label={t('profile.gender.label')}>
+          <button
+            type="button"
+            onClick={() => navigate('/settings/gender')}
+            className="flex w-full items-center justify-between border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors hover:border-ink"
+          >
+            <span className={user.gender ? 'text-ink' : 'text-muted'}>{genderLabel}</span>
+            <span className="text-muted">▸</span>
+          </button>
         </Field>
 
         {/* fixed identity — not editable here */}

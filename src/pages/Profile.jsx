@@ -54,15 +54,13 @@ function ProfileTabs({ tabs, active, onSelect }) {
             type="button"
             onClick={() => onSelect(tabDef.key)}
             aria-selected={on}
-            className={`-mb-px flex flex-1 items-center justify-center gap-2 border-b-2 px-2 py-4 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors duration-300 sm:gap-2.5 sm:tracking-[0.2em] ${
+            aria-label={tabDef.label}
+            title={tabDef.label}
+            className={`-mb-px flex flex-1 items-center justify-center border-b-2 py-2.5 transition-colors duration-300 ${
               on ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink-dim'
             }`}
           >
-            <Icon size={15} className="shrink-0" />
-            <span>{tabDef.label}</span>
-            {typeof tabDef.count === 'number' ? (
-              <span className="tnum text-faint">{tabDef.count}</span>
-            ) : null}
+            <Icon size={22} className="shrink-0" />
           </button>
         )
       })}
@@ -88,8 +86,6 @@ export function Editor({ user, onClose }) {
     bio: user.bio || '',
     location: user.location || '',
     contactEmail: user.contactEmail || '',
-    genres: (user.genres || []).join(', '),
-    links: (user.links || []).map((l) => `${l.label}, ${l.url}`).join('\n'),
   })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -104,21 +100,11 @@ export function Editor({ user, onClose }) {
   const save = async () => {
     setBusy(true)
     setErr('')
-    const links = form.links
-      .split('\n')
-      .map((line) => {
-        const [label, ...rest] = line.split(',')
-        const url = rest.join(',').trim()
-        return label && url ? { label: label.trim(), url } : null
-      })
-      .filter(Boolean)
     const r = await updateProfile({
       avatar: form.avatar,
       bio: form.bio,
       location: form.location,
       contactEmail: form.contactEmail,
-      genres: form.genres,
-      links,
     })
     setBusy(false)
     if (r.ok) onClose()
@@ -170,13 +156,23 @@ export function Editor({ user, onClose }) {
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
           />
         </Field>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label={t('profile.field.location')}>
-            <input className={inputCls} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-          </Field>
-          <Field label={t('profile.field.genres')} hint={t('profile.field.genresHint')}>
-            <input className={inputCls} value={form.genres} onChange={(e) => setForm({ ...form, genres: e.target.value })} />
-          </Field>
+        <Field label={t('profile.field.location')}>
+          <input className={inputCls} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+        </Field>
+        <div>
+          <Label>{t('profile.field.genres')}</Label>
+          <Link
+            to="/edit-profile/genres"
+            className="mt-2 flex w-full items-center justify-between border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors hover:border-ink"
+          >
+            <span className={user.genres?.length ? 'text-ink' : 'text-muted'}>
+              {user.genres?.length ? user.genres.join(' · ') : t('profile.manageGenres')}
+            </span>
+            <span className="flex items-center gap-2 text-muted">
+              <span className="tnum">{user.genres?.length || 0}</span>
+              <span>▸</span>
+            </span>
+          </Link>
         </div>
         <Field label={t('profile.contactEmail')} hint={t('profile.contactHint')}>
           <input
@@ -187,15 +183,19 @@ export function Editor({ user, onClose }) {
             onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
           />
         </Field>
-        <Field label={t('profile.field.links')} hint={t('profile.field.linksHint')}>
-          <textarea
-            rows={3}
-            className={textareaCls}
-            placeholder={t('profile.linksPlaceholder')}
-            value={form.links}
-            onChange={(e) => setForm({ ...form, links: e.target.value })}
-          />
-        </Field>
+        <div>
+          <Label>{t('profile.links')}</Label>
+          <Link
+            to="/edit-profile/links"
+            className="mt-2 flex w-full items-center justify-between border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-ink transition-colors hover:border-ink"
+          >
+            <span>{t('profile.manageLinks')}</span>
+            <span className="flex items-center gap-2 text-muted">
+              <span className="tnum">{(user.links || []).length}</span>
+              <span>▸</span>
+            </span>
+          </Link>
+        </div>
         {err ? <div className="border border-line-bright px-3 py-2 font-mono text-[11px] text-ink">! {err}</div> : null}
         <div className="flex gap-3">
           <Btn onClick={save} variant="solid" disabled={busy}>
