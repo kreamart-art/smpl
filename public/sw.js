@@ -22,7 +22,7 @@ self.addEventListener('push', (event) => {
     data = {}
   }
   const title = data.title || 'SMPL'
-  event.waitUntil(
+  const jobs = [
     self.registration.showNotification(title, {
       body: data.body || '',
       icon: '/icon-192.png',
@@ -30,7 +30,14 @@ self.addEventListener('push', (event) => {
       tag: data.tag || undefined,
       data: { url: data.url || '/' },
     }),
-  )
+  ]
+  // home-screen app-icon count badge (installed PWA); no-op where unsupported
+  if (typeof data.badgeCount === 'number' && self.navigator && 'setAppBadge' in self.navigator) {
+    jobs.push(
+      data.badgeCount > 0 ? self.navigator.setAppBadge(data.badgeCount) : self.navigator.clearAppBadge(),
+    )
+  }
+  event.waitUntil(Promise.all(jobs))
 })
 
 self.addEventListener('notificationclick', (event) => {

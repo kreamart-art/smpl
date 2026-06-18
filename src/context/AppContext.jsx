@@ -94,6 +94,19 @@ export function AppProvider({ children }) {
     }
   }, [applyBootstrap])
 
+  // Mirror the unread-DM count onto the installed app's home-screen icon badge
+  // (Web Badging API). A no-op on browsers/devices that don't support it.
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('setAppBadge' in navigator)) return
+    const n = unreadMessages || 0
+    try {
+      if (n > 0) navigator.setAppBadge(n)
+      else navigator.clearAppBadge()
+    } catch {
+      /* not installed / unsupported — ignore */
+    }
+  }, [unreadMessages])
+
   // Keep the active account's session (with its live token) in the local store,
   // so we can hop back to it later without a password.
   useEffect(() => {

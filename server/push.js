@@ -40,13 +40,24 @@ export function removeSubscription(endpoint) {
 // (410 Gone / 404) are pruned so the table self-heals.
 export async function sendPush(userId, payload) {
   if (!userId) return
+  // Attach the recipient's unread-DM count so the service worker can set the
+  // home-screen app-icon badge (number on the icon), even with the app closed.
+  let full = payload
+  try {
+    const badgeCount = db
+      .prepare('SELECT COUNT(*) AS c FROM messages WHERE toId = ? AND readAt IS NULL')
+      .get(userId).c
+    full = { ...payload, badgeCount }
+  } catch {
+    /* messages table unavailable — send without a badge count */
+  }
   // native devices (iOS/Android via the app) — graceful no-op if unconfigured
-  sendNative(userId, payload).catch(() => {})
+  sendNative(userId, full).catch(() => {})
   // web push (installed PWA / desktop browsers)
   if (!pushConfigured) return
   const subs = db.prepare('SELECT * FROM push_subscriptions WHERE userId=?').all(userId)
   if (!subs.length) return
-  const body = JSON.stringify(payload)
+  const body = JSON.stringify(full)
   await Promise.all(
     subs.map(async (s) => {
       try {
