@@ -284,6 +284,16 @@ export function migrate() {
   db.exec(
     'CREATE TABLE IF NOT EXISTS waveform_videos (id TEXT PRIMARY KEY, userId TEXT, battleId TEXT, url TEXT, tag TEXT, createdAt INTEGER)',
   )
+  // 2026-06-18: curator battle drafts — save a partly-set-up battle, finish later.
+  db.exec(
+    'CREATE TABLE IF NOT EXISTS battle_drafts (id TEXT PRIMARY KEY, curatorId TEXT, data TEXT, createdAt INTEGER, updatedAt INTEGER)',
+  )
+  // 2026-06-18: crate — save beats/verses from battles to your profile. NOT a
+  // like: no public per-beat counter, never touches voting. One row per save.
+  db.exec(
+    'CREATE TABLE IF NOT EXISTS crate_items (id TEXT PRIMARY KEY, userId TEXT, submissionId TEXT, battleId TEXT, createdAt INTEGER)',
+  )
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS crate_uniq ON crate_items (userId, submissionId)')
   // 2026-06-16: handles are ALL CAPS, no spaces or odd chars (A-Z 0-9 . _ -).
   for (const u of db.prepare('SELECT id, alias FROM users').all()) {
     const norm = normalizeHandle(u.alias)

@@ -34,6 +34,9 @@ export const common = {
     'common.cancel': 'Cancel',
     'common.close': 'Close',
     'common.back': 'Back',
+    'common.play': 'Play',
+    'common.pause': 'Pause',
+    'common.delete': 'Delete',
     'common.share': 'Share',
     'common.linkCopied': 'Link copied',
 
@@ -81,6 +84,9 @@ export const common = {
     'common.cancel': 'Annuleren',
     'common.close': 'Sluiten',
     'common.back': 'Terug',
+    'common.play': 'Afspelen',
+    'common.pause': 'Pauze',
+    'common.delete': 'Verwijderen',
     'common.share': 'Delen',
     'common.linkCopied': 'Link gekopieerd',
 

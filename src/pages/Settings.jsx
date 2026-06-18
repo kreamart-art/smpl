@@ -7,7 +7,7 @@ import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { TwoFactorPanel, DeleteAccountPanel } from '../components/SecurityPanels.jsx'
 import LangToggle from '../components/LangToggle.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
-import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconBell, IconUser } from '../components/icons.jsx'
+import { IconSettings, IconLogout, IconShield, IconTrash, IconGlobe, IconBell, IconUser, IconCrate } from '../components/icons.jsx'
 import { pushSupported, pushPermission, isPushSubscribed, enablePush, disablePush } from '../lib/push.js'
 import { Field, inputCls } from '../components/ui.jsx'
 import { ageFrom } from '../utils/wave.js'
@@ -593,6 +593,39 @@ function CuratorCompetePanel({ user, onBack }) {
   )
 }
 
+// Private "in N crates" reach for a maker. Never public — no like-counter.
+function CrateInsightsPanel({ onBack }) {
+  const t = useT()
+  const { fetchCrateReach } = useApp()
+  const [reach, setReach] = useState(null)
+  useEffect(() => {
+    let alive = true
+    fetchCrateReach().then((r) => {
+      if (alive && r.ok) setReach(r.reach)
+    })
+    return () => {
+      alive = false
+    }
+  }, [fetchCrateReach])
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <IconCrate size={15} /> {t('crate.insights')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="space-y-3 p-8 text-center">
+        <div className="font-mono text-[3rem] leading-none tnum text-ink">{reach == null ? '—' : reach}</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{t('crate.inCratesLabel')}</div>
+        <p className="mx-auto max-w-xs font-mono text-[10px] leading-relaxed text-faint">{t('crate.insightsNote')}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Settings() {
   const { currentUser, logout, isHouse, isCurator } = useApp()
   const { standalone } = usePWA()
@@ -631,6 +664,7 @@ export default function Settings() {
   if (view === 'identity') return <Shell><IdentityPanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'install') return <Shell><InstallPanel onBack={() => setView('menu')} /></Shell>
   if (view === 'compete') return <Shell><CuratorCompetePanel user={user} onBack={() => setView('menu')} /></Shell>
+  if (view === 'insights') return <Shell><CrateInsightsPanel onBack={() => setView('menu')} /></Shell>
 
   const Item = ({ icon, label, onClick, danger, right }) => (
     <button
@@ -684,6 +718,9 @@ export default function Settings() {
               ) : null
             }
           />
+          {user.role !== 'listener' ? (
+            <Item icon={<IconCrate size={18} />} label={t('crate.insights')} onClick={() => setView('insights')} />
+          ) : null}
           <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
             <IconGlobe size={18} />
             <span>{t('common.language')}</span>

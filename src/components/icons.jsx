@@ -26,6 +26,25 @@ export function IconBattles(props) {
   )
 }
 
+export function IconCrate(props) {
+  return (
+    <Svg {...props}>
+      <path d="M3 7h18l-1.4 13H4.4L3 7Z" />
+      <path d="M3 7l2-3h14l2 3" />
+      <line x1="9.5" y1="11.5" x2="14.5" y2="11.5" />
+    </Svg>
+  )
+}
+
+export function IconPause(props) {
+  return (
+    <Svg {...props}>
+      <rect x="6" y="5" width="3.5" height="14" fill="currentColor" stroke="none" />
+      <rect x="14.5" y="5" width="3.5" height="14" fill="currentColor" stroke="none" />
+    </Svg>
+  )
+}
+
 export function IconStats(props) {
   return (
     <Svg {...props}>

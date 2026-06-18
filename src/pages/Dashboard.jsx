@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
@@ -12,6 +12,7 @@ import SampleReviewPanel from '../components/SampleReviewPanel.jsx'
 import EditBattleModal from '../components/EditBattleModal.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { STATUS, nextStatus } from '../data/status.js'
+import { fmtDate } from '../utils/wave.js'
 import { useT } from '../i18n/index.jsx'
 
 const empty = {
@@ -62,6 +63,9 @@ export default function Dashboard() {
     declareWinner,
     approveSubmission,
     uploadAudio,
+    saveBattleDraft,
+    fetchBattleDrafts,
+    deleteBattleDraft,
   } = app
   const [form, setForm] = useState(empty)
   const [msg, setMsg] = useState(null)
@@ -70,8 +74,22 @@ export default function Dashboard() {
   const [libOpen, setLibOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [editBattle, setEditBattle] = useState(null)
+  const [drafts, setDrafts] = useState([])
+  const [draftId, setDraftId] = useState(null) // the draft currently being edited
+  const [savingDraft, setSavingDraft] = useState(false)
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
+
+  useEffect(() => {
+    if (!isCurator) return
+    let alive = true
+    fetchBattleDrafts().then((r) => {
+      if (alive && r.ok) setDrafts(r.drafts || [])
+    })
+    return () => {
+      alive = false
+    }
+  }, [isCurator, fetchBattleDrafts])
   // strict ownership: you only see and manage battles you created yourself
   const myBattles = battles.filter((b) => b.curatorId === currentUser.id)
 
@@ -145,6 +163,12 @@ export default function Dashboard() {
     }
     const r = await createBattle(payload)
     if (r.ok) {
+      // publishing a resumed draft consumes it
+      if (draftId) {
+        await deleteBattleDraft(draftId)
+        setDraftId(null)
+        reloadDrafts()
+      }
       setForm(empty)
       setStep(1)
       setMsg({
@@ -156,6 +180,41 @@ export default function Dashboard() {
       })
     } else {
       setMsg({ ok: false, text: r.error })
+    }
+  }
+
+  const reloadDrafts = async () => {
+    const r = await fetchBattleDrafts()
+    if (r.ok) setDrafts(r.drafts || [])
+  }
+
+  // Save the wizard's current state as a draft (new, or updating the open one).
+  const onSaveDraft = async () => {
+    setSavingDraft(true)
+    const r = await saveBattleDraft(form, draftId)
+    setSavingDraft(false)
+    if (r.ok) {
+      setDraftId(r.draft.id)
+      reloadDrafts()
+      setMsg({ ok: true, text: t('dashboard.draft.saved') })
+    } else {
+      setMsg({ ok: false, text: r.error })
+    }
+  }
+
+  const resumeDraft = (d) => {
+    setForm({ ...empty, ...(d.data || {}) })
+    setDraftId(d.id)
+    setStep(1)
+    setMsg(null)
+    document.getElementById('create-battle')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const removeDraft = async (id) => {
+    const r = await deleteBattleDraft(id)
+    if (r.ok) {
+      setDrafts((ds) => ds.filter((x) => x.id !== id))
+      if (draftId === id) setDraftId(null)
     }
   }
 
@@ -542,25 +601,35 @@ export default function Dashboard() {
                   >
                     ◂ {t('common.back')}
                   </button>
-                  {step < 4 ? (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (step === 1 && !form.title.trim()) {
-                          setMsg({ ok: false, text: t('dashboard.msg.needTitle') })
-                          return
-                        }
-                        setStep((s) => Math.min(4, s + 1))
-                      }}
-                      className="border border-ink bg-ink px-6 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+                      onClick={onSaveDraft}
+                      disabled={savingDraft}
+                      className="border border-line-bright px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-40"
                     >
-                      {t('dashboard.wizard.next')} ▸
+                      {savingDraft ? '…' : t('dashboard.draft.save')}
                     </button>
-                  ) : (
-                    <Btn type="submit" variant="solid">
-                      {t('dashboard.create.submit')}
-                    </Btn>
-                  )}
+                    {step < 4 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (step === 1 && !form.title.trim()) {
+                            setMsg({ ok: false, text: t('dashboard.msg.needTitle') })
+                            return
+                          }
+                          setStep((s) => Math.min(4, s + 1))
+                        }}
+                        className="border border-ink bg-ink px-6 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+                      >
+                        {t('dashboard.wizard.next')} ▸
+                      </button>
+                    ) : (
+                      <Btn type="submit" variant="solid">
+                        {t('dashboard.create.submit')}
+                      </Btn>
+                    )}
+                  </div>
                 </div>
                 <p className="font-mono text-[10px] leading-relaxed text-muted">
                   {t('dashboard.create.footnote', { status: t(`status.${STATUS.ANNOUNCED}`) })}
@@ -568,6 +637,41 @@ export default function Dashboard() {
               </form>
             </div>
           </Reveal>
+
+          {drafts.length ? (
+            <Reveal delay={40}>
+              <div className="mt-6 border border-line bg-panel">
+                <PanelHead index="C1·" title={t('dashboard.draft.title')} note={t('dashboard.draft.note', { n: drafts.length })} />
+                <div className="divide-y divide-line">
+                  {drafts.map((d) => (
+                    <div key={d.id} className="flex items-center gap-3 px-6 py-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-sans text-[15px] font-bold uppercase tracking-tight">
+                          {d.data?.title?.trim() || t('dashboard.draft.untitled')}
+                        </div>
+                        <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                          {d.data?.kind || 'BEATS'} · {t('dashboard.draft.edited', { when: fmtDate(d.updatedAt) })}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => resumeDraft(d)}
+                        className="h-9 shrink-0 border border-line-bright px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                      >
+                        {t('dashboard.draft.resume')}
+                      </button>
+                      <button
+                        onClick={() => removeDraft(d.id)}
+                        aria-label={t('common.delete')}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center border border-line font-mono text-[11px] text-muted transition-colors hover:text-ink"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+          ) : null}
         </div>
 
         {/* MANAGE */}

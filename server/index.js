@@ -205,6 +205,7 @@ function buildBootstrap(uid, userRow) {
   let unread = 0
   let unreadMessages = 0
   let blocked = []
+  let cratedIds = []
   if (userRow) {
     const personal = personalize(activityItems().items, userRow.id).filter((i) => i.personal)
     unread = personal.filter((i) => i.ts > (userRow.lastSeenAt || 0)).length
@@ -212,6 +213,7 @@ function buildBootstrap(uid, userRow) {
       .prepare('SELECT COUNT(*) AS c FROM messages WHERE toId = ? AND readAt IS NULL')
       .get(userRow.id).c
     blocked = db.prepare('SELECT blockedId FROM blocks WHERE blockerId=?').all(userRow.id).map((r) => r.blockedId)
+    cratedIds = db.prepare('SELECT submissionId FROM crate_items WHERE userId=?').all(userRow.id).map((r) => r.submissionId)
   }
 
   return {
@@ -225,6 +227,7 @@ function buildBootstrap(uid, userRow) {
     unread,
     unreadMessages,
     blocked,
+    cratedIds,
     mailConfigured,
     pushConfigured,
   }
@@ -1833,6 +1836,138 @@ app.delete('/api/me/waveform-video/:id', requireAuth, (req, res) => {
   if (row.userId !== req.user.id) return fail(res, 403, 'That clip is not yours.')
   db.prepare('DELETE FROM waveform_videos WHERE id = ?').run(row.id)
   return ok(res, {})
+})
+
+// ----- curator battle drafts -------------------------------------------------
+// Save the create-wizard state to finish a battle later. Owner-only, curators.
+app.post('/api/battle-drafts', requireCurator, (req, res) => {
+  const { id, data } = req.body || {}
+  const json = JSON.stringify(data ?? {}).slice(0, 20_000)
+  const now = Date.now()
+  if (id) {
+    const row = db.prepare('SELECT * FROM battle_drafts WHERE id = ?').get(id)
+    if (row && row.curatorId !== req.user.id) return fail(res, 403, 'That draft is not yours.')
+    if (row) {
+      db.prepare('UPDATE battle_drafts SET data = ?, updatedAt = ? WHERE id = ?').run(json, now, id)
+      return ok(res, { draft: { id, data: data ?? {}, updatedAt: now } })
+    }
+    // unknown id (e.g. deleted elsewhere) — fall through and create a fresh draft
+  }
+  const newId = `d_${randomUUID().slice(0, 10)}`
+  db.prepare('INSERT INTO battle_drafts (id,curatorId,data,createdAt,updatedAt) VALUES (?,?,?,?,?)').run(
+    newId, req.user.id, json, now, now,
+  )
+  return ok(res, { draft: { id: newId, data: data ?? {}, updatedAt: now } })
+})
+
+app.get('/api/battle-drafts', requireCurator, (req, res) => {
+  const rows = db
+    .prepare('SELECT * FROM battle_drafts WHERE curatorId = ? ORDER BY updatedAt DESC')
+    .all(req.user.id)
+  const drafts = rows.map((r) => {
+    let data = {}
+    try {
+      data = JSON.parse(r.data || '{}')
+    } catch {
+      /* keep empty */
+    }
+    return { id: r.id, data, updatedAt: r.updatedAt }
+  })
+  return ok(res, { drafts })
+})
+
+app.delete('/api/battle-drafts/:id', requireCurator, (req, res) => {
+  const row = db.prepare('SELECT * FROM battle_drafts WHERE id = ?').get(req.params.id)
+  if (!row) return fail(res, 404, 'Draft not found.')
+  if (row.curatorId !== req.user.id) return fail(res, 403, 'That draft is not yours.')
+  db.prepare('DELETE FROM battle_drafts WHERE id = ?').run(row.id)
+  return ok(res, {})
+})
+
+// ----- crate: save beats/verses to your profile ------------------------------
+// NOT a like — no public per-beat counter, never touches voting. You can save a
+// beat once you can hear it (voting onward). A save from a live battle stays
+// private on your crate until that battle's voting closes (winner declared).
+const CRATE_MILESTONES = [10, 50, 100]
+
+app.post('/api/crate', requireAuth, (req, res) => {
+  const sub = getSubmissionRow(req.body?.submissionId)
+  if (!sub) return fail(res, 404, 'Beat not found.')
+  const battle = getBattleRow(sub.battleId)
+  if (!battle) return fail(res, 404, 'Battle not found.')
+  if (![STATUS.VOTING_PHASE, STATUS.WINNER_DECLARED].includes(battle.status))
+    return fail(res, 400, 'You can crate a beat once voting opens.')
+  const existing = db
+    .prepare('SELECT id FROM crate_items WHERE userId = ? AND submissionId = ?')
+    .get(req.user.id, sub.id)
+  if (existing) return ok(res, { crated: true })
+  db.prepare('INSERT INTO crate_items (id,userId,submissionId,battleId,createdAt) VALUES (?,?,?,?,?)').run(
+    `c_${randomUUID().slice(0, 12)}`, req.user.id, sub.id, sub.battleId, Date.now(),
+  )
+  // maker milestone: total crates across this maker's beats; push on 10/50/100.
+  if (sub.producerId && sub.producerId !== req.user.id) {
+    const reach = db
+      .prepare(
+        'SELECT COUNT(*) AS c FROM crate_items ci JOIN submissions s ON s.id = ci.submissionId WHERE s.producerId = ?',
+      )
+      .get(sub.producerId).c
+    if (CRATE_MILESTONES.includes(reach)) {
+      sendPush(sub.producerId, { title: 'SMPL', body: `Your work is in ${reach} crates`, url: '/settings' })
+    }
+  }
+  return ok(res, { crated: true })
+})
+
+app.delete('/api/crate/:submissionId', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM crate_items WHERE userId = ? AND submissionId = ?').run(
+    req.user.id, req.params.submissionId,
+  )
+  return ok(res, { crated: false })
+})
+
+// A user's crate (public profile content). Items from a battle still in voting
+// stay private (owner-only) until the winner is declared.
+app.get('/api/users/:id/crate', (req, res) => {
+  const self = req.uid === req.params.id
+  const counts = voteCountMap()
+  const rows = db
+    .prepare('SELECT * FROM crate_items WHERE userId = ? ORDER BY createdAt DESC')
+    .all(req.params.id)
+  const items = []
+  for (const r of rows) {
+    const sub = getSubmissionRow(r.submissionId)
+    if (!sub) continue
+    const battleRow = getBattleRow(sub.battleId)
+    if (!battleRow) continue
+    const battle = rowToBattle(battleRow)
+    const open = battle.status === STATUS.WINNER_DECLARED
+    if (!self && !open) continue // private until the battle closes
+    const ser = serSub(rowToSubmission(sub), battle, req.uid, counts)
+    const producer = ser.producerId ? pubUser(getUserRow(ser.producerId)) : null
+    items.push({
+      id: r.id,
+      submissionId: sub.id,
+      battleId: battle.id,
+      battleTitle: battle.title,
+      battleStatus: battle.status,
+      kind: battle.kind,
+      audioUrl: ser.audioUrl || '',
+      producer,
+      pending: !open,
+      createdAt: r.createdAt,
+    })
+  }
+  return ok(res, { items })
+})
+
+// Private "in N crates" reach for a maker (Settings Insights). Never public.
+app.get('/api/me/crate-reach', requireAuth, (req, res) => {
+  const reach = db
+    .prepare(
+      'SELECT COUNT(*) AS c FROM crate_items ci JOIN submissions s ON s.id = ci.submissionId WHERE s.producerId = ?',
+    )
+    .get(req.user.id).c
+  return ok(res, { reach })
 })
 
 // ----- SEO: a live sitemap of every public page (marketing + battles + profiles)

@@ -2,6 +2,19 @@
 // blocks, the sample audio player, the share button, 404, and the bell dropdown.
 export const extra = {
   en: {
+    // crate — save beats to your profile (no like-counter)
+    'crate.tab': 'Crate',
+    'crate.save': 'Crate',
+    'crate.saved': 'Crated',
+    'crate.add': 'Save to crate',
+    'crate.remove': 'Remove from crate',
+    'crate.empty': 'No beats in the crate yet.',
+    'crate.emptySelf': 'Save beats you love from battles to build your crate.',
+    'crate.pending': 'Result pending',
+    'crate.anon': 'Anonymous',
+    'crate.insights': 'Crate reach',
+    'crate.inCratesLabel': 'crates your work is in',
+    'crate.insightsNote': 'Private. Only you can see this — it never shows on your profile.',
     'cd.days': 'DAYS',
     'cd.hrs': 'HRS',
     'cd.min': 'MIN',
@@ -285,6 +298,19 @@ export const extra = {
     'contact.direct': 'Or email us directly:',
   },
   nl: {
+    // crate — beats opslaan op je profiel (geen like-teller)
+    'crate.tab': 'Crate',
+    'crate.save': 'Crate',
+    'crate.saved': 'Gecrate',
+    'crate.add': 'In crate',
+    'crate.remove': 'Uit crate',
+    'crate.empty': 'Nog geen beats in de crate.',
+    'crate.emptySelf': 'Bewaar beats die je vet vindt uit battles om je crate te bouwen.',
+    'crate.pending': 'Uitslag volgt',
+    'crate.anon': 'Anoniem',
+    'crate.insights': 'Crate-bereik',
+    'crate.inCratesLabel': 'crates waar je werk in zit',
+    'crate.insightsNote': 'Privé. Alleen jij ziet dit, het komt nooit op je profiel.',
     'cd.days': 'DAGEN',
     'cd.hrs': 'UUR',
     'cd.min': 'MIN',

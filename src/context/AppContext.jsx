@@ -52,6 +52,7 @@ export function AppProvider({ children }) {
   const [unread, setUnread] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [blocked, setBlocked] = useState([])
+  const [cratedIds, setCratedIds] = useState([])
   const [mailConfigured, setMailConfigured] = useState(false)
   const [pushConfigured, setPushConfigured] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -68,6 +69,7 @@ export function AppProvider({ children }) {
     setUnread(d.unread || 0)
     setUnreadMessages(d.unreadMessages || 0)
     setBlocked(d.blocked || [])
+    setCratedIds(d.cratedIds || [])
     setMailConfigured(!!d.mailConfigured)
     setPushConfigured(!!d.pushConfigured)
   }, [])
@@ -520,6 +522,16 @@ export function AppProvider({ children }) {
   const fetchWaveformVideos = useCallback((userId) => api.get(`/api/users/${userId}/waveform-videos`), [])
   const fetchWaveformVideo = useCallback((id) => api.get(`/api/waveform-videos/${id}`), [])
   const deleteWaveformVideo = useCallback((id) => api.del(`/api/me/waveform-video/${id}`), [])
+  // crate — save beats/verses to your profile (mutate so cratedIds refreshes)
+  const crateBeat = useCallback((submissionId) => mutate(() => api.post('/api/crate', { submissionId })), [mutate])
+  const uncrateBeat = useCallback((submissionId) => mutate(() => api.del(`/api/crate/${submissionId}`)), [mutate])
+  const fetchCrate = useCallback((userId) => api.get(`/api/users/${userId}/crate`), [])
+  const fetchCrateReach = useCallback(() => api.get('/api/me/crate-reach'), [])
+  const isCrated = useCallback((submissionId) => cratedIds.includes(submissionId), [cratedIds])
+  // curator battle drafts (managed locally in the dashboard)
+  const saveBattleDraft = useCallback((data, id) => api.post('/api/battle-drafts', { data, id }), [])
+  const fetchBattleDrafts = useCallback(() => api.get('/api/battle-drafts'), [])
+  const deleteBattleDraft = useCallback((id) => api.del(`/api/battle-drafts/${id}`), [])
   const markNotificationsSeen = useCallback(async () => {
     await api.post('/api/notifications/seen')
     await refresh()
@@ -609,6 +621,15 @@ export function AppProvider({ children }) {
     fetchWaveformVideos,
     fetchWaveformVideo,
     deleteWaveformVideo,
+    cratedIds,
+    isCrated,
+    crateBeat,
+    uncrateBeat,
+    fetchCrate,
+    fetchCrateReach,
+    saveBattleDraft,
+    fetchBattleDrafts,
+    deleteBattleDraft,
     emailSource,
     fetchComments,
     postComment,

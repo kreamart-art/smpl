@@ -85,6 +85,13 @@ export const dashboard = {
     'dashboard.create.descriptionPlaceholder': "What's the brief?",
     'dashboard.create.revealNow': 'Reveal sample immediately',
     'dashboard.create.submit': 'Create battle',
+    'dashboard.draft.save': 'Save draft',
+    'dashboard.draft.saved': 'Draft saved.',
+    'dashboard.draft.title': 'Drafts',
+    'dashboard.draft.note': '{n} saved',
+    'dashboard.draft.untitled': 'Untitled draft',
+    'dashboard.draft.edited': 'edited {when}',
+    'dashboard.draft.resume': 'Resume',
     'dashboard.create.footnote': 'New battles start in {status}. Push them forward below.',
 
     // manage-battles panel
@@ -187,6 +194,13 @@ export const dashboard = {
     'dashboard.create.descriptionPlaceholder': 'wat is de brief?',
     'dashboard.create.revealNow': 'sample meteen tonen',
     'dashboard.create.submit': 'battle aanmaken',
+    'dashboard.draft.save': 'Concept opslaan',
+    'dashboard.draft.saved': 'Concept opgeslagen.',
+    'dashboard.draft.title': 'Concepten',
+    'dashboard.draft.note': '{n} opgeslagen',
+    'dashboard.draft.untitled': 'Naamloos concept',
+    'dashboard.draft.edited': 'bewerkt {when}',
+    'dashboard.draft.resume': 'Verder',
     'dashboard.create.footnote': 'nieuwe battles starten in {status}. duw ze hieronder vooruit.',
 
     // manage-battles panel

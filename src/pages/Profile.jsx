@@ -11,9 +11,10 @@ import ShareToDM from '../components/ShareToDM.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import FollowList from '../components/FollowList.jsx'
 import WaveformClips from '../components/WaveformClips.jsx'
+import CrateGrid from '../components/CrateGrid.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
-import { IconSettings, IconPoster, IconBattles, IconStats, IconFeed } from '../components/icons.jsx'
+import { IconSettings, IconPoster, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -213,13 +214,14 @@ export function Editor({ user, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, deleteWaveformVideo } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, deleteWaveformVideo, fetchCrate } =
     useApp()
   const base = getUserByAlias(alias)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [followView, setFollowView] = useState(null) // null | 'followers' | 'following'
   const [clips, setClips] = useState([])
+  const [crate, setCrate] = useState([])
   const [tab, setTab] = useState(null) // active profile tab; null → derived default
   const contentRef = useRef(null)
 
@@ -236,6 +238,20 @@ export default function Profile() {
       alive = false
     }
   }, [base?.id, fetchWaveformVideos])
+
+  useEffect(() => {
+    if (!base?.id) {
+      setCrate([])
+      return
+    }
+    let alive = true
+    fetchCrate(base.id).then((r) => {
+      if (alive && r.ok) setCrate(r.items || [])
+    })
+    return () => {
+      alive = false
+    }
+  }, [base?.id, fetchCrate])
 
   // old deep link (?edit=1) → the dedicated edit page
   useEffect(() => {
@@ -269,7 +285,7 @@ export default function Profile() {
   const isCuratorProfile = user.role === 'curator' || user.role === 'admin'
   const cstats = isCuratorProfile ? curatorStats(user.id) : null
   // one content section, IG/TikTok-style: competitors land on their clip grid, curators on their battles
-  const activeTab = tab ?? (isCuratorProfile ? 'record' : 'clips')
+  const activeTab = tab ?? (isCuratorProfile ? 'record' : user.role === 'listener' ? 'crate' : 'clips')
   // tapping the primary count jumps straight to the grid/record, like Instagram.
   // Resolve the real scroll container (the app shell scrolls an inner <main>, the
   // website scrolls the page) so the jump works in both shells.
@@ -518,15 +534,16 @@ export default function Profile() {
           active={activeTab}
           onSelect={setTab}
           tabs={[
-            { key: 'clips', label: t('profile.tab.clips'), count: clips.length, icon: IconBattles },
+            user.role !== 'listener' && { key: 'clips', label: t('profile.tab.clips'), count: clips.length, icon: IconBattles },
+            { key: 'crate', label: t('crate.tab'), count: crate.length, icon: IconCrate },
             { key: 'stats', label: t('profile.tab.stats'), icon: IconStats },
-            {
+            user.role !== 'listener' && {
               key: 'record',
               label: isCuratorProfile ? t('profile.tab.battles') : t('profile.tab.history'),
               count: isCuratorProfile ? cstats.curated.length : stats.history.length,
               icon: IconFeed,
             },
-          ]}
+          ].filter(Boolean)}
         />
 
         {/* CLIPS */}
@@ -543,6 +560,17 @@ export default function Profile() {
           ) : (
             <p className="mt-8 border border-line bg-panel px-5 py-12 text-center font-mono text-[12px] leading-relaxed text-muted">
               {isSelf ? t('profile.clips.emptySelf') : t('profile.clips.empty')}
+            </p>
+          )
+        ) : null}
+
+        {/* CRATE */}
+        {activeTab === 'crate' ? (
+          crate.length ? (
+            <CrateGrid items={crate} />
+          ) : (
+            <p className="mt-8 border border-line bg-panel px-5 py-12 text-center font-mono text-[12px] leading-relaxed text-muted">
+              {isSelf ? t('crate.emptySelf') : t('crate.empty')}
             </p>
           )
         ) : null}
