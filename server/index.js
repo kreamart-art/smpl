@@ -40,6 +40,18 @@ const PORT =
 const seeded = seedIfEmpty()
 migrate()
 
+// One-time-use ledger for magic links + signup tickets (so a token can't be
+// replayed within its TTL). Keyed by the token's jti.
+db.exec('CREATE TABLE IF NOT EXISTS used_tokens (jti TEXT PRIMARY KEY, usedAt INTEGER)')
+// Record a jti; returns false if it was already used (replay). Tokens minted
+// before this shipped have no jti — treat those as fresh so we never lock anyone
+// out of an in-flight link.
+function consumeJti(jti) {
+  if (!jti) return true
+  const r = db.prepare('INSERT OR IGNORE INTO used_tokens (jti, usedAt) VALUES (?, ?)').run(jti, Date.now())
+  return r.changes > 0
+}
+
 // Uploaded audio (curator samples / open-verse beats) lives next to the DB —
 // same persistent volume in production (/app/data/uploads).
 const UPLOAD_DIR =
@@ -51,6 +63,12 @@ mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const app = express()
 app.use(cors())
+// Don't leak full URLs (e.g. a magic-link token in the query) to cross-origin
+// resources via the Referer header.
+app.use((_req, res, next) => {
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  next()
+})
 // Canonical host: 301 the old domain + www to https://usesmpl.com (the move off
 // artnomad.nl). Keeps old links/bookmarks working without fronting the parent.
 app.use((req, res, next) => {
@@ -400,15 +418,20 @@ const canManageBattle = (user, battle) =>
 const clientIp = (req) =>
   (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'ip'
 const rlHits = new Map()
-const rateLimit = (name, max, windowMs) => (req, res, next) => {
-  const key = `${name}:${clientIp(req)}`
+// Bump a fixed-window counter for an arbitrary key; returns false when over the
+// limit. Lets us rate-limit by something other than IP (e.g. a target email).
+function rateBump(key, max, windowMs) {
   const now = Date.now()
   let e = rlHits.get(key)
   if (!e || now > e.reset) {
     e = { count: 0, reset: now + windowMs }
     rlHits.set(key, e)
   }
-  if (++e.count > max) return fail(res, 429, 'Too many requests. Slow down and try again shortly.')
+  return ++e.count <= max
+}
+const rateLimit = (name, max, windowMs) => (req, res, next) => {
+  if (!rateBump(`${name}:${clientIp(req)}`, max, windowMs))
+    return fail(res, 429, 'Too many requests. Slow down and try again shortly.')
   next()
 }
 setInterval(() => {
@@ -523,7 +546,9 @@ app.post('/api/auth/login', rateLimit('login', 25, 5 * 60_000), (req, res) => {
 })
 
 // Step 2 of a 2FA login: redeem the ticket + a TOTP or backup code for a token.
-app.post('/api/auth/2fa', (req, res) => {
+// Rate limited so a 6-digit code (or backup code) can't be brute-forced within
+// the ticket's window.
+app.post('/api/auth/2fa', rateLimit('twofa', 8, 10 * 60_000), (req, res) => {
   const { ticket, code } = req.body || {}
   const p = verifyToken(ticket)
   if (!p || !p.twofa || !p.uid) return fail(res, 401, 'Your 2FA session expired. Log in again.')
@@ -625,7 +650,11 @@ app.post('/api/auth/magic', rateLimit('magic', 6, 30 * 60_000), (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase()
   if (!/^\S+@\S+\.\S+$/.test(email)) return fail(res, 400, 'Enter a valid email address.')
   if (email === 'curator@smpl.app') return fail(res, 400, 'That account is reserved.')
-  const token = signToken({ email, purpose: 'magic' }, MAGIC_TTL)
+  // Cap how often ANY single address can be mailed (across IPs) so the endpoint
+  // can't be used to bomb a victim's inbox with login links.
+  if (!rateBump(`magic-email:${email}`, 3, 30 * 60_000))
+    return fail(res, 429, 'Too many login links sent to that address. Try again later.')
+  const token = signToken({ email, purpose: 'magic', jti: randomUUID() }, MAGIC_TTL)
   const link = `${APP_URL}/auth/magic?token=${encodeURIComponent(token)}`
   const tpl = loginEmail(link, langOf(req))
   sendEmail({ to: email, subject: tpl.subject, text: tpl.text, html: tpl.html }).catch(() => {})
@@ -639,6 +668,8 @@ app.post('/api/auth/magic', rateLimit('magic', 6, 30 * 60_000), (req, res) => {
 app.post('/api/auth/magic/consume', rateLimit('magicConsume', 30, 30 * 60_000), (req, res) => {
   const p = verifyToken(req.body?.token)
   if (!p || p.purpose !== 'magic' || !p.email) return fail(res, 400, 'This link is invalid or has expired.')
+  // single use — a magic link works once, even within its 20-minute window
+  if (!consumeJti(p.jti)) return fail(res, 400, 'This link was already used. Request a new one.')
   const email = String(p.email).toLowerCase()
   const row = getUserByEmail(email)
   if (row) {
@@ -646,7 +677,7 @@ app.post('/api/auth/magic/consume', rateLimit('magicConsume', 30, 30 * 60_000), 
     if (row.totpEnabled) return ok(res, { needs2fa: true, ticket: signToken({ uid: row.id, twofa: true }, 10 * 60 * 1000) })
     return ok(res, { token: signToken({ uid: row.id }), me: meUser(getUserRow(row.id)) })
   }
-  return ok(res, { newAccount: true, email, ticket: signToken({ email, purpose: 'signup' }, 30 * 60_000) })
+  return ok(res, { newAccount: true, email, ticket: signToken({ email, purpose: 'signup', jti: randomUUID() }, 30 * 60_000) })
 })
 
 // Finalize a brand-new account from a signup ticket (verified email) + a chosen
@@ -665,13 +696,22 @@ app.post('/api/auth/finalize', rateLimit('finalize', 10, 30 * 60_000), (req, res
   const age = ageFromDob(String(dob || '').trim())
   if (age === null) return fail(res, 400, 'Enter a valid date of birth.')
   if (age < 16) return fail(res, 400, 'You must be at least 16 to use SMPL.')
-  const row = createMember({
-    email,
-    alias: cleanAlias,
-    dob: String(dob).trim(),
-    avatar: typeof avatar === 'string' && avatar.length < 1_500_000 ? avatar : '',
-    emailVerified: 1,
-  })
+  // burn the ticket only now that everything validates (so a rejected alias can
+  // be retried), and once — a signup ticket creates at most one account
+  if (!consumeJti(p.jti)) return fail(res, 400, 'Your signup session was already used. Log in instead.')
+  let row
+  try {
+    row = createMember({
+      email,
+      alias: cleanAlias,
+      dob: String(dob).trim(),
+      avatar: typeof avatar === 'string' && avatar.length < 1_500_000 ? avatar : '',
+      emailVerified: 1,
+    })
+  } catch {
+    // lost a race on the unique email/alias — surface it cleanly, never a 500
+    return fail(res, 409, 'That email or handle was just taken. Log in or try another handle.')
+  }
   return ok(res, { token: signToken({ uid: row.id }), me: meUser(row) })
 })
 
