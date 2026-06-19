@@ -470,7 +470,7 @@ function sendVerificationEmail(row, lang) {
   return sendEmail({ to: row.email, subject: tpl.subject, text: tpl.text, html: tpl.html })
 }
 
-app.post('/api/auth/signup', rateLimit('signup', 6, 60 * 60_000), (req, res) => {
+app.post('/api/auth/signup', rateLimit('signup', 20, 15 * 60_000), (req, res) => {
   const { alias, email, role, name, dob, location, bio, genres, links, avatar, password, acceptTerms } =
     req.body || {}
   if (!acceptTerms) return fail(res, 400, 'You must accept the Terms and Privacy Policy to sign up.')
@@ -646,13 +646,14 @@ function createMember({ email, alias, dob = '', avatar = '', emailVerified = 1 }
 }
 
 // Send a magic link (a 20-min signed token carrying the email + purpose).
-app.post('/api/auth/magic', rateLimit('magic', 6, 30 * 60_000), (req, res) => {
+app.post('/api/auth/magic', rateLimit('magic', 15, 15 * 60_000), (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase()
   if (!/^\S+@\S+\.\S+$/.test(email)) return fail(res, 400, 'Enter a valid email address.')
   if (email === 'curator@smpl.app') return fail(res, 400, 'That account is reserved.')
   // Cap how often ANY single address can be mailed (across IPs) so the endpoint
-  // can't be used to bomb a victim's inbox with login links.
-  if (!rateBump(`magic-email:${email}`, 3, 30 * 60_000))
+  // can't be used to bomb a victim's inbox — but loose enough that a normal
+  // person who re-requests a link a few times isn't locked out.
+  if (!rateBump(`magic-email:${email}`, 5, 15 * 60_000))
     return fail(res, 429, 'Too many login links sent to that address. Try again later.')
   const token = signToken({ email, purpose: 'magic', jti: randomUUID() }, MAGIC_TTL)
   const link = `${APP_URL}/auth/magic?token=${encodeURIComponent(token)}`
