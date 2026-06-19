@@ -295,6 +295,32 @@ export function AppProvider({ children }) {
     [refresh],
   )
 
+  // passwordless: send a magic link, consume it (existing → session, new →
+  // signup ticket), then finalize a new listener account from the ticket.
+  const magicSend = useCallback((email) => api.post('/api/auth/magic', { email }), [])
+  const magicConsume = useCallback(
+    async (token) => {
+      const r = await api.post('/api/auth/magic/consume', { token })
+      if (r.ok && r.token) {
+        setToken(r.token)
+        await refresh()
+      }
+      return r
+    },
+    [refresh],
+  )
+  const finalizeSignup = useCallback(
+    async (payload) => {
+      const r = await api.post('/api/auth/finalize', payload)
+      if (r.ok && r.token) {
+        setToken(r.token)
+        await refresh()
+      }
+      return r
+    },
+    [refresh],
+  )
+
   const logout = useCallback(async () => {
     setToken(null)
     writeSessions([])
@@ -593,6 +619,9 @@ export function AppProvider({ children }) {
     login,
     verify2fa,
     signup,
+    magicSend,
+    magicConsume,
+    finalizeSignup,
     logout,
     requestPasswordReset,
     resetPassword,

@@ -29,6 +29,26 @@ export const auth = {
     'auth.2fa.checking': 'Checking…',
     'auth.2fa.back': '◂ Back to login',
 
+    // —— passwordless: magic link
+    'auth.magic.intro': 'No password needed. Enter your email and we send you a one-time login link.',
+    'auth.magic.send': 'Email me a login link',
+    'auth.magic.sending': 'Sending…',
+    'auth.magic.sent': 'Check your inbox. We sent you a login link that works once and expires in 20 minutes.',
+    'auth.magic.otherEmail': 'Use a different email',
+    'auth.magic.orPassword': 'Prefer a password? Log in with one',
+    'auth.magic.orMagic': 'Prefer no password? Email me a link',
+    'auth.magic.checking': 'Opening your link…',
+    'auth.magic.invalid': 'This link is invalid or has expired.',
+    'auth.magic.requestNew': 'Request a new link',
+    'auth.magic.eyebrow': 'Almost there',
+    'auth.magic.welcomeTitle': 'Join SMPL',
+    'auth.magic.welcomeIntro':
+      'Your email is confirmed. Pick an alias, that is your name in the room. Your real name and date of birth stay private.',
+    'auth.magic.emailConfirmed': 'Email confirmed',
+    'auth.magic.dobHint': 'private, 16+',
+    'auth.magic.finish': 'Enter SMPL',
+    'auth.magic.finishing': 'Creating…',
+
     // —— login: quick login
     'auth.quick.title': 'Quick login',
     'auth.quick.note': 'All demo accounts · password “smpl”',
@@ -116,6 +136,26 @@ export const auth = {
     'auth.2fa.verify': 'Verifiëren',
     'auth.2fa.checking': 'Controleren…',
     'auth.2fa.back': '◂ Terug naar inloggen',
+
+    // —— passwordless: magic link
+    'auth.magic.intro': 'Geen wachtwoord nodig. Vul je e-mail in, dan sturen we je een eenmalige inloglink.',
+    'auth.magic.send': 'Mail me een inloglink',
+    'auth.magic.sending': 'Versturen…',
+    'auth.magic.sent': 'Check je inbox. We hebben je een inloglink gestuurd die één keer werkt en na 20 minuten verloopt.',
+    'auth.magic.otherEmail': 'Ander e-mailadres gebruiken',
+    'auth.magic.orPassword': 'Liever met wachtwoord? Log daarmee in',
+    'auth.magic.orMagic': 'Liever geen wachtwoord? Mail me een link',
+    'auth.magic.checking': 'Je link openen…',
+    'auth.magic.invalid': 'Deze link is ongeldig of verlopen.',
+    'auth.magic.requestNew': 'Vraag een nieuwe link aan',
+    'auth.magic.eyebrow': 'Bijna klaar',
+    'auth.magic.welcomeTitle': 'Word lid van SMPL',
+    'auth.magic.welcomeIntro':
+      'Je e-mail is bevestigd. Kies een alias, dat is je naam in de room. Je echte naam en geboortedatum blijven privé.',
+    'auth.magic.emailConfirmed': 'E-mail bevestigd',
+    'auth.magic.dobHint': 'privé, 16+',
+    'auth.magic.finish': 'SMPL in',
+    'auth.magic.finishing': 'Aanmaken…',
 
     // —— login: quick login
     'auth.quick.title': 'Quick login',

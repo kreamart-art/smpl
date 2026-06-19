@@ -25,6 +25,7 @@ import Legal from './pages/Legal.jsx'
 import Contact from './pages/Contact.jsx'
 import Help from './pages/Help.jsx'
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/Recover.jsx'
+import AuthMagic from './pages/AuthMagic.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 function BootScreen({ error }) {
@@ -109,6 +110,7 @@ export default function App() {
         <Route path="/sample-maker" element={<SampleMaker />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/magic" element={<AuthMagic />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/reset" element={<ResetPassword />} />
