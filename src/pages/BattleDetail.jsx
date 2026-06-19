@@ -479,6 +479,8 @@ export default function BattleDetail() {
                 <Btn type="submit" variant="solid" size="lg" disabled={!form.audioUrl}>
                   {mySubmission ? t('battleDetail.submission.update') : t(`battleDetail.submission.submit.${battle.kind}`)}
                 </Btn>
+                {/* confirmation right where the button is, so it's never off-screen */}
+                {msg ? <Feedback msg={msg} /> : null}
               </form>
             ) : (
               <p className="font-mono text-[12px] leading-relaxed text-muted">
