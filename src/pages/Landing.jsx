@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import BattleCard from '../components/BattleCard.jsx'
 import FeaturedBattle from '../components/FeaturedBattle.jsx'
@@ -64,6 +64,8 @@ export default function Landing() {
   const t = useT()
   const { battles } = useApp()
   const { standalone } = usePWA()
+  // the installed app is battle-first; the marketing homepage is web-only
+  if (standalone) return <Navigate to="/battles" replace />
   const active = battles.filter((b) => STATUS_GROUP[b.status] === 'active')
   const upcoming = battles.filter((b) => STATUS_GROUP[b.status] === 'upcoming')
   const featured = active[0]

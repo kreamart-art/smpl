@@ -2,7 +2,7 @@
   "name": "SMPL · Same sample. Different soul.",
   "short_name": "SMPL",
   "description": "Beat & verse battles. One sample, many takes: the crowd crowns the winner.",
-  "start_url": "/",
+  "start_url": "/battles",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",
