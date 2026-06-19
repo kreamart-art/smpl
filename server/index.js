@@ -228,9 +228,13 @@ function serSub(s, battle, uid, counts) {
       ...(battle.status === STATUS.WINNER_DECLARED ? { votes: counts[s.id] || 0 } : {}),
     }
   }
-  // Before voting opens, only the opaque uploaded file is exposed (no identity).
+  // Before voting opens, only the OWNER can hear their own entry — nobody can
+  // sneak-listen to submissions during the submission phase. Once voting opens
+  // (incl. blind battles) the opaque audio plays for everyone so they can vote.
+  const mine = !!uid && s.producerId === uid
   const uploaded = s.audioUrl && s.audioUrl.startsWith('/api/uploads/') ? s.audioUrl : null
-  return { ...base, mine: !!uid && s.producerId === uid, audioUrl: uploaded || undefined }
+  const audible = battle && battle.status === STATUS.SUBMISSION_PHASE ? mine : true
+  return { ...base, mine, audioUrl: audible ? uploaded || undefined : undefined }
 }
 
 function buildBootstrap(uid, userRow) {
