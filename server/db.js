@@ -138,6 +138,7 @@ export function meUser(r) {
     genderText: r.genderText || '', // free text when gender = 'self'
     lastSeenAt: r.lastSeenAt || 0,
     twoFactor: !!r.totpEnabled,
+    hasPassword: !!r.passwordHash,
     emailVerified: !!r.emailVerified,
     curatorCompetes: !!r.curatorCompetes,
     sampleMakerStatus: r.sampleMakerStatus || null,

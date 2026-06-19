@@ -259,13 +259,24 @@ export function AppProvider({ children }) {
 
   // --- auth ----------------------------------------------------------------
   const login = useCallback(
-    async (email, password) => {
-      const r = await api.post('/api/auth/login', { email, password })
+    async (identifier, password) => {
+      const r = await api.post('/api/auth/login', { identifier, password })
       // r.needs2fa → hold here; the caller collects a code and calls verify2fa.
       if (r.ok && r.token) {
         setToken(r.token)
         await refresh()
       }
+      return r
+    },
+    [refresh],
+  )
+
+  // Change (or first-time set, for passwordless accounts) the password while
+  // signed in. Refreshes `me` so hasPassword flips.
+  const changePassword = useCallback(
+    async (currentPassword, newPassword) => {
+      const r = await api.post('/api/auth/change-password', { currentPassword, newPassword })
+      if (r.ok) await refresh()
       return r
     },
     [refresh],
@@ -619,6 +630,7 @@ export function AppProvider({ children }) {
     login,
     verify2fa,
     signup,
+    changePassword,
     magicSend,
     magicConsume,
     finalizeSignup,

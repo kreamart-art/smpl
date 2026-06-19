@@ -530,12 +530,15 @@ app.post('/api/auth/signup', rateLimit('signup', 20, 15 * 60_000), (req, res) =>
 })
 
 app.post('/api/auth/login', rateLimit('login', 25, 5 * 60_000), (req, res) => {
-  const { email, password } = req.body || {}
-  const row = getUserByEmail(String(email || '').trim())
-  if (!row) return fail(res, 404, 'No account for that email. Try a quick-login chip or sign up.')
-  // passwordless accounts (magic-link / Google / Apple) have no hash — a null
-  // hash must NOT grant access (verifyPassword would otherwise accept anything)
-  if (!row.passwordHash) return fail(res, 400, 'This account signs in with a magic link or Google/Apple. Use that to log in.')
+  const { identifier, email, password } = req.body || {}
+  const who = String(identifier || email || '').trim()
+  // sign in with either a @handle (username) or an email address
+  let row = getUserByEmail(who)
+  if (!row) row = getUserByAliasRow(who)
+  if (!row) return fail(res, 404, 'No account for that username or email. Sign up to join.')
+  // accounts with no password set (e.g. older magic-link signups) must use
+  // "forgot password" to set one — a null hash must NOT grant access.
+  if (!row.passwordHash) return fail(res, 400, 'This account has no password yet. Tap “Forgot password” to set one.')
   if (!password) return fail(res, 400, 'Password required.')
   if (!verifyPassword(password, row.passwordHash)) return fail(res, 401, 'Wrong password.')
   if (row.totpEnabled) {
@@ -570,6 +573,20 @@ app.post('/api/auth/2fa', rateLimit('twofa', 8, 10 * 60_000), (req, res) => {
 })
 
 app.get('/api/auth/me', requireAuth, (req, res) => ok(res, { me: meUser(req.user) }))
+
+// Change (or first-time set) the password while signed in. If the account
+// already has a password, the current one must be given; passwordless accounts
+// (older magic-link signups) can set one straight away since the session is
+// already proof of identity.
+app.post('/api/auth/change-password', rateLimit('chpw', 12, 30 * 60_000), requireAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {}
+  if (!newPassword || String(newPassword).length < 4)
+    return fail(res, 400, 'Your new password needs at least 4 characters.')
+  if (req.user.passwordHash && !verifyPassword(currentPassword, req.user.passwordHash))
+    return fail(res, 401, 'Your current password is wrong.')
+  db.prepare('UPDATE users SET passwordHash = ? WHERE id = ?').run(hashPassword(String(newPassword)), req.user.id)
+  return ok(res, { me: meUser(getUserRow(req.user.id)) })
+})
 
 // ----- password reset --------------------------------------------------------
 app.post('/api/auth/forgot', rateLimit('forgot', 6, 30 * 60_000), (req, res) => {

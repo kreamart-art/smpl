@@ -6,6 +6,7 @@ import TransportBar from './TransportBar.jsx'
 import AppTopBar from './AppTopBar.jsx'
 import BottomTabBar from './BottomTabBar.jsx'
 import WelcomeTour from './Tour.jsx'
+import PasswordSetupPrompt from './PasswordSetupPrompt.jsx'
 import InstallBanner from './InstallBanner.jsx'
 import VerifyEmailBanner from './VerifyEmailBanner.jsx'
 import PushPrompt from './PushPrompt.jsx'
@@ -86,6 +87,7 @@ export default function Layout() {
         {!inThread ? <BottomTabBar /> : null}
         <AnnouncementPopup />
         {!inThread ? <WelcomeTour /> : null}
+        <PasswordSetupPrompt />
       </div>
     )
   }
@@ -109,6 +111,7 @@ export default function Layout() {
       <div style={{ height: track ? 64 : 0 }} />
       <TransportBar />
       <InstallBanner />
+      <PasswordSetupPrompt />
     </div>
   )
 }

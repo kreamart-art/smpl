@@ -432,6 +432,96 @@ function IdentityPanel({ user, onBack }) {
   )
 }
 
+// Change (or first-time set) the account password while signed in.
+function ChangePasswordPanel({ user, onBack }) {
+  const t = useT()
+  const { changePassword } = useApp()
+  const [current, setCurrent] = useState('')
+  const [pw, setPw] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+  const clear = () => {
+    setMsg('')
+    setErr('')
+  }
+
+  const save = async () => {
+    clear()
+    if (pw.length < 4) return setErr(t('auth.changePw.tooShort'))
+    if (pw !== confirm) return setErr(t('auth.changePw.mismatch'))
+    setBusy(true)
+    const r = await changePassword(user.hasPassword ? current : null, pw)
+    setBusy(false)
+    if (r.ok) {
+      setMsg(t('auth.changePw.saved'))
+      setCurrent('')
+      setPw('')
+      setConfirm('')
+    } else setErr(r.error || t('settings.saveFailed'))
+  }
+
+  return (
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <span>⚷</span> {t('auth.changePw.title')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="space-y-4 p-5">
+        {user.hasPassword ? (
+          <Field label={t('auth.changePw.current')}>
+            <input
+              type="password"
+              className={inputCls}
+              value={current}
+              onChange={(e) => {
+                setCurrent(e.target.value)
+                clear()
+              }}
+            />
+          </Field>
+        ) : null}
+        <Field label={t('auth.changePw.new')} hint={t('auth.field.passwordHint')}>
+          <input
+            type="password"
+            className={inputCls}
+            value={pw}
+            onChange={(e) => {
+              setPw(e.target.value)
+              clear()
+            }}
+          />
+        </Field>
+        <Field label={t('auth.changePw.confirm')}>
+          <input
+            type="password"
+            className={inputCls}
+            value={confirm}
+            onChange={(e) => {
+              setConfirm(e.target.value)
+              clear()
+            }}
+          />
+        </Field>
+        {err ? <p className="font-mono text-[11px] text-ink">{err}</p> : null}
+        {msg ? <p className="font-mono text-[11px] text-muted">✓ {msg}</p> : null}
+        <button
+          onClick={save}
+          disabled={busy || pw.length < 4 || (user.hasPassword && !current)}
+          className="border border-line-bright px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-40"
+        >
+          {busy ? t('auth.changePw.saving') : t('auth.changePw.save')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // "Install SMPL" — one-tap on Chrome/Android, step-by-step on iOS Safari.
 function InstallPanel({ onBack }) {
   const t = useT()
@@ -663,6 +753,7 @@ export default function Settings() {
   if (view === 'role') return <Shell><AccountTypePanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'switch') return <Shell><AccountSwitcher onBack={() => setView('menu')} /></Shell>
   if (view === 'identity') return <Shell><IdentityPanel user={user} onBack={() => setView('menu')} /></Shell>
+  if (view === 'password') return <Shell><ChangePasswordPanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'install') return <Shell><InstallPanel onBack={() => setView('menu')} /></Shell>
   if (view === 'compete') return <Shell><CuratorCompetePanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'insights') return <Shell><CrateInsightsPanel onBack={() => setView('menu')} /></Shell>
@@ -767,6 +858,11 @@ export default function Settings() {
               onClick={() => setView('switch')}
             />
           ) : null}
+          <Item
+            icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⚷</span>}
+            label={t('auth.changePw.title')}
+            onClick={() => setView('password')}
+          />
           <Item
             icon={<IconShield size={18} />}
             label={t('profile.twoFactorAuth')}

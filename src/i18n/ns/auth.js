@@ -8,7 +8,7 @@ export const auth = {
     'auth.login.heroLine1': 'Log',
     'auth.login.heroLine2': 'in.',
     'auth.login.intro':
-      'Use a quick-login chip, or your email and password. Accounts with two-factor on will ask for a code from your authenticator.',
+      'Log in with your username or email and your password. Accounts with two-factor on will ask for a code from your authenticator.',
 
     // —— login: email + password step
     'auth.login.title': 'Login',
@@ -19,6 +19,24 @@ export const auth = {
     'auth.field.passwordPlaceholder': '••••••••',
     'auth.login.enter': 'Enter',
     'auth.login.entering': 'Entering…',
+    'auth.field.identifier': 'Username or email',
+    'auth.field.identifierHint': 'your @handle or email',
+    'auth.field.identifierPlaceholder': 'NULL.SET or you@mail.com',
+
+    // —— change / set password (settings + the prompt for passwordless users)
+    'auth.changePw.title': 'Change password',
+    'auth.changePw.current': 'Current password',
+    'auth.changePw.new': 'New password',
+    'auth.changePw.confirm': 'Confirm new password',
+    'auth.changePw.save': 'Save password',
+    'auth.changePw.saving': 'Saving…',
+    'auth.changePw.saved': 'Password updated.',
+    'auth.changePw.mismatch': 'The new passwords do not match.',
+    'auth.changePw.tooShort': 'Use at least 4 characters.',
+    'auth.setPw.title': 'Set a password',
+    'auth.setPw.body':
+      'Email login links are going away. Set a password now so you can keep signing in to the app.',
+    'auth.setPw.later': 'Later',
 
     // —— login: two-factor step
     'auth.2fa.title': 'Two-factor',
@@ -116,7 +134,7 @@ export const auth = {
     'auth.login.heroLine1': 'Log',
     'auth.login.heroLine2': 'in.',
     'auth.login.intro':
-      'Gebruik een quick-login chip, of je e-mail en wachtwoord. Accounts met twee-factor vragen om een code uit je authenticator.',
+      'Log in met je gebruikersnaam of e-mail en je wachtwoord. Accounts met twee-factor vragen om een code uit je authenticator.',
 
     // —— login: email + password step
     'auth.login.title': 'Inloggen',
@@ -127,6 +145,24 @@ export const auth = {
     'auth.field.passwordPlaceholder': '••••••••',
     'auth.login.enter': 'Inloggen',
     'auth.login.entering': 'Bezig…',
+    'auth.field.identifier': 'Gebruikersnaam of e-mail',
+    'auth.field.identifierHint': 'je @handle of e-mail',
+    'auth.field.identifierPlaceholder': 'NULL.SET of jij@mail.com',
+
+    // —— wachtwoord wijzigen / instellen (settings + de prompt voor wachtwoordloze accounts)
+    'auth.changePw.title': 'Wachtwoord wijzigen',
+    'auth.changePw.current': 'Huidig wachtwoord',
+    'auth.changePw.new': 'Nieuw wachtwoord',
+    'auth.changePw.confirm': 'Bevestig nieuw wachtwoord',
+    'auth.changePw.save': 'Wachtwoord opslaan',
+    'auth.changePw.saving': 'Opslaan…',
+    'auth.changePw.saved': 'Wachtwoord bijgewerkt.',
+    'auth.changePw.mismatch': 'De nieuwe wachtwoorden komen niet overeen.',
+    'auth.changePw.tooShort': 'Gebruik minimaal 4 tekens.',
+    'auth.setPw.title': 'Stel een wachtwoord in',
+    'auth.setPw.body':
+      'De inloglink per e-mail verdwijnt. Stel nu een wachtwoord in zodat je kunt blijven inloggen in de app.',
+    'auth.setPw.later': 'Later',
 
     // —— login: two-factor step
     'auth.2fa.title': 'Twee-factor',
