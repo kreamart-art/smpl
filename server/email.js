@@ -107,6 +107,33 @@ export function sourceEmail(link, battle, lang = 'en') {
   }
 }
 
+export function loginEmail(link, lang = 'en') {
+  if (lang === 'nl') {
+    return {
+      subject: 'Je inloglink voor SMPL',
+      text: `Log in bij SMPL via deze link (20 minuten geldig, werkt 1 keer):\n${link}\n\nNiet aangevraagd? Negeer deze mail dan.`,
+      html: shell(
+        `<p style="margin:0 0 16px">Tik op de knop om in te loggen of een account te starten. De link is <strong>20 minuten</strong> geldig en werkt 1 keer.</p>
+         <p style="margin:0 0 22px">${button(link, 'Inloggen')}</p>
+         <p style="margin:0 0 8px;color:#999">Werkt de knop niet? Plak deze link in je browser:</p>
+         <p style="margin:0 0 18px;word-break:break-all;color:#7aa7ff;font-size:12px">${link}</p>
+         <p style="margin:0;color:#777">Niet aangevraagd? Negeer deze mail dan; er gebeurt niets.</p>`,
+      ),
+    }
+  }
+  return {
+    subject: 'Your SMPL login link',
+    text: `Log in to SMPL with this link (valid for 20 minutes, works once):\n${link}\n\nDidn’t request this? Just ignore this email.`,
+    html: shell(
+      `<p style="margin:0 0 16px">Tap the button to log in or start an account. The link is valid for <strong>20 minutes</strong> and works once.</p>
+       <p style="margin:0 0 22px">${button(link, 'Log in')}</p>
+       <p style="margin:0 0 8px;color:#999">Button not working? Paste this link into your browser:</p>
+       <p style="margin:0 0 18px;word-break:break-all;color:#7aa7ff;font-size:12px">${link}</p>
+       <p style="margin:0;color:#777">Didn’t request this? Just ignore this email; nothing happens.</p>`,
+    ),
+  }
+}
+
 export function verifyEmail(link, lang = 'en') {
   if (lang === 'nl') {
     return {

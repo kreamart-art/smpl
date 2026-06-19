@@ -92,6 +92,11 @@ const P = (v, d = []) => {
   }
 }
 
+// DAY ONE / founding member: anyone who joined on or before this cutoff gets the
+// permanent, no-longer-earnable badge. Configurable via env; default a launch
+// window. joinedAt never changes, so the badge is permanent.
+const FOUNDING_CUTOFF = Number(process.env.SMPL_FOUNDING_UNTIL) || Date.parse('2026-08-01T00:00:00Z')
+
 // ----- row mappers -----------------------------------------------------------
 export function pubUser(r) {
   if (!r) return null
@@ -107,7 +112,10 @@ export function pubUser(r) {
     genres: P(r.genres),
     pastHistory: P(r.pastHistory),
     avatar: r.avatar || '',
+    banner: r.banner || '', // profile banner photo (producer/artist)
+    daw: r.daw || '', // DAW / tools shown on the profile
     joinedAt: r.joinedAt,
+    foundingMember: !!r.joinedAt && r.joinedAt <= FOUNDING_CUTOFF, // permanent DAY ONE badge
     contactEmail: r.contactEmail || '', // optional, public — distinct from the private login email
     verified: !!r.verified, // admin-granted badge
   }
@@ -245,6 +253,11 @@ export function migrate() {
   addColumn('users', 'city', 'TEXT')
   addColumn('users', 'gender', 'TEXT')
   addColumn('users', 'genderText', 'TEXT')
+  // 2026-06-19: passwordless / OAuth provider link + producer profile extras.
+  addColumn('users', 'oauthProvider', 'TEXT') // 'google' | 'apple' | null
+  addColumn('users', 'oauthSub', 'TEXT') // provider subject id (stable user id)
+  addColumn('users', 'banner', 'TEXT') // profile banner photo (data URL or path)
+  addColumn('users', 'daw', 'TEXT') // DAW / tools (producer profile)
   // 2026-06-13: share a profile/battle/event into a DM as a card.
   addColumn('messages', 'shareKind', 'TEXT')
   addColumn('messages', 'shareRef', 'TEXT')

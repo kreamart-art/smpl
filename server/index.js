@@ -17,7 +17,7 @@ import {
   hashBackup,
 } from './auth.js'
 import { STATUS, STATUS_INDEX, nextStatus } from '../src/data/status.js'
-import { sendEmail, mailConfigured, resetEmail, verifyEmail as verifyEmailTpl, sourceEmail } from './email.js'
+import { sendEmail, mailConfigured, resetEmail, verifyEmail as verifyEmailTpl, sourceEmail, loginEmail } from './email.js'
 import { runBackup, listBackups, scheduleBackups } from './backup.js'
 import { pushConfigured, vapidPublicKey, saveSubscription, removeSubscription, sendPush } from './push.js'
 import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
@@ -506,6 +506,9 @@ app.post('/api/auth/login', rateLimit('login', 25, 5 * 60_000), (req, res) => {
   const { email, password } = req.body || {}
   const row = getUserByEmail(String(email || '').trim())
   if (!row) return fail(res, 404, 'No account for that email. Try a quick-login chip or sign up.')
+  // passwordless accounts (magic-link / Google / Apple) have no hash — a null
+  // hash must NOT grant access (verifyPassword would otherwise accept anything)
+  if (!row.passwordHash) return fail(res, 400, 'This account signs in with a magic link or Google/Apple. Use that to log in.')
   if (!password) return fail(res, 400, 'Password required.')
   if (!verifyPassword(password, row.passwordHash)) return fail(res, 401, 'Wrong password.')
   if (row.totpEnabled) {
@@ -586,6 +589,86 @@ app.post('/api/auth/resend-verification', rateLimit('resend', 4, 30 * 60_000), r
   if (req.user.emailVerified) return ok(res, { sent: true, already: true })
   sendVerificationEmail(req.user, langOf(req)).catch(() => {})
   return ok(res, { sent: true, configured: mailConfigured })
+})
+
+// ----- passwordless magic-link + unified provider signup ---------------------
+// One front door: a magic link (and later Google/Apple) verifies an email. If a
+// member already owns that email we mint a session; if not we hand back a short
+// "signup ticket" carrying the verified email, and the client collects an alias
+// (+ 16+ dob) before /api/auth/finalize creates the listener account. Reuses
+// signToken/verifyToken + the email shell — no second auth system.
+const MAGIC_TTL = 20 * 60 * 1000
+
+// Create a fresh listener account (used by magic-link + OAuth finalize). Mirrors
+// the signup INSERT but with no role/password and a pre-verified email.
+function createMember({ email, alias, dob = '', avatar = '', emailVerified = 1 }) {
+  const id = `u_${randomUUID().slice(0, 8)}`
+  const now = Date.now()
+  db.prepare(
+    `INSERT INTO users (id,alias,email,role,name,dob,bio,location,links,genres,pastHistory,avatar,joinedAt,lastSeenAt,passwordHash,acceptedTerms,emailVerified)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  ).run(id, alias, email, 'listener', '', String(dob || ''), '', '', '[]', '[]', '[]', avatar, now, now, null, now, emailVerified ? 1 : 0)
+  if (id !== 'u_smpl') {
+    try {
+      db.prepare('INSERT OR IGNORE INTO follows (followerId,followeeId,createdAt) VALUES (?,?,?)').run(id, 'u_smpl', now)
+    } catch {}
+  }
+  return getUserRow(id)
+}
+
+// Send a magic link (a 20-min signed token carrying the email + purpose).
+app.post('/api/auth/magic', rateLimit('magic', 6, 30 * 60_000), (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase()
+  if (!/^\S+@\S+\.\S+$/.test(email)) return fail(res, 400, 'Enter a valid email address.')
+  if (email === 'curator@smpl.app') return fail(res, 400, 'That account is reserved.')
+  const token = signToken({ email, purpose: 'magic' }, MAGIC_TTL)
+  const link = `${APP_URL}/auth/magic?token=${encodeURIComponent(token)}`
+  const tpl = loginEmail(link, langOf(req))
+  sendEmail({ to: email, subject: tpl.subject, text: tpl.text, html: tpl.html }).catch(() => {})
+  // Dev convenience with no SMTP: return the link so the flow stays testable.
+  if (!mailConfigured && process.env.NODE_ENV !== 'production') return ok(res, { sent: true, devLink: link })
+  return ok(res, { sent: true })
+})
+
+// Consume a magic token: existing email → session (2FA-aware); new email → a
+// signup ticket for the alias step.
+app.post('/api/auth/magic/consume', rateLimit('magicConsume', 30, 30 * 60_000), (req, res) => {
+  const p = verifyToken(req.body?.token)
+  if (!p || p.purpose !== 'magic' || !p.email) return fail(res, 400, 'This link is invalid or has expired.')
+  const email = String(p.email).toLowerCase()
+  const row = getUserByEmail(email)
+  if (row) {
+    if (!row.emailVerified) db.prepare('UPDATE users SET emailVerified = 1 WHERE id = ?').run(row.id)
+    if (row.totpEnabled) return ok(res, { needs2fa: true, ticket: signToken({ uid: row.id, twofa: true }, 10 * 60 * 1000) })
+    return ok(res, { token: signToken({ uid: row.id }), me: meUser(getUserRow(row.id)) })
+  }
+  return ok(res, { newAccount: true, email, ticket: signToken({ email, purpose: 'signup' }, 30 * 60_000) })
+})
+
+// Finalize a brand-new account from a signup ticket (verified email) + a chosen
+// alias + a 16+ dob. Shared by magic-link AND Google/Apple. Always a listener.
+app.post('/api/auth/finalize', rateLimit('finalize', 10, 30 * 60_000), (req, res) => {
+  const { ticket, alias, dob, avatar, acceptTerms } = req.body || {}
+  const p = verifyToken(ticket)
+  if (!p || p.purpose !== 'signup' || !p.email) return fail(res, 400, 'Your signup session expired. Start again.')
+  if (!acceptTerms) return fail(res, 400, 'You must accept the Terms and Privacy Policy to sign up.')
+  const email = String(p.email).toLowerCase()
+  if (getUserByEmail(email)) return fail(res, 409, 'An account with that email already exists. Log in instead.')
+  const cleanAlias = normalizeHandle(alias)
+  if (cleanAlias.length < 2) return fail(res, 400, 'A handle needs at least 2 letters or numbers.')
+  if (RESERVED_ALIASES.has(cleanAlias.toLowerCase())) return fail(res, 409, 'That handle is reserved.')
+  if (getUserByAliasRow(cleanAlias)) return fail(res, 409, 'That handle is taken.')
+  const age = ageFromDob(String(dob || '').trim())
+  if (age === null) return fail(res, 400, 'Enter a valid date of birth.')
+  if (age < 16) return fail(res, 400, 'You must be at least 16 to use SMPL.')
+  const row = createMember({
+    email,
+    alias: cleanAlias,
+    dob: String(dob).trim(),
+    avatar: typeof avatar === 'string' && avatar.length < 1_500_000 ? avatar : '',
+    emailVerified: 1,
+  })
+  return ok(res, { token: signToken({ uid: row.id }), me: meUser(row) })
 })
 
 // ----- bootstrap -------------------------------------------------------------
@@ -1208,6 +1291,8 @@ app.patch('/api/me', requireAuth, (req, res) => {
   const b = req.body || {}
   if (typeof b.avatar === 'string' && b.avatar.length > 1_500_000)
     return fail(res, 413, 'Image too large. Pick something smaller.')
+  if (typeof b.banner === 'string' && b.banner.length > 2_500_000)
+    return fail(res, 413, 'Banner image too large. Pick something smaller.')
   const fields = []
   const vals = []
   const set = (k, v) => {
@@ -1233,6 +1318,8 @@ app.patch('/api/me', requireAuth, (req, res) => {
     set('genderText', g === 'self' ? String(b.genderText || '').trim().slice(0, 60) : '')
   }
   if (typeof b.avatar === 'string') set('avatar', b.avatar)
+  if (typeof b.banner === 'string') set('banner', b.banner)
+  if (typeof b.daw === 'string') set('daw', b.daw.trim().slice(0, 80))
   if (Array.isArray(b.links)) set('links', JSON.stringify(b.links))
   if (b.genres !== undefined) {
     const raw = Array.isArray(b.genres) ? b.genres : String(b.genres || '').split(',')
