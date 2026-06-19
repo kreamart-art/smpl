@@ -12,6 +12,7 @@ import { pushSupported, pushPermission, isPushSubscribed, enablePush, disablePus
 import { Field, inputCls } from '../components/ui.jsx'
 import { ageFrom } from '../utils/wave.js'
 import { useT } from '../i18n/index.jsx'
+import { resetTours } from '../components/Tour.jsx'
 
 function PrivateCell({ label, value }) {
   return (
@@ -781,6 +782,16 @@ export default function Settings() {
               icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⤓</span>}
               label={t('settings.install')}
               onClick={() => setView('install')}
+            />
+          ) : null}
+          {standalone ? (
+            <Item
+              icon={<span className="flex w-[18px] justify-center text-[15px] leading-none">⌖</span>}
+              label={t('tour.replay')}
+              onClick={() => {
+                resetTours()
+                navigate('/battles?tour=1')
+              }}
             />
           ) : null}
           <Item

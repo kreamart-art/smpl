@@ -14,6 +14,7 @@ import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
+import { BattleTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
 import { STATUS, STATUS_ORDER, STATUS_INDEX, countdownTarget } from '../data/status.js'
 import { shuffleSeeded, fmtDate } from '../utils/wave.js'
@@ -237,6 +238,7 @@ export default function BattleDetail() {
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6">
+      <BattleTour />
       <Link to="/battles" className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
         {t('battleDetail.allBattles')}
       </Link>
@@ -264,6 +266,7 @@ export default function BattleDetail() {
               <div className="font-mono text-lg tnum leading-none">{battle.attendees.length}</div>
             </div>
             <button
+              data-tour="battle-attend"
               onClick={onAttend}
               className={`border px-4 h-10 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
                 attending ? 'bg-ink text-bg border-ink' : 'border-line-bright text-ink hover:border-ink'
@@ -272,6 +275,7 @@ export default function BattleDetail() {
               {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
             </button>
             <Link
+              data-tour="battle-share"
               to={battle.status === STATUS.WINNER_DECLARED ? `/share/win/${battle.id}` : `/share/battle/${battle.id}`}
               aria-label={t('share.title')}
               title={t('share.title')}
@@ -318,6 +322,7 @@ export default function BattleDetail() {
           {canDownloadSource ? (
             <div className="flex flex-wrap items-center gap-2">
               <a
+                data-tour="battle-sample"
                 href={mediaUrl(battle.sampleUrl)}
                 download={`SMPL-${(battle.title || 'source').replace(/[^\w]+/g, '_')}.${sourceExt}`}
                 target="_blank"
@@ -355,7 +360,7 @@ export default function BattleDetail() {
 
       {/* COUNTDOWN */}
       {ts ? (
-        <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border border-line bg-panel p-5">
+        <div data-tour="battle-countdown" className="mt-6 flex flex-wrap items-end justify-between gap-4 border border-line bg-panel p-5">
           <CountdownBlocks to={ts} label={t(CD_KEY[battle.status])} />
           <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
             {t(`status.${battle.status}`)}
@@ -377,6 +382,7 @@ export default function BattleDetail() {
 
         {battle.status === STATUS.OPEN_FOR_SIGNUP && (
           <PhaseBox
+            tour="battle-action"
             title={t('battleDetail.signup.title')}
             sub={t('battleDetail.signup.sub', {
               left: battle.maxProducers - battle.signups.length,
@@ -407,6 +413,7 @@ export default function BattleDetail() {
 
         {battle.status === STATUS.SUBMISSION_PHASE && (
           <PhaseBox
+            tour="battle-action"
             title={t('battleDetail.submission.title')}
             sub={t(`battleDetail.submission.sub.${battle.kind}`, { n: approvedSubs.length })}
           >
@@ -483,6 +490,7 @@ export default function BattleDetail() {
 
         {battle.status === STATUS.VOTING_PHASE && (
           <PhaseBox
+            tour="battle-action"
             title={t('battleDetail.voting.title')}
             sub={t(battle.blind ? 'battleDetail.voting.subBlind' : 'battleDetail.voting.sub')}
           >
@@ -665,9 +673,9 @@ function EmailSourceButton({ battleId }) {
   )
 }
 
-function PhaseBox({ title, sub, children }) {
+function PhaseBox({ title, sub, children, tour }) {
   return (
-    <div className="border border-line bg-panel">
+    <div data-tour={tour} className="border border-line bg-panel">
       <div className="flex items-baseline justify-between border-b border-line px-5 py-3">
         <h2 className="font-sans text-lg font-semibold uppercase tracking-tight">{title}</h2>
         {sub ? <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{sub}</span> : null}

@@ -5,6 +5,7 @@ import Footer from './Footer.jsx'
 import TransportBar from './TransportBar.jsx'
 import AppTopBar from './AppTopBar.jsx'
 import BottomTabBar from './BottomTabBar.jsx'
+import WelcomeTour from './Tour.jsx'
 import InstallBanner from './InstallBanner.jsx'
 import VerifyEmailBanner from './VerifyEmailBanner.jsx'
 import PushPrompt from './PushPrompt.jsx'
@@ -84,6 +85,7 @@ export default function Layout() {
         {!inThread ? <TransportBar /> : null}
         {!inThread ? <BottomTabBar /> : null}
         <AnnouncementPopup />
+        {!inThread ? <WelcomeTour /> : null}
       </div>
     )
   }

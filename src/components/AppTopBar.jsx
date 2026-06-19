@@ -17,7 +17,7 @@ export default function AppTopBar() {
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex h-12 items-center justify-between px-4">
-        <span className="flex w-12 items-center">
+        <span className="flex w-12 items-center" data-tour="messages">
           <MessagesLink />
         </span>
         <Link to="/battles" aria-label="SMPL, home">
