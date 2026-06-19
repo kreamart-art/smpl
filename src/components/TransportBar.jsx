@@ -33,8 +33,8 @@ export default function TransportBar() {
           </div>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <Waveform seed={track.seed} progress={progress} onSeek={(f) => playAt(track, f)} height={30} bars={120} />
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <Waveform seed={track.seed} progress={progress} onSeek={(f) => playAt(track, f)} height={30} bars={48} />
         </div>
 
         <div className="shrink-0 font-mono text-[11px] text-muted tnum">
