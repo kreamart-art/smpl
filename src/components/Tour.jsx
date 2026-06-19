@@ -12,6 +12,8 @@ import { usePWA } from '../context/PWAContext.jsx'
 
 export const WELCOME_KEY = 'smpl_tour_welcome_v1'
 export const BATTLE_KEY = 'smpl_tour_battle_v1'
+export const PROFILE_KEY = 'smpl_tour_profile_v1'
+export const SHARE_KEY = 'smpl_tour_share_v1'
 
 const read = (k) => {
   try {
@@ -30,8 +32,7 @@ const write = (k) => {
 // Re-arm every tour (used by the Settings "replay" entry).
 export const resetTours = () => {
   try {
-    localStorage.removeItem(WELCOME_KEY)
-    localStorage.removeItem(BATTLE_KEY)
+    ;[WELCOME_KEY, BATTLE_KEY, PROFILE_KEY, SHARE_KEY].forEach((k) => localStorage.removeItem(k))
   } catch {
     /* ignore */
   }
@@ -58,6 +59,22 @@ const BATTLE_STEPS = [
   { key: 'sample', target: '[data-tour="battle-sample"]' },
   { key: 'action', target: '[data-tour="battle-action"]' },
 ].map((s) => ({ ...s, ns: 'battle' }))
+
+// Own profile.
+const PROFILE_STEPS = [
+  { key: 'intro' },
+  { key: 'stats', target: '[data-tour="profile-stats"]' },
+  { key: 'tabs', target: '[data-tour="profile-tabs"]' },
+  { key: 'edit', target: '[data-tour="profile-edit"]' },
+  { key: 'settings', target: '[data-tour="profile-settings"]' },
+].map((s) => ({ ...s, ns: 'profile' }))
+
+// Share-card page.
+const SHARE_STEPS = [
+  { key: 'intro' },
+  { key: 'format', target: '[data-tour="share-format"]' },
+  { key: 'actions', target: '[data-tour="share-actions"]' },
+].map((s) => ({ ...s, ns: 'share' }))
 
 // Core engine: drives one list of steps.
 function TourRunner({ steps, onClose }) {
@@ -194,28 +211,36 @@ export default function WelcomeTour() {
   return <TourRunner steps={WELCOME_STEPS} onClose={close} />
 }
 
-// Battle-detail tour: first time a new user opens a battle (after the welcome
-// tour), app only. Adapts to the phase by dropping steps whose target is absent.
-export function BattleTour() {
+// Per-page tour: runs once (app only, after the welcome tour). Adapts to the
+// page by dropping steps whose target is absent in the current state.
+function PageTour({ allSteps, flagKey, enabled = true }) {
   const { standalone } = usePWA()
   const [steps, setSteps] = useState(null)
 
   useEffect(() => {
-    // run once, app only, and only after the welcome tour has been seen
-    if (!standalone || read(BATTLE_KEY) || !read(WELCOME_KEY)) return
+    if (!enabled || !standalone || read(flagKey) || !read(WELCOME_KEY)) return
     const tmo = setTimeout(() => {
-      const present = BATTLE_STEPS.filter((s) => !s.target || document.querySelector(s.target))
+      const present = allSteps.filter((s) => !s.target || document.querySelector(s.target))
       // need at least one anchored step beyond the intro to be worth running
       if (present.some((s) => s.target)) setSteps(present)
     }, 800)
     return () => clearTimeout(tmo)
-  }, [standalone])
+  }, [enabled, standalone, allSteps, flagKey])
 
   const close = () => {
-    write(BATTLE_KEY)
+    write(flagKey)
     setSteps(null)
   }
 
   if (!steps) return null
   return <TourRunner steps={steps} onClose={close} />
 }
+
+// First time a new user opens a battle.
+export const BattleTour = () => <PageTour allSteps={BATTLE_STEPS} flagKey={BATTLE_KEY} />
+// First time a user lands on their own profile (caller gates on `isSelf`).
+export const ProfileTour = ({ enabled = true }) => (
+  <PageTour allSteps={PROFILE_STEPS} flagKey={PROFILE_KEY} enabled={enabled} />
+)
+// First time a user opens the share-card page.
+export const ShareTour = () => <PageTour allSteps={SHARE_STEPS} flagKey={SHARE_KEY} />

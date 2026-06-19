@@ -5,6 +5,7 @@ import { useT } from '../i18n/index.jsx'
 import { STATUS } from '../data/status.js'
 import ShareCard from '../components/ShareCard.jsx'
 import { Btn } from '../components/ui.jsx'
+import { ShareTour } from '../components/Tour.jsx'
 
 export default function SharePage() {
   const { kind, id } = useParams()
@@ -201,6 +202,7 @@ export default function SharePage() {
 
   return (
     <div className="min-h-screen bg-bg" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)' }}>
+      <ShareTour />
       <div className="mx-auto flex max-w-[520px] flex-col px-4 py-6 sm:px-6">
         <div className="flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
@@ -225,7 +227,7 @@ export default function SharePage() {
         ) : (
           <>
             {/* format toggle */}
-            <div className="mt-5 inline-flex w-fit border border-line">
+            <div data-tour="share-format" className="mt-5 inline-flex w-fit border border-line">
               {['story', 'post'].map((f) => (
                 <button
                   key={f}
@@ -259,7 +261,7 @@ export default function SharePage() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div data-tour="share-actions" className="mt-6 flex flex-wrap gap-3">
               <Btn onClick={onShare} variant="solid" size="lg" disabled={busy}>
                 {busy ? t('share.generating') : `↑ ${t('share.shareBtn')}`}
               </Btn>

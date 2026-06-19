@@ -15,6 +15,7 @@ import CrateGrid from '../components/CrateGrid.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconSettings, IconPoster, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
+import { ProfileTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { fmtDate, fmtMonthYear } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -45,7 +46,7 @@ function fileToAvatar(file, cb) {
 // SMPL language: mono caps, hairline rules, an ink underline on the active tab.
 function ProfileTabs({ tabs, active, onSelect }) {
   return (
-    <div className="flex border-y border-line">
+    <div data-tour="profile-tabs" className="flex border-y border-line">
       {tabs.map((tabDef) => {
         const on = tabDef.key === active
         const Icon = tabDef.icon
@@ -308,6 +309,7 @@ export default function Profile() {
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-10 sm:px-6 sm:py-12">
+      {isSelf ? <ProfileTour /> : null}
       {/* PROFILE HEADER — one compact Instagram-style block, SMPL skin */}
       <div className="relative isolate overflow-hidden border border-line bg-panel">
         <span className="hero-bloom" aria-hidden="true" />
@@ -329,7 +331,7 @@ export default function Profile() {
             <div className="shrink-0">
               <Avatar alias={user.alias} src={user.avatar} size={72} />
             </div>
-            <div className="flex flex-1 items-center justify-between sm:flex-none sm:justify-start sm:gap-10">
+            <div data-tour="profile-stats" className="flex flex-1 items-center justify-between sm:flex-none sm:justify-start sm:gap-10">
               <button
                 onClick={() => goToContent(isCuratorProfile ? 'record' : 'clips')}
                 className="px-1 text-center transition-opacity hover:opacity-70"
@@ -430,6 +432,7 @@ export default function Profile() {
                   </Link>
                 ) : null}
                 <button
+                  data-tour="profile-edit"
                   onClick={() => navigate('/edit-profile')}
                   className="h-10 flex-1 border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink sm:flex-none sm:px-6"
                 >
@@ -451,6 +454,7 @@ export default function Profile() {
                 />
                 <ShareToDM share={{ kind: 'profile', ref: user.alias }} className="h-10 w-10 shrink-0" />
                 <Link
+                  data-tour="profile-settings"
                   to="/settings"
                   aria-label={t('common.settings')}
                   className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
