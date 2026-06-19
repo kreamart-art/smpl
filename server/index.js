@@ -1836,15 +1836,36 @@ app.delete('/api/messages/:id', requireAuth, (req, res) => {
   return ok(res, {})
 })
 
-// ----- audio uploads (curator-only) ------------------------------------------
+// ----- audio uploads ---------------------------------------------------------
 // Served under /api/uploads so the dev Vite proxy (/api → api server) and the
 // single-origin production server both reach the files without extra config.
 app.use('/api/uploads', express.static(UPLOAD_DIR, { maxAge: '1y', immutable: true }))
 
 const AUDIO_EXT = {
   'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav',
-  'audio/wave': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac',
-  'audio/ogg': 'ogg', 'audio/webm': 'webm', 'audio/flac': 'flac', 'audio/x-flac': 'flac',
+  'audio/wave': 'wav', 'audio/vnd.wave': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a',
+  'audio/aac': 'aac', 'audio/ogg': 'ogg', 'audio/opus': 'opus', 'audio/webm': 'webm',
+  'audio/flac': 'flac', 'audio/x-flac': 'flac', 'audio/aiff': 'aiff', 'audio/x-aiff': 'aiff',
+}
+
+// Last-resort format detection by magic bytes, for uploads that arrive with a
+// generic (application/octet-stream) or wrong content-type — common from the
+// iOS Files picker. Returns an extension or null when it isn't audio at all.
+function sniffAudioExt(buf) {
+  if (!buf || buf.length < 12) return null
+  const at = (i, sig) => {
+    for (let k = 0; k < sig.length; k++) if (buf[i + k] !== sig.charCodeAt(k)) return false
+    return true
+  }
+  if (at(0, 'ID3')) return 'mp3' // MP3 with an ID3 tag
+  if (buf[0] === 0xff && (buf[1] === 0xf1 || buf[1] === 0xf9)) return 'aac' // ADTS AAC
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'mp3' // raw MPEG frame sync
+  if (at(0, 'RIFF') && at(8, 'WAVE')) return 'wav'
+  if (at(0, 'FORM') && (at(8, 'AIFF') || at(8, 'AIFC'))) return 'aiff'
+  if (at(4, 'ftyp')) return 'm4a' // MP4/M4A container
+  if (at(0, 'OggS')) return 'ogg' // Ogg (Vorbis/Opus)
+  if (at(0, 'fLaC')) return 'flac'
+  return null
 }
 
 // Strip ID3 tags so an uploaded beat can't carry the producer's name into the
@@ -1876,8 +1897,9 @@ app.post(
     const buf = req.body
     if (!buf || !buf.length) return fail(res, 400, 'No audio received.')
     const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
-    const ext = AUDIO_EXT[ct]
-    if (!ext) return fail(res, 415, 'Unsupported audio. Use mp3, wav, m4a, aac, ogg or flac.')
+    // Trust the content-type when we know it, otherwise read the file's bytes.
+    const ext = AUDIO_EXT[ct] || sniffAudioExt(buf)
+    if (!ext) return fail(res, 415, 'Unsupported audio. Use mp3, wav, m4a, aac, ogg, flac or aiff.')
     const name = `a_${randomUUID().slice(0, 12)}.${ext}`
     try {
       writeFileSync(path.join(UPLOAD_DIR, name), stripAudioMetadata(buf))
@@ -1917,6 +1939,19 @@ app.post(
 
 const VIDEO_EXT = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' }
 
+// Detect video by magic bytes for generic/octet-stream uploads, so an unknown
+// content-type can't be stored blind. Returns an extension or null.
+function sniffVideoExt(buf) {
+  if (!buf || buf.length < 12) return null
+  const at = (i, sig) => {
+    for (let k = 0; k < sig.length; k++) if (buf[i + k] !== sig.charCodeAt(k)) return false
+    return true
+  }
+  if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return 'webm' // EBML
+  if (at(4, 'ftyp')) return at(8, 'qt  ') ? 'mov' : 'mp4' // MP4 / QuickTime container
+  return null
+}
+
 // Generated waveform share clips (MediaRecorder output). Stored under /api/uploads.
 app.post(
   '/api/uploads/video',
@@ -1927,7 +1962,9 @@ app.post(
     const buf = req.body
     if (!buf || !buf.length) return fail(res, 400, 'No video received.')
     const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
-    const ext = VIDEO_EXT[ct] || 'webm'
+    // Trust a known content-type, otherwise read the bytes; reject true garbage.
+    const ext = VIDEO_EXT[ct] || sniffVideoExt(buf)
+    if (!ext) return fail(res, 415, 'Unsupported video. Use mp4, webm or mov.')
     const name = `v_${randomUUID().slice(0, 12)}.${ext}`
     try {
       writeFileSync(path.join(UPLOAD_DIR, name), buf)

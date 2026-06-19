@@ -62,13 +62,30 @@ async function req(method, path, body) {
   return res.ok ? { ok: true } : { ok: false, error: `HTTP ${res.status}` }
 }
 
+// Browsers (notably iOS Files) often hand back a File with an empty `type`, or
+// one the server doesn't know. Fall back to the filename extension so we always
+// send a usable Content-Type — otherwise the body parser skips the upload.
+const EXT_MIME = {
+  mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac',
+  ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/opus', flac: 'audio/flac',
+  aif: 'audio/aiff', aiff: 'audio/aiff', aifc: 'audio/aiff', caf: 'audio/x-caf',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  gif: 'image/gif', heic: 'image/heic',
+  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime',
+}
+function mimeFor(file) {
+  if (file?.type) return file.type
+  const ext = (file?.name?.split('.').pop() || '').toLowerCase()
+  return EXT_MIME[ext] || 'application/octet-stream'
+}
+
 // Raw binary upload (audio files) — sends the File as the body with its own
 // content-type, so the server can stream it to disk without base64 bloat.
 async function upload(path, file) {
   const headers = {}
   const tok = getToken()
   if (tok) headers.Authorization = `Bearer ${tok}`
-  if (file?.type) headers['Content-Type'] = file.type
+  headers['Content-Type'] = mimeFor(file)
   let res
   try {
     res = await fetch(API_BASE + path, { method: 'POST', headers, body: file })

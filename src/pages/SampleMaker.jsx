@@ -190,7 +190,7 @@ function SubmitForm({ c, onUpload, onSubmit }) {
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <label className={`cursor-pointer border border-line-bright px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg ${uploading ? 'pointer-events-none opacity-40' : ''}`}>
               {uploading ? '…' : form.url ? c.uploaded : c.upload}
-              <input type="file" accept="audio/*" className="hidden" onChange={pick} disabled={uploading} />
+              <input type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff" className="hidden" onChange={pick} disabled={uploading} />
             </label>
             {form.fileName ? <span className="max-w-[180px] truncate font-mono text-[11px] text-muted">✓ {form.fileName}</span> : null}
           </div>

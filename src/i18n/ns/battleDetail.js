@@ -81,6 +81,11 @@ export const battleDetail = {
     'battleDetail.submission.hint.optional': 'optional',
     'battleDetail.submission.submit.BEATS': 'Submit beat',
     'battleDetail.submission.submit.VERSES': 'Drop verse',
+    'battleDetail.submission.current.BEATS': 'Your beat is in. You can still swap it.',
+    'battleDetail.submission.current.VERSES': 'Your verse is in. You can still swap it.',
+    'battleDetail.submission.replaceHint':
+      'Changed something? Upload a new file and update to replace it. Locks the moment submissions close.',
+    'battleDetail.submission.update': 'Update entry',
     'battleDetail.submission.waiting.BEATS':
       'Beats are rolling in from registered producers. Voting opens when this phase closes. Stick around.',
     'battleDetail.submission.waiting.VERSES':
@@ -181,6 +186,11 @@ export const battleDetail = {
     'battleDetail.submission.hint.optional': 'optioneel',
     'battleDetail.submission.submit.BEATS': 'beat inzenden',
     'battleDetail.submission.submit.VERSES': 'verse droppen',
+    'battleDetail.submission.current.BEATS': 'je beat staat ingezonden. je kunt hem nog vervangen.',
+    'battleDetail.submission.current.VERSES': 'je verse staat ingezonden. je kunt hem nog vervangen.',
+    'battleDetail.submission.replaceHint':
+      'iets aangepast? upload een nieuw bestand en update om hem te vervangen. gaat op slot zodra de inzendingen sluiten.',
+    'battleDetail.submission.update': 'inzending updaten',
     'battleDetail.submission.waiting.BEATS':
       'beats stromen binnen van ingeschreven producers. stemmen opent zodra deze fase sluit. blijf hangen.',
     'battleDetail.submission.waiting.VERSES':

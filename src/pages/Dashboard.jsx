@@ -414,7 +414,7 @@ export default function Dashboard() {
                           : t('dashboard.create.upload')}
                       <input
                         type="file"
-                        accept="audio/*"
+                        accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff"
                         className="hidden"
                         onChange={onPickSample}
                         disabled={uploading}

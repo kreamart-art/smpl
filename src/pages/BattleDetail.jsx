@@ -122,6 +122,13 @@ export default function BattleDetail() {
     [approvedSubs, battle],
   )
 
+  // The competitor's own entry, if they already submitted — lets them replace
+  // it while the submission phase is still open.
+  const mySubmission = useMemo(
+    () => (battle && currentUser ? battleSubmissions(battle.id).find((s) => s.mine) : null),
+    [battle, currentUser, battleSubmissions],
+  )
+
   if (!battle) {
     return (
       <div className="mx-auto max-w-[1400px] px-4 py-24 text-center sm:px-6">
@@ -408,6 +415,17 @@ export default function BattleDetail() {
                 <p className="font-mono text-[12px] leading-relaxed text-muted">
                   {t(`battleDetail.submission.brief.${battle.kind}`)}
                 </p>
+                {mySubmission ? (
+                  <div className="border border-line-bright bg-bg px-4 py-3">
+                    <div className="font-mono text-[11px] text-ink">
+                      <span className="text-muted">✓ </span>
+                      {t(`battleDetail.submission.current.${battle.kind}`)}
+                    </div>
+                    <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-muted">
+                      {t('battleDetail.submission.replaceHint')}
+                    </p>
+                  </div>
+                ) : null}
                 <div>
                   <div className="flex items-baseline justify-between gap-2">
                     <Label>{t(`submit.upload.${battle.kind}`)}</Label>
@@ -426,7 +444,7 @@ export default function BattleDetail() {
                           : t(`submit.upload.${battle.kind}`)}
                       <input
                         type="file"
-                        accept="audio/*"
+                        accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.aif,.aiff"
                         className="hidden"
                         onChange={onPickBeat}
                         disabled={uploadingBeat}
@@ -451,7 +469,9 @@ export default function BattleDetail() {
                     ) : null}
                   </div>
                 </div>
-                <Btn type="submit" variant="solid" size="lg" disabled={!form.audioUrl}>{t(`battleDetail.submission.submit.${battle.kind}`)}</Btn>
+                <Btn type="submit" variant="solid" size="lg" disabled={!form.audioUrl}>
+                  {mySubmission ? t('battleDetail.submission.update') : t(`battleDetail.submission.submit.${battle.kind}`)}
+                </Btn>
               </form>
             ) : (
               <p className="font-mono text-[12px] leading-relaxed text-muted">
