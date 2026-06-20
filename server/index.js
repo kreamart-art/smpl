@@ -1,9 +1,13 @@
 import express from 'express'
 import cors from 'cors'
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync, unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const execFileP = promisify(execFile)
 import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission, normalizeHandle } from './db.js'
 import {
   hashPassword,
@@ -2016,13 +2020,47 @@ function sniffVideoExt(buf) {
   return null
 }
 
+// Re-encode a browser-recorded clip into a clean, share-ready H.264 MP4 (proper
+// duration header, constant 30fps, yuv420p, faststart) + pull a poster frame.
+// This is what makes the clips play start-to-finish on Instagram/TikTok and gives
+// the profile grid a real thumbnail instead of a black first frame.
+async function transcodeClip(rawPath, base) {
+  const mp4Name = `${base}_v.mp4`
+  const jpgName = `${base}.jpg`
+  const mp4Path = path.join(UPLOAD_DIR, mp4Name)
+  const jpgPath = path.join(UPLOAD_DIR, jpgName)
+  await execFileP(
+    'ffmpeg',
+    [
+      '-y', '-i', rawPath,
+      '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
+      '-profile:v', 'high', '-r', '30', '-fps_mode', 'cfr',
+      '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '128k',
+      mp4Path,
+    ],
+    { timeout: 180_000 },
+  )
+  let poster = ''
+  try {
+    await execFileP(
+      'ffmpeg',
+      ['-y', '-ss', '0.8', '-i', mp4Path, '-frames:v', '1', '-vf', 'scale=540:-1', '-q:v', '4', jpgPath],
+      { timeout: 30_000 },
+    )
+    if (existsSync(jpgPath)) poster = `/api/uploads/${jpgName}`
+  } catch {
+    /* poster is optional */
+  }
+  return { url: `/api/uploads/${mp4Name}`, poster }
+}
+
 // Generated waveform share clips (MediaRecorder output). Stored under /api/uploads.
 app.post(
   '/api/uploads/video',
   rateLimit('upload', 20, 60 * 60_000),
   requireAuth,
   express.raw({ type: ['video/*', 'application/octet-stream'], limit: '60mb' }),
-  (req, res) => {
+  async (req, res) => {
     const buf = req.body
     if (!buf || !buf.length) return fail(res, 400, 'No video received.')
     const ct = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
@@ -2030,26 +2068,42 @@ app.post(
     const ext = VIDEO_EXT[ct] || sniffVideoExt(buf)
     if (!ext) return fail(res, 415, 'Unsupported video. Use mp4, webm or mov.')
     const name = `v_${randomUUID().slice(0, 12)}.${ext}`
+    const rawPath = path.join(UPLOAD_DIR, name)
     try {
-      writeFileSync(path.join(UPLOAD_DIR, name), buf)
+      writeFileSync(rawPath, buf)
     } catch {
       return fail(res, 500, 'Could not store the video.')
     }
-    return ok(res, { url: `/api/uploads/${name}` })
+    // Transcode to a clean MP4 + poster; fall back to the raw file if ffmpeg
+    // isn't available or chokes, so a clip is never lost.
+    try {
+      const out = await transcodeClip(rawPath, name.replace(/\.[^.]+$/, ''))
+      try {
+        unlinkSync(rawPath)
+      } catch {
+        /* keep going */
+      }
+      return ok(res, out)
+    } catch {
+      return ok(res, { url: `/api/uploads/${name}`, poster: '' })
+    }
   },
 )
 
 // ----- waveform clips on the profile -----------------------------------------
 // Save a generated clip to the producer's own profile (a portfolio of flips).
 app.post('/api/me/waveform-video', requireAuth, (req, res) => {
-  const { url, battleId, tag } = req.body || {}
+  const { url, poster, battleId, tag } = req.body || {}
   if (!url || !/^\/?(api\/uploads)\//.test(url)) return fail(res, 400, 'Upload the clip first.')
+  const safePoster = typeof poster === 'string' && /^\/?(api\/uploads)\//.test(poster) ? poster : ''
   const id = `wv_${randomUUID().slice(0, 10)}`
   const createdAt = Date.now()
-  db.prepare('INSERT INTO waveform_videos (id,userId,battleId,url,tag,createdAt) VALUES (?,?,?,?,?,?)').run(
-    id, req.user.id, String(battleId || ''), url, String(tag || '').slice(0, 120), createdAt,
+  db.prepare('INSERT INTO waveform_videos (id,userId,battleId,url,poster,tag,createdAt) VALUES (?,?,?,?,?,?,?)').run(
+    id, req.user.id, String(battleId || ''), url, safePoster, String(tag || '').slice(0, 120), createdAt,
   )
-  return ok(res, { video: { id, userId: req.user.id, battleId: battleId || '', url, tag: tag || '', createdAt } })
+  return ok(res, {
+    video: { id, userId: req.user.id, battleId: battleId || '', url, poster: safePoster, tag: tag || '', createdAt },
+  })
 })
 
 // A producer's saved waveform clips (public profile content).

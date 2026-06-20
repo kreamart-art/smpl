@@ -75,6 +75,7 @@ export default function ClipPage() {
 
       <video
         src={mediaUrl(video.url)}
+        poster={video.poster ? mediaUrl(video.poster) : undefined}
         controls
         autoPlay
         loop

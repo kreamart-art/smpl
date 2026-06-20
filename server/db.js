@@ -298,6 +298,8 @@ export function migrate() {
   db.exec(
     'CREATE TABLE IF NOT EXISTS waveform_videos (id TEXT PRIMARY KEY, userId TEXT, battleId TEXT, url TEXT, tag TEXT, createdAt INTEGER)',
   )
+  // 2026-06-20: poster frame (thumbnail) for a clip, so the grid isn't black.
+  addColumn('waveform_videos', 'poster', 'TEXT')
   // 2026-06-18: curator battle drafts — save a partly-set-up battle, finish later.
   db.exec(
     'CREATE TABLE IF NOT EXISTS battle_drafts (id TEXT PRIMARY KEY, curatorId TEXT, data TEXT, createdAt INTEGER, updatedAt INTEGER)',

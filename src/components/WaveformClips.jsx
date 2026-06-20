@@ -21,6 +21,7 @@ export default function WaveformClips({ clips = [], self = false, onDelete }) {
           >
             <video
               src={mediaUrl(v.url)}
+              poster={v.poster ? mediaUrl(v.poster) : undefined}
               muted
               playsInline
               preload="metadata"

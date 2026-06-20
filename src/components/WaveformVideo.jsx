@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react'
 import Portal from './Portal.jsx'
 import { useI18n } from '../i18n/index.jsx'
 import { useApp } from '../context/AppContext.jsx'
+import { mediaUrl } from '../api.js'
 
 const W = 1080
 const H = 1920
@@ -52,6 +53,9 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
   const [mime, setMime] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // the clean, server-transcoded MP4 (+ poster) — share/download/save all use it
+  const [prepared, setPrepared] = useState(null)
+  const [preparing, setPreparing] = useState(false)
 
   // ---- one-time assets: logo + a small noise tile (cheap film grain) ----
   useEffect(() => {
@@ -284,46 +288,82 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
     }
   }
 
-  const fileFromBlob = () => {
-    const ext = mime.includes('mp4') ? 'mp4' : 'webm'
-    const safe = (producer || 'flip').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'flip'
-    return new File([blob], `smpl-${safe}.${ext}`, { type: mime })
+  const safeName = () => (producer || 'flip').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'flip'
+  const rawFile = (b = blob, m = mime) =>
+    new File([b], `smpl-${safeName()}.${m.includes('mp4') ? 'mp4' : 'webm'}`, { type: m })
+
+  // Upload the raw recording once; the server hands back a clean H.264 MP4 (+ a
+  // poster). Cached, so share / download / save reuse the same Instagram-ready
+  // file. Falls back to the local recording if the server can't transcode.
+  const ensurePrepared = async (b = blob, m = mime) => {
+    if (prepared) return prepared
+    setErr('')
+    setPreparing(true)
+    const up = await uploadVideo(rawFile(b, m))
+    let result
+    if (up.ok && up.url) {
+      let mp4 = b
+      try {
+        mp4 = await (await fetch(mediaUrl(up.url))).blob()
+      } catch {
+        /* keep the local recording if the round-trip fails */
+      }
+      result = { url: up.url, poster: up.poster || '', blob: mp4, ext: 'mp4' }
+    } else {
+      result = { url: '', poster: '', blob: b, ext: m.includes('mp4') ? 'mp4' : 'webm', error: up.error }
+    }
+    setPrepared(result)
+    setPreparing(false)
+    return result
   }
-  const download = () => {
-    const url = URL.createObjectURL(blob)
+
+  const downloadBlob = (b, fname) => {
+    const url = URL.createObjectURL(b)
     const a = document.createElement('a')
     a.href = url
-    a.download = fileFromBlob().name
+    a.download = fname
     document.body.appendChild(a)
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
   }
+  const download = async () => {
+    const p = await ensurePrepared()
+    downloadBlob(p.blob, `smpl-${safeName()}.${p.ext}`)
+  }
   const share = async () => {
-    const file = fileFromBlob()
+    const p = await ensurePrepared()
+    const file = new File([p.blob], `smpl-${safeName()}.${p.ext}`, { type: p.blob.type || 'video/mp4' })
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: 'SMPL' })
       } catch {
         /* cancelled */
       }
-    } else download()
+    } else downloadBlob(p.blob, file.name)
   }
   const saveToProfile = async () => {
     if (!blob) return
     setErr('')
     setSaving(true)
-    const up = await uploadVideo(fileFromBlob())
-    if (!up.ok) {
-      setErr(up.error || (nl ? 'Uploaden mislukt.' : 'Upload failed.'))
+    const p = await ensurePrepared()
+    if (!p.url) {
+      setErr(p.error || (nl ? 'Opslaan mislukt — probeer opnieuw.' : 'Could not save — try again.'))
       setSaving(false)
       return
     }
-    const r = await saveWaveformVideo({ url: up.url, battleId, tag })
+    const r = await saveWaveformVideo({ url: p.url, poster: p.poster, battleId, tag })
     setSaving(false)
     if (r.ok) setSaved(true)
     else setErr(r.error || (nl ? 'Opslaan mislukt.' : 'Save failed.'))
   }
+
+  // As soon as a recording exists, build the share-ready MP4 in the background so
+  // the buttons are instant and the share stays inside the user gesture on iOS.
+  useEffect(() => {
+    if (blob && !prepared && !preparing) ensurePrepared(blob, mime)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blob])
 
   return (
     <Portal>
@@ -395,10 +435,15 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
               </div>
             ) : (
               <div className="space-y-3">
+                {preparing ? (
+                  <p className="text-center font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                    {nl ? 'Clip klaarmaken om te delen…' : 'Preparing your clip to share…'}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={saveToProfile}
-                  disabled={saving || saved}
+                  disabled={saving || saved || preparing}
                   className="w-full border border-ink bg-ink px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-bg transition-colors hover:bg-bright disabled:opacity-60"
                 >
                   {saved
@@ -417,14 +462,16 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
                   <button
                     type="button"
                     onClick={share}
-                    className="flex-1 border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                    disabled={preparing}
+                    className="flex-1 border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-40"
                   >
                     {nl ? 'Delen' : 'Share'}
                   </button>
                   <button
                     type="button"
                     onClick={download}
-                    className="flex-1 border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                    disabled={preparing}
+                    className="flex-1 border border-line-bright px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-bg disabled:opacity-40"
                   >
                     {nl ? 'Download' : 'Download'}
                   </button>
@@ -433,6 +480,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
                     onClick={() => {
                       setBlob(null)
                       setSaved(false)
+                      setPrepared(null)
                     }}
                     className="border border-line px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink"
                   >
