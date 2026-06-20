@@ -259,7 +259,10 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
       const canvas = canvasRef.current
       const vStream = canvas.captureStream(30)
       const mixed = new MediaStream([...vStream.getVideoTracks(), ...destRef.current.stream.getAudioTracks()])
-      const rec = new MediaRecorder(mixed, { mimeType: recMime, videoBitsPerSecond: 6_000_000 })
+      // A black ground with thin bars compresses heavily — a modest bitrate keeps
+      // the upload small + fast (so the server transcode never times out) and
+      // looks identical. The server re-encode is the final quality pass anyway.
+      const rec = new MediaRecorder(mixed, { mimeType: recMime, videoBitsPerSecond: 2_500_000 })
       const chunks = []
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data)
       rec.onstop = () => {

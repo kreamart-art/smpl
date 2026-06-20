@@ -84,13 +84,13 @@ export default function BeatPlayer({
         >
           <Glyph playing={isPlaying} />
         </button>
-        <div className="flex-1 px-3 py-2 min-w-0">
+        <div className="flex-1 overflow-hidden px-3 py-2 min-w-0">
           <Waveform
             seed={meta.seed}
             progress={progress}
             onSeek={(f) => playAt(meta, f)}
             height={34}
-            bars={72}
+            bars={48}
             playedClass={isWinner ? 'bg-bg' : 'bg-ink'}
             baseClass={isWinner ? 'bg-black/40' : 'bg-line-bright'}
           />

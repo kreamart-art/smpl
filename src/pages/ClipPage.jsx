@@ -19,6 +19,7 @@ export default function ClipPage() {
   const { lang } = useI18n()
   const nl = lang === 'nl'
   const [data, setData] = useState(undefined) // undefined = loading, null = not found
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -51,6 +52,30 @@ export default function ClipPage() {
   }
 
   const { video, producer } = data
+  const fname = `smpl-${(producer?.alias || 'clip').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'clip'}.mp4`
+  const grabBlob = async () => (await fetch(mediaUrl(video.url))).blob()
+  const downloadClip = async () => {
+    const b = await grabBlob()
+    const url = URL.createObjectURL(b)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fname
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+  const shareClip = async () => {
+    setBusy(true)
+    try {
+      const file = new File([await grabBlob()], fname, { type: 'video/mp4' })
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: 'SMPL' })
+      else await downloadClip()
+    } catch {
+      /* cancelled */
+    }
+    setBusy(false)
+  }
   return (
     <div className="mx-auto max-w-[480px] px-4 py-8 sm:py-12">
       {producer ? (
@@ -84,8 +109,14 @@ export default function ClipPage() {
       />
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <Btn onClick={shareClip} variant="solid" disabled={busy}>
+          {busy ? (nl ? 'Even…' : 'One sec…') : nl ? 'Delen' : 'Share'}
+        </Btn>
+        <Btn onClick={downloadClip} variant="ghost" disabled={busy}>
+          {nl ? 'Download' : 'Download'}
+        </Btn>
         {video.battleId ? (
-          <Btn to={`/battles/${video.battleId}`} variant="solid">
+          <Btn to={`/battles/${video.battleId}`} variant="ghost">
             {nl ? 'Bekijk battle' : 'View battle'}
           </Btn>
         ) : null}
