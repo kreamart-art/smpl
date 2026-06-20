@@ -893,14 +893,20 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   // anyone may vote on a battle — except the producers/artists competing in it
   if (b.signups.includes(req.user.id))
     return fail(res, 403, 'You’re competing in this battle, so you can’t vote here.')
-  const already = db
-    .prepare('SELECT 1 FROM votes WHERE battleId = ? AND userId = ?')
+  // a voter may change their pick while voting is open — keep one row per
+  // (battle, user) and just move it to the new submission.
+  const existing = db
+    .prepare('SELECT id, submissionId FROM votes WHERE battleId = ? AND userId = ?')
     .get(b.id, req.user.id)
-  if (already) return fail(res, 409, 'You already voted in this battle.')
   const sub = getSubmissionRow(req.body?.submissionId)
   if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not found.')
   if (sub.disqualified) return fail(res, 400, 'That entry was disqualified.')
   if (sub.producerId === req.user.id) return fail(res, 400, 'You cannot vote for your own beat.')
+  if (existing) {
+    if (existing.submissionId === sub.id) return ok(res, {}) // already on this beat — no-op
+    db.prepare('UPDATE votes SET submissionId = ? WHERE id = ?').run(sub.id, existing.id)
+    return ok(res, {})
+  }
   db.prepare('INSERT INTO votes (id,battleId,submissionId,userId) VALUES (?,?,?,?)').run(
     `v_${randomUUID().slice(0, 8)}`, b.id, sub.id, req.user.id,
   )

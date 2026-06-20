@@ -224,8 +224,14 @@ export default function BattleDetail() {
 
   const onVote = async (submissionId) => {
     if (!currentUser) return requireLogin('vote')
+    if (myVote && myVote.submissionId === submissionId) return // already on this beat
+    const changing = !!myVote
     const r = await castVote(battle.id, submissionId)
-    setMsg(r.ok ? { ok: true, text: t('battleDetail.fb.voteCast') } : { ok: false, text: r.error })
+    setMsg(
+      r.ok
+        ? { ok: true, text: t(changing ? 'battleDetail.fb.voteChanged' : 'battleDetail.fb.voteCast') }
+        : { ok: false, text: r.error },
+    )
   }
 
   return (
@@ -505,14 +511,9 @@ export default function BattleDetail() {
                   btn = (
                     <button
                       onClick={() => onVote(s.id)}
-                      disabled={!!myVote}
-                      className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
-                        myVote
-                          ? 'border-line text-muted opacity-40 pointer-events-none'
-                          : 'border-line-bright text-ink hover:bg-ink hover:text-bg'
-                      }`}
+                      className="border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
                     >
-                      {t('common.vote')}
+                      {t(myVote ? 'common.switchVote' : 'common.vote')}
                     </button>
                   )
                 }

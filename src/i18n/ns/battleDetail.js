@@ -41,7 +41,8 @@ export const battleDetail = {
     'battleDetail.fb.slotClaimed': 'Slot claimed. You are in this battle.',
     'battleDetail.fb.submissionUpdated': 'Submission updated.',
     'battleDetail.fb.beatSubmitted': 'Beat submitted. Good luck.',
-    'battleDetail.fb.voteCast': 'Vote cast. One per battle, that is final.',
+    'battleDetail.fb.voteCast': 'Vote cast. You can change it while voting is open.',
+    'battleDetail.fb.voteChanged': 'Vote changed.',
 
     // ANNOUNCED panel
     'battleDetail.announced.title': 'Announced',
@@ -91,7 +92,7 @@ export const battleDetail = {
     'battleDetail.voting.sub': 'Vote for your favourite · one per person · not your own',
     'battleDetail.voting.loginToVote': 'Log in to vote.',
     'battleDetail.voting.loginLink': 'Login ▸',
-    'battleDetail.voting.voteIn': '✓ Your vote is in. Names + tallies appear when the curator declares the winner.',
+    'battleDetail.voting.voteIn': '✓ Your vote is in — you can switch it while voting is open. Names + tallies appear when the curator declares the winner.',
     'battleDetail.voting.yourBeat': 'Your beat',
     'battleDetail.voting.empty': 'No beats were submitted.',
 
@@ -141,7 +142,8 @@ export const battleDetail = {
     'battleDetail.fb.slotClaimed': 'slot geclaimd. je zit in deze battle.',
     'battleDetail.fb.submissionUpdated': 'inzending bijgewerkt.',
     'battleDetail.fb.beatSubmitted': 'beat ingezonden. succes.',
-    'battleDetail.fb.voteCast': 'stem uitgebracht. één per battle, en dat is definitief.',
+    'battleDetail.fb.voteCast': 'stem uitgebracht. je kunt ’m wijzigen zolang de stemfase loopt.',
+    'battleDetail.fb.voteChanged': 'stem gewijzigd.',
 
     // ANNOUNCED panel
     'battleDetail.announced.title': 'aangekondigd',
@@ -191,7 +193,7 @@ export const battleDetail = {
     'battleDetail.voting.sub': 'stem op je favoriet · één per persoon · niet je eigen',
     'battleDetail.voting.loginToVote': 'log in om te stemmen.',
     'battleDetail.voting.loginLink': 'inloggen ▸',
-    'battleDetail.voting.voteIn': '✓ je stem is binnen. namen + tellingen verschijnen als de curator de winnaar uitroept.',
+    'battleDetail.voting.voteIn': '✓ je stem is binnen — je kunt ’m wisselen zolang de stemfase loopt. namen + tellingen verschijnen als de curator de winnaar uitroept.',
     'battleDetail.voting.yourBeat': 'jouw beat',
     'battleDetail.voting.empty': 'er zijn geen beats ingezonden.',
 
