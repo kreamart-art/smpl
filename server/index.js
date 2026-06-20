@@ -97,7 +97,19 @@ const getBattleRow = (id) => db.prepare('SELECT * FROM battles WHERE id = ?').ge
 const getSubmissionRow = (id) => db.prepare('SELECT * FROM submissions WHERE id = ?').get(id)
 
 const allBattles = () => db.prepare('SELECT * FROM battles').all().map(rowToBattle)
-const allUsersPub = () => db.prepare('SELECT * FROM users').all().map(pubUser)
+// Public users, each with a cheap `wins` count (battles they've won) so the
+// client can surface "rising maker" in people suggestions. One pass over the
+// declared winners — small.
+const allUsersPub = () => {
+  const wins = {}
+  for (const b of db
+    .prepare(`SELECT winnerSubmissionId FROM battles WHERE status = ? AND winnerSubmissionId IS NOT NULL`)
+    .all(STATUS.WINNER_DECLARED)) {
+    const s = getSubmissionRow(b.winnerSubmissionId)
+    if (s) wins[s.producerId] = (wins[s.producerId] || 0) + 1
+  }
+  return db.prepare('SELECT * FROM users').all().map((u) => ({ ...pubUser(u), wins: wins[u.id] || 0 }))
+}
 const allFollows = () => db.prepare('SELECT followerId, followeeId FROM follows').all()
 
 function voteCountMap() {
@@ -107,8 +119,80 @@ function voteCountMap() {
   return m
 }
 
-// Derive the phase a scheduled battle should be in at `now`. Never auto-declares
-// a winner — that's the curator's call; voting just closes at voteEnd.
+// Resolve a battle's winner straight from the crowd vote. Highest votes among
+// non-disqualified entries wins; a field with zero votes has no winner (no crowd
+// verdict). On a top-vote TIE the per-battle tieBreak decides: 'earliest' = the
+// earliest submission wins automatically, 'curator' = leave it to the curator.
+// Returns { state: 'winner'|'tie'|'none', winnerId, tied: [submissionId] }.
+function resolveWinner(battleId, tieBreak) {
+  const subs = db
+    .prepare('SELECT id, createdAt FROM submissions WHERE battleId = ? AND COALESCE(disqualified, 0) = 0')
+    .all(battleId)
+  if (!subs.length) return { state: 'none', winnerId: null, tied: [] }
+  const counts = {}
+  for (const r of db
+    .prepare('SELECT submissionId, COUNT(*) AS n FROM votes WHERE battleId = ? GROUP BY submissionId')
+    .all(battleId))
+    counts[r.submissionId] = r.n
+  let max = 0
+  for (const s of subs) max = Math.max(max, counts[s.id] || 0)
+  if (max === 0) return { state: 'none', winnerId: null, tied: [] } // nobody voted
+  const top = subs.filter((s) => (counts[s.id] || 0) === max)
+  if (top.length === 1) return { state: 'winner', winnerId: top[0].id, tied: [] }
+  const tied = top.map((s) => s.id)
+  if ((tieBreak || 'earliest') !== 'curator') {
+    const earliest = top.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0]
+    return { state: 'winner', winnerId: earliest.id, tied }
+  }
+  return { state: 'tie', winnerId: null, tied }
+}
+
+// Push the win to the winner, then the other entrants + everyone who was in the
+// room. Shared by the manual close and the scheduled auto-close.
+function notifyWinner(b, sub) {
+  const winnerAlias = getUserRow(sub.producerId)?.alias || 'a maker'
+  sendPush(sub.producerId, {
+    title: 'You won',
+    body: `Your beat won “${b.title}”`,
+    tag: `win-${b.id}`,
+    url: `/battles/${b.id}`,
+  }).catch(() => {})
+  const reached = new Set([sub.producerId])
+  const entrants = db
+    .prepare('SELECT DISTINCT producerId FROM submissions WHERE battleId = ?')
+    .all(b.id)
+    .map((r) => r.producerId)
+  for (const uid of [...entrants, ...rowToBattle(getBattleRow(b.id)).attendees]) {
+    if (reached.has(uid)) continue
+    reached.add(uid)
+    sendPush(uid, {
+      title: 'Winner declared',
+      body: `@${winnerAlias} won “${b.title}”`,
+      tag: `win-${b.id}`,
+      url: `/battles/${b.id}`,
+    }).catch(() => {})
+  }
+}
+
+// Voting closed on a scheduled battle: crown the highest-voted entry. On a
+// 'curator' tie we still CLOSE voting (status flips, names/tallies reveal) but
+// leave the winner unset for the curator to break the tie; a 0-vote battle
+// closes with no winner.
+function autoDeclareWinner(b) {
+  const resv = resolveWinner(b.id, b.tieBreak)
+  const winnerId = resv.state === 'winner' ? resv.winnerId : null
+  db.prepare('UPDATE battles SET status = ?, winnerSubmissionId = ? WHERE id = ?').run(
+    STATUS.WINNER_DECLARED, winnerId, b.id,
+  )
+  if (winnerId) {
+    const sub = getSubmissionRow(winnerId)
+    if (sub) notifyWinner(b, sub)
+  }
+}
+
+// Derive the phase a scheduled battle should be in at `now`. Caps at the voting
+// phase; once voteEnd passes, autoAdvance crowns the winner from the crowd vote
+// (see autoDeclareWinner) rather than this function.
 function scheduledStatus(now, signupStart, signupEnd, submitEnd) {
   if (now >= submitEnd) return STATUS.VOTING_PHASE
   if (now >= signupEnd) return STATUS.SUBMISSION_PHASE
@@ -160,15 +244,19 @@ function pushBattlePhase(battle, target) {
 function autoAdvance() {
   const now = Date.now()
   const rows = db
-    .prepare('SELECT id, status, signupStart, signupEnd, submitEnd, title FROM battles WHERE scheduled = 1')
+    .prepare('SELECT id, status, signupStart, signupEnd, submitEnd, voteEnd, tieBreak, title FROM battles WHERE scheduled = 1')
     .all()
   for (const b of rows) {
     if (b.status === STATUS.WINNER_DECLARED) continue
     const target = scheduledStatus(now, b.signupStart, b.signupEnd, b.submitEnd)
+    let status = b.status
     if (STATUS_INDEX[target] > STATUS_INDEX[b.status]) {
       db.prepare('UPDATE battles SET status = ? WHERE id = ?').run(target, b.id)
       pushBattlePhase(b, target)
+      status = target
     }
+    // voting has closed: the crowd's vote crowns the winner automatically.
+    if (status === STATUS.VOTING_PHASE && now >= b.voteEnd) autoDeclareWinner(b)
   }
 }
 
@@ -824,6 +912,7 @@ app.patch('/api/battles/:id', requireAuth, (req, res) => {
   if (d.maxProducers !== undefined) set('maxProducers', Math.max(2, Math.min(64, Number(d.maxProducers) || 8)))
   if (d.sampleRevealed !== undefined) set('sampleRevealed', d.sampleRevealed ? 1 : 0)
   if (d.blind !== undefined) set('blind', d.blind ? 1 : 0)
+  if (d.tieBreak !== undefined) set('tieBreak', d.tieBreak === 'curator' ? 'curator' : 'earliest')
   if (d.scheduled !== undefined) {
     const sched = d.scheduled ? 1 : 0
     set('scheduled', sched)
@@ -888,8 +977,8 @@ app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req
   const status = scheduled ? scheduledStatus(t, signupStart, signupEnd, submitEnd) : STATUS.ANNOUNCED
   const id = `b_${randomUUID().slice(0, 8)}`
   db.prepare(
-    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled,genre)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled,genre,tieBreak)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id, kind,
     String(d.title || '').trim() || 'UNTITLED BATTLE', d.sampleUrl || '',
@@ -897,6 +986,7 @@ app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req
     10, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
     Number(d.maxProducers) || 8, signupStart, signupEnd, submitStart, submitEnd, voteStart, voteEnd,
     status, '[]', '[]', null, d.blind ? 1 : 0, scheduled, String(d.genre || '').trim(),
+    d.tieBreak === 'curator' ? 'curator' : 'earliest',
   )
   // tell the host's followers a new battle just dropped
   const followers = db.prepare('SELECT followerId FROM follows WHERE followeeId=?').all(req.user.id)
@@ -922,36 +1012,40 @@ app.patch('/api/battles/:id/status', requireAuth, (req, res) => {
   return ok(res, { battle: rowToBattle(getBattleRow(b.id)) })
 })
 
+// Close voting + crown the winner. The CROWD decides: the winner is always the
+// highest-voted (non-disqualified) entry — the curator can't override it. The
+// only manual choice is breaking a genuine top-vote tie on a 'curator' battle.
 app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
   const b = getBattleRow(req.params.id)
   if (!b) return fail(res, 404, 'Battle not found.')
   if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
-  const sub = getSubmissionRow(req.body?.submissionId)
-  if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not in this battle.')
-  if (sub.disqualified) return fail(res, 400, 'A disqualified entry can’t win.')
+  if (b.status !== STATUS.VOTING_PHASE && b.status !== STATUS.WINNER_DECLARED)
+    return fail(res, 400, 'Voting hasn’t opened yet.')
+  const resv = resolveWinner(b.id, b.tieBreak)
+  const picked = req.body?.submissionId
+  let winnerId = null
+  if (picked) {
+    // a curator may ONLY pick when breaking a real top-vote tie on their battle.
+    if (resv.state !== 'tie' || !resv.tied.includes(picked))
+      return fail(res, 400, 'The crowd decides the winner — you can only break a true tie.')
+    winnerId = picked
+  } else if (resv.state === 'winner') {
+    winnerId = resv.winnerId
+  } else if (resv.state === 'tie') {
+    // a top-vote tie on a 'curator' battle: hand the choice back to the curator.
+    const tied = resv.tied.map((sid) => {
+      const s = getSubmissionRow(sid)
+      return { submissionId: sid, alias: s ? getUserRow(s.producerId)?.alias || null : null }
+    })
+    return ok(res, { tie: true, tied })
+  } else {
+    return fail(res, 400, 'No votes yet — there’s no winner to declare.')
+  }
+  const sub = getSubmissionRow(winnerId)
   db.prepare('UPDATE battles SET status = ?, winnerSubmissionId = ? WHERE id = ?').run(
     STATUS.WINNER_DECLARED, sub.id, b.id,
   )
-  // notify the winner, then the other entrants and everyone who was in the room
-  const winnerAlias = getUserRow(sub.producerId)?.alias || 'a maker'
-  sendPush(sub.producerId, {
-    title: 'You won',
-    body: `Your beat won “${b.title}”`,
-    tag: `win-${b.id}`,
-    url: `/battles/${b.id}`,
-  }).catch(() => {})
-  const reached = new Set([sub.producerId])
-  const entrants = db.prepare('SELECT DISTINCT producerId FROM submissions WHERE battleId = ?').all(b.id).map((r) => r.producerId)
-  for (const uid of [...entrants, ...rowToBattle(getBattleRow(b.id)).attendees]) {
-    if (reached.has(uid)) continue
-    reached.add(uid)
-    sendPush(uid, {
-      title: 'Winner declared',
-      body: `@${winnerAlias} won “${b.title}”`,
-      tag: `win-${b.id}`,
-      url: `/battles/${b.id}`,
-    }).catch(() => {})
-  }
+  notifyWinner(b, sub)
   return ok(res, { battle: rowToBattle(getBattleRow(b.id)) })
 })
 
@@ -1085,9 +1179,8 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   // neutral so no battle can ever be called rigged. They can still comment.
   if (isHouse(req.user))
     return fail(res, 403, 'House accounts don’t vote — it keeps every battle fair.')
-  // anyone may vote on a battle — except the producers/artists competing in it
-  if (b.signups.includes(req.user.id))
-    return fail(res, 403, 'You’re competing in this battle, so you can’t vote here.')
+  // Producers + artists competing in the battle MAY vote too — just never for
+  // their own beat (enforced below). Only the house stays out entirely.
   // a voter may change their pick while voting is open — keep one row per
   // (battle, user) and just move it to the new submission.
   const existing = db
@@ -1218,10 +1311,14 @@ app.post('/api/users/:id/follow', requireAuth, (req, res) => {
   const target = getUserRow(req.params.id)
   if (!target) return fail(res, 404, 'User not found.')
   if (target.id === req.user.id) return fail(res, 400, 'You cannot follow yourself.')
+  // The @SMPL house account stays neutral: it follows nobody, and nobody can
+  // unfollow it — it's the room's home base, a permanent follow for everyone.
+  if (req.user.alias === 'SMPL') return fail(res, 403, 'The SMPL account doesn’t follow individual members.')
   const has = db
     .prepare('SELECT 1 FROM follows WHERE followerId = ? AND followeeId = ?')
     .get(req.user.id, target.id)
   if (has) {
+    if (target.alias === 'SMPL') return ok(res, { following: true }) // can't unfollow @SMPL
     db.prepare('DELETE FROM follows WHERE followerId = ? AND followeeId = ?').run(req.user.id, target.id)
     return ok(res, { following: false })
   }

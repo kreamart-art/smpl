@@ -154,6 +154,7 @@ export function rowToBattle(r) {
     sampleRevealed: !!r.sampleRevealed,
     blind: !!r.blind,
     scheduled: !!r.scheduled,
+    tieBreak: r.tieBreak === 'curator' ? 'curator' : 'earliest',
     attendees: P(r.attendees),
     signups: P(r.signups),
   }
@@ -326,5 +327,21 @@ export function migrate() {
         /* unique collision: keep the original handle rather than crash */
       }
     }
+  }
+  // 2026-06-20: per-battle tie-break for the AUTOMATIC winner (highest votes).
+  // 'earliest' = on a top-vote tie the earliest submission wins (no human);
+  // 'curator' = the curator breaks a top-vote tie. Existing battles default to
+  // 'earliest' so the crowd's vote always resolves on its own.
+  addColumn('battles', 'tieBreak', 'TEXT')
+  db.exec("UPDATE battles SET tieBreak = 'earliest' WHERE tieBreak IS NULL OR tieBreak = ''")
+  // 2026-06-21: @SMPL is a permanent follow for everyone (the room's home base)
+  // and it follows nobody itself. Backfill all members onto it, and strip any
+  // follows the SMPL account had.
+  const smpl = db.prepare("SELECT id FROM users WHERE alias = 'SMPL'").get()
+  if (smpl) {
+    db.prepare(
+      'INSERT OR IGNORE INTO follows (followerId, followeeId, createdAt) SELECT id, ?, ? FROM users WHERE id != ?',
+    ).run(smpl.id, Date.now(), smpl.id)
+    db.prepare('DELETE FROM follows WHERE followerId = ?').run(smpl.id)
   }
 }
