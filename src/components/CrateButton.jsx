@@ -25,7 +25,7 @@ export default function CrateButton({ submissionId, className = '' }) {
       disabled={busy}
       aria-pressed={on}
       title={on ? t('crate.remove') : t('crate.add')}
-      className={`flex h-9 items-center gap-1.5 border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
+      className={`flex h-11 touch-manipulation items-center gap-1.5 border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
         on ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
       } ${className}`}
     >

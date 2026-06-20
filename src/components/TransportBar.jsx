@@ -21,7 +21,7 @@ export default function TransportBar() {
         <button
           onClick={() => toggle(track)}
           aria-label={playing ? 'pause' : 'play'}
-          className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink hover:bg-ink hover:text-bg"
+          className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center border border-line-bright text-ink hover:bg-ink hover:text-bg"
         >
           <Glyph playing={playing} />
         </button>
@@ -44,7 +44,7 @@ export default function TransportBar() {
         <button
           onClick={stop}
           aria-label="stop"
-          className="flex h-10 w-10 shrink-0 items-center justify-center border border-line text-muted hover:border-ink hover:text-ink"
+          className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center border border-line text-muted hover:border-ink hover:text-ink"
         >
           <span className="block h-2.5 w-2.5 bg-current" />
         </button>

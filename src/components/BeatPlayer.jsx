@@ -29,8 +29,8 @@ export default function BeatPlayer({
   return (
     <div
       className={`border ${
-        isWinner ? 'border-ink' : 'border-line'
-      } ${isWinner ? 'bg-ink text-bg' : 'bg-panel text-ink'}`}
+        isWinner ? 'border-accent' : 'border-line'
+      } ${isWinner ? 'bg-accent text-accent-ink' : 'bg-panel text-ink'}`}
     >
       <div
         className={`flex items-center justify-between px-3 py-2 border-b ${
@@ -76,9 +76,9 @@ export default function BeatPlayer({
         <button
           onClick={() => toggle(meta)}
           aria-label={isPlaying ? 'pause' : 'play'}
-          className={`flex w-12 shrink-0 items-center justify-center border-r transition-colors ${
+          className={`flex min-h-[44px] w-12 shrink-0 touch-manipulation items-center justify-center border-r transition-colors ${
             isWinner
-              ? 'border-line-bright hover:bg-ink hover:text-bg'
+              ? 'border-black/25 hover:bg-accent-ink hover:text-accent'
               : 'border-line hover:bg-ink hover:text-bg'
           }`}
         >
@@ -91,8 +91,8 @@ export default function BeatPlayer({
             onSeek={(f) => playAt(meta, f)}
             height={34}
             bars={48}
-            playedClass={isWinner ? 'bg-bg' : 'bg-ink'}
-            baseClass={isWinner ? 'bg-black/40' : 'bg-line-bright'}
+            playedClass={isWinner ? 'bg-accent-ink' : 'bg-ink'}
+            baseClass={isWinner ? 'bg-black/25' : 'bg-line-bright'}
           />
         </div>
         {rightSlot ? (

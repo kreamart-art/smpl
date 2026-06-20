@@ -44,14 +44,14 @@ function PhasePipeline({ status }) {
         return (
           <div
             key={s}
-            className={`bg-bg px-2 py-2 text-center ${active ? 'bg-ink text-bg' : ''}`}
+            className={`px-2 py-2 text-center ${active ? 'bg-accent text-accent-ink' : 'bg-bg'}`}
           >
-            <div className={`font-mono text-[9px] tnum ${done ? 'text-ink' : active ? 'text-bg' : 'text-muted'}`}>
+            <div className={`font-mono text-[9px] tnum ${done ? 'text-ink' : active ? 'text-accent-ink' : 'text-muted'}`}>
               {String(idx).padStart(2, '0')}
             </div>
             <div
               className={`mt-1 font-mono text-[8px] uppercase leading-tight tracking-[0.1em] ${
-                active ? 'text-bg' : done ? 'text-ink' : 'text-muted'
+                active ? 'text-accent-ink' : done ? 'text-ink' : 'text-muted'
               }`}
             >
               {t(`status.${s}`).split(' ')[0]}
@@ -272,7 +272,7 @@ export default function BattleDetail() {
     ) : null
 
   return (
-    <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-[880px] px-4 py-8 sm:px-6">
       <BattleTour />
       <Link to="/battles" className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
         {t('battleDetail.allBattles')}
@@ -298,13 +298,16 @@ export default function BattleDetail() {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('battleDetail.hereNow')}</div>
-              <div className="font-mono text-lg tnum leading-none">{battle.attendees.length}</div>
+              <div className="flex items-center justify-end gap-1.5 font-mono text-lg tnum leading-none">
+                <span className="block h-1.5 w-1.5 bg-accent pulse-dot" />
+                {battle.attendees.length}
+              </div>
             </div>
             <button
               data-tour="battle-attend"
               onClick={onAttend}
-              className={`border px-4 h-10 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                attending ? 'bg-ink text-bg border-ink' : 'border-line-bright text-ink hover:border-ink'
+              className={`touch-manipulation border px-4 h-11 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
+                attending ? 'bg-accent text-accent-ink border-accent' : 'border-line-bright text-ink hover:border-ink'
               }`}
             >
               {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
@@ -432,7 +435,7 @@ export default function BattleDetail() {
                 {t('battleDetail.signup.registered')}
               </div>
             ) : (
-              <Btn onClick={openRules} variant="solid" size="lg">
+              <Btn onClick={openRules} variant="accent" size="lg">
                 {t(`battleDetail.signup.claim.${battle.kind}`)}
               </Btn>
             )}
@@ -511,7 +514,7 @@ export default function BattleDetail() {
                     ) : null}
                   </div>
                 </div>
-                <Btn type="submit" variant="solid" size="lg" disabled={!form.audioUrl}>
+                <Btn type="submit" variant="accent" size="lg" disabled={!form.audioUrl}>
                   {mySubmission ? t('battleDetail.submission.update') : t(`battleDetail.submission.submit.${battle.kind}`)}
                 </Btn>
                 {/* confirmation right where the button is, so it's never off-screen */}
@@ -534,6 +537,10 @@ export default function BattleDetail() {
             {!currentUser ? (
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.loginToVote')} <Link to="/login" className="underline">{t('battleDetail.voting.loginLink')}</Link>
+              </div>
+            ) : isHouse ? (
+              <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
+                {t('battleDetail.voting.house')}
               </div>
             ) : isRegistered ? (
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
@@ -559,8 +566,9 @@ export default function BattleDetail() {
                     </span>
                   )
                 } else if (votedThis) {
+                  // your pick — the single accent on the voting screen
                   btn = (
-                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink">
+                    <span className="bg-accent px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-accent-ink">
                       {t('common.voted')}
                     </span>
                   )
@@ -568,6 +576,13 @@ export default function BattleDetail() {
                   btn = (
                     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
                       {t('battleDetail.voting.yourBeat')}
+                    </span>
+                  )
+                } else if (isHouse) {
+                  // the house stays neutral — no vote button, just a quiet label
+                  btn = (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                      {t('battleDetail.voting.houseTag')}
                     </span>
                   )
                 } else if (isRegistered) {
@@ -578,10 +593,12 @@ export default function BattleDetail() {
                     </span>
                   )
                 } else {
+                  // neutral CTA per beat (keeps the accent to the single picked
+                  // one); 44px tap target.
                   btn = (
                     <button
                       onClick={() => onVote(s.id)}
-                      className="border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                      className="touch-manipulation flex min-h-[44px] items-center border border-line-bright px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
                     >
                       {t(myVote ? 'common.switchVote' : 'common.vote')}
                     </button>

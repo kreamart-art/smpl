@@ -14,14 +14,17 @@ export function Btn({
   ...rest
 }) {
   const base =
-    'inline-flex items-center justify-center gap-2 font-mono uppercase tracking-[0.18em] border transition-all duration-300 select-none whitespace-nowrap'
+    'inline-flex touch-manipulation items-center justify-center gap-2 font-mono uppercase tracking-[0.18em] border transition-all duration-300 select-none whitespace-nowrap'
   const sizes = {
-    sm: 'text-[10px] px-3 h-8',
-    md: 'text-[11px] px-4 h-10',
+    sm: 'text-[10px] px-3 h-9',
+    md: 'text-[11px] px-4 h-11',
     lg: 'text-[12px] px-7 h-13',
   }
   const variants = {
     solid: 'bg-ink text-bg border-ink hover:bg-bright hover:border-bright',
+    // the one red accent — reserved for the primary battle action (vote / I'm in
+    // / claim / submit). dark-on-accent text both themes (AA).
+    accent: 'bg-accent text-accent-ink border-accent hover:bg-accent-hover hover:border-accent-hover',
     ghost: 'bg-transparent text-ink border-line-bright hover:border-ink hover:bg-panel',
     dim: 'bg-transparent text-muted border-line hover:text-ink hover:border-line-bright',
   }
@@ -101,10 +104,12 @@ export function Field({ label, hint, children }) {
   )
 }
 
+// 16px (text-base) is deliberate: iOS Safari auto-zooms on focus for inputs
+// under 16px. Keep it at/above 16 everywhere a user types.
 export const inputCls =
-  'w-full bg-bg border border-line text-ink font-mono text-sm px-3 h-11 outline-none focus:border-ink placeholder:text-muted'
+  'w-full bg-bg border border-line text-ink font-mono text-base px-3 h-11 outline-none focus:border-ink placeholder:text-muted'
 export const textareaCls =
-  'w-full bg-bg border border-line text-ink font-sans text-sm px-3 py-3 outline-none focus:border-ink placeholder:text-muted resize-none'
+  'w-full bg-bg border border-line text-ink font-sans text-base px-3 py-3 outline-none focus:border-ink placeholder:text-muted resize-none'
 
 export function SectionTitle({ index, title, right }) {
   return (

@@ -6,12 +6,19 @@
   --color-panel-2: #121110;
   --color-line: #322e28;
   --color-line-bright: #524c43;
-  --color-faint: #6f685c;
-  --color-muted: #989183;
+  --color-faint: #83837f; /* AA: ~5.5:1 on black (was #6f685c, 3.8:1 — failed) */
+  --color-muted: #8c8c88; /* AA: ~6.2:1 on black — secondary text */
   --color-ink-dim: #b7b1a6;
   --color-ink: #f0eee9;
   --color-bright: #ffffff;
-  --color-verified: #e11d2a; /* the one accent — the verified seal */
+  --color-verified: #e11d2a; /* the verified seal (distinct from the UI accent) */
+
+  /* single UI accent — deep red, ties into the live-red. Used ONLY for: the
+     active battle phase, the primary action (vote / I'm in), live signals and
+     the winner state. Never for body text, borders or generic hovers. */
+  --color-accent: #e5341f; /* ~4.84:1 as text on black (AA) */
+  --color-accent-ink: #0a0a0a; /* dark text on an accent fill (~4.57:1, AA) */
+  --color-accent-hover: #c72d1a;
 
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
@@ -22,6 +29,23 @@
 *::before,
 *::after {
   border-radius: 0 !important;
+}
+
+/* a11y: stop iOS from auto-resizing text, and remove the double-tap-zoom +
+   300ms tap delay on interactive elements. Pinch-zoom itself stays allowed on
+   the website (the app keeps user-scalable=no — see the viewport in index.html). */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+button,
+a,
+label,
+summary,
+[role='button'],
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 html,
@@ -263,11 +287,13 @@ body {
   --color-panel-2: #eeebe3;
   --color-line: #d6d0c5;
   --color-line-bright: #ada495;
-  --color-faint: #8c867a;
-  --color-muted: #6b655b;
+  --color-faint: #66645c; /* AA: ~4.7:1 on cream (was #8c867a, 2.9:1 — failed) */
+  --color-muted: #5f5e5a; /* AA: ~5.2:1 on cream — secondary text */
   --color-ink-dim: #46423a;
   --color-ink: #15120d;
   --color-bright: #000000;
+  /* accent stays the same red; on cream it is only ever a filled block with
+     accent-ink text, never red text on cream. */
 }
 /* the cinematic atmosphere is built for black — tone it down on paper */
 [data-theme='light'] .vignette {

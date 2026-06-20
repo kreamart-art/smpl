@@ -2,10 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
+    <!-- Default = website: pinch-zoom allowed (WCAG AA). The installed app
+         re-adds user-scalable=no below (we kill the zoom annoyances another way:
+         16px inputs + touch-action:manipulation). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      // In the installed app only, lock zoom (it's a native-feeling shell).
+      try {
+        var sp = new URLSearchParams(location.search)
+        var forced = sp.get('app') || localStorage.getItem('smpl_app')
+        var app =
+          forced === '1' ||
+          (forced !== '0' &&
+            ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+              window.navigator.standalone === true))
+        if (app) {
+          document
+            .querySelector('meta[name=viewport]')
+            .setAttribute(
+              'content',
+              'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
+            )
+        }
+      } catch (e) {}
+    </script>
     <meta name="description" content="Beat &amp; verse battles built on one shared sample. A curator drops the sample, producers and rappers flip it, and the crowd votes the winner. Compete and build your reputation." />
     <title>SMPL · Beat &amp; Verse Battles · Same sample. Different soul.</title>
     <link rel="canonical" href="https://usesmpl.com/" />

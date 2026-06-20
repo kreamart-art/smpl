@@ -1,8 +1,8 @@
 import { STATUS } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
 
-// Monochrome status chip. Differentiation is by fill / border / a live dot —
-// never by colour, to keep the identity strictly black & off-white.
+// Status chip. Mostly mono (fill / border) — the one colour is the accent live
+// dot for the voting (LIVE) phase, a deliberate live signal.
 export default function StatusBadge({ status, size = 'md' }) {
   const t = useT()
   const label = t(`status.${status}`)
@@ -23,7 +23,7 @@ export default function StatusBadge({ status, size = 'md' }) {
 
   return (
     <span className={`${base} ${sizes[size]} ${skin}`}>
-      {live ? <span className="block h-1.5 w-1.5 bg-ink pulse-dot" /> : null}
+      {live ? <span className="block h-1.5 w-1.5 bg-accent pulse-dot" /> : null}
       {inverted ? <span className="font-bold">★</span> : null}
       {label}
     </span>

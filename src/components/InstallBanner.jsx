@@ -1,7 +1,27 @@
 import { useState } from 'react'
 import { usePWA } from '../context/PWAContext.jsx'
+import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
+import { pushSupported, pushPermission } from '../lib/push.js'
 import { IconDownload, IconShare } from './icons.jsx'
+
+// Is a top-of-page banner (verify email / enable push) currently showing? The
+// install bar yields to it so only one banner is on screen at a time.
+function topBannerShowing({ currentUser, mailConfigured, pushConfigured }) {
+  if (!currentUser) return false
+  try {
+    const verify =
+      mailConfigured && !currentUser.emailVerified && sessionStorage.getItem('smpl_verify_dismissed') !== '1'
+    const push =
+      pushConfigured &&
+      pushSupported() &&
+      pushPermission() === 'default' &&
+      sessionStorage.getItem('smpl_push_dismissed') !== '1'
+    return !!(verify || push)
+  } catch {
+    return false
+  }
+}
 
 function isMobileBrowser() {
   if (typeof window === 'undefined') return false
@@ -14,6 +34,7 @@ function isMobileBrowser() {
 // Shown only on the website (not standalone): "Get the SMPL app".
 export default function InstallBanner() {
   const { standalone, canInstall, promptInstall, isIOS } = usePWA()
+  const { currentUser, mailConfigured, pushConfigured } = useApp()
   const t = useT()
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -27,6 +48,8 @@ export default function InstallBanner() {
 
   // Worth showing where install is possible (native prompt) or on phones.
   if (standalone || dismissed || !(canInstall || mobile)) return null
+  // Only one banner at a time: yield to a top-of-page banner if one is up.
+  if (topBannerShowing({ currentUser, mailConfigured, pushConfigured })) return null
 
   const close = () => {
     setDismissed(true)

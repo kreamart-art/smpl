@@ -25,6 +25,10 @@ export const landing = {
     'landing.hero.browse': 'Browse battles ▸',
     'landing.hero.standsAlone': 'SMPL · the beat stands alone',
     'landing.hero.scroll': 'Scroll ▾',
+    'landing.action.kicker': 'where the room is right now',
+    'landing.cta.voteNow': 'Vote now ▸',
+    'landing.cta.submit': 'Submit your beat ▸',
+    'landing.cta.view': 'View battle ▸',
 
     // section 01 — active
     'landing.active.kicker': 'Live now',
@@ -72,6 +76,10 @@ export const landing = {
     'landing.hero.browse': 'Bekijk battles ▸',
     'landing.hero.standsAlone': 'SMPL · de beat staat op zichzelf',
     'landing.hero.scroll': 'Scroll ▾',
+    'landing.action.kicker': 'waar de room nu staat',
+    'landing.cta.voteNow': 'Stem nu ▸',
+    'landing.cta.submit': 'Stuur je beat in ▸',
+    'landing.cta.view': 'Bekijk battle ▸',
 
     // section 01 — active
     'landing.active.kicker': 'Nu live',

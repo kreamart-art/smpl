@@ -43,7 +43,7 @@ export default function AudioPlayer({ meta, sealed = false }) {
           onClick={() => !sealed && toggle(meta)}
           disabled={sealed}
           aria-label={isPlaying ? 'pause' : 'play'}
-          className={`flex w-16 shrink-0 items-center justify-center border-r border-line text-ink transition-colors ${
+          className={`flex min-h-[44px] w-16 shrink-0 touch-manipulation items-center justify-center border-r border-line text-ink transition-colors ${
             sealed ? 'opacity-30' : 'hover:bg-ink hover:text-bg'
           }`}
         >
