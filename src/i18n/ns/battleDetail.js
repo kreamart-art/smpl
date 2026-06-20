@@ -97,6 +97,7 @@ export const battleDetail = {
     'battleDetail.voting.cantVote': 'Competing',
     'battleDetail.voting.yourBeat': 'Your beat',
     'battleDetail.voting.empty': 'No beats were submitted.',
+    'battleDetail.waveform.make': 'Waveform video',
 
     // WINNER_DECLARED panel
     'battleDetail.winner.title': 'Winner declared',
@@ -200,6 +201,7 @@ export const battleDetail = {
     'battleDetail.voting.cantVote': 'deelnemer',
     'battleDetail.voting.yourBeat': 'jouw beat',
     'battleDetail.voting.empty': 'er zijn geen beats ingezonden.',
+    'battleDetail.waveform.make': 'Waveform-video',
 
     // WINNER_DECLARED panel
     'battleDetail.winner.title': 'winnaar bekend',

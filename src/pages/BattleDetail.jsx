@@ -100,6 +100,7 @@ export default function BattleDetail() {
     voteCount,
     mailConfigured,
     isCurator,
+    isHouse,
     disqualifySubmission,
   } = app
 
@@ -233,6 +234,34 @@ export default function BattleDetail() {
         : { ok: false, text: r.error },
     )
   }
+
+  // The official @SMPL / house account can spin up a promo waveform for any
+  // entry; a producer can still make one of their own. Names stay hidden on a
+  // live blind battle so the format isn't spoiled.
+  const canMakeWave = (s) => !!s.audioUrl && (s.mine || isHouse)
+  const waveProducer = (s) => {
+    if (s.mine) return currentUser?.alias || ''
+    if (battle.blind && battle.status !== STATUS.WINNER_DECLARED) return ''
+    return getUser(s.producerId)?.alias || ''
+  }
+  const waveRow = (s, tag) =>
+    canMakeWave(s) ? (
+      <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
+        <button
+          onClick={() =>
+            setWaveVideo({
+              audioUrl: mediaUrl(s.audioUrl),
+              producer: waveProducer(s),
+              tag,
+              battleId: battle.id,
+            })
+          }
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+        >
+          {t('battleDetail.waveform.make')}
+        </button>
+      </div>
+    ) : null
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6">
@@ -557,23 +586,7 @@ export default function BattleDetail() {
                         </button>
                       </div>
                     ) : null}
-                    {s.mine && s.audioUrl ? (
-                      <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
-                        <button
-                          onClick={() =>
-                            setWaveVideo({
-                              audioUrl: mediaUrl(s.audioUrl),
-                              producer: currentUser?.alias || '',
-                              tag: `${battle.title} · ${c.drop.toUpperCase()} ${index}/${shuffled.length}`,
-                              battleId: battle.id,
-                            })
-                          }
-                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
-                        >
-                          Waveform video
-                        </button>
-                      </div>
-                    ) : null}
+                    {waveRow(s, `${battle.title} · ${c.drop.toUpperCase()} ${index}/${shuffled.length}`)}
                     {!battle.blind ? <CommentThread submissionId={s.id} producerId={s.producerId} /> : null}
                   </div>
                 )
@@ -611,6 +624,7 @@ export default function BattleDetail() {
                     <div className="flex flex-wrap items-center gap-2 border border-t-0 border-line bg-panel px-3 py-2">
                       <CrateButton submissionId={s.id} />
                     </div>
+                    {waveRow(s, `${battle.title} · #${rank} · ${getUser(s.producerId)?.alias || ''}`)}
                     <CommentThread submissionId={s.id} producerId={s.producerId} />
                   </div>
                 )
