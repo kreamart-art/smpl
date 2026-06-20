@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import { IconBell } from './icons.jsx'
-import { pushSupported, pushPermission, enablePush } from '../lib/push.js'
+import { pushSupported, pushPermission, isPushSubscribed, enablePush } from '../lib/push.js'
 
-// One-time nudge to enable browser notifications. Only appears once push is
-// configured (VAPID set), the user is signed in, the browser supports it, and
-// permission hasn't been decided yet. Dismiss lasts the session.
+// Nudge to enable browser notifications. Shows whenever push is configured, the
+// user is signed in, the browser supports it, permission isn't denied, and there
+// is NO active subscription yet — so it reappears when a subscription was lost
+// (e.g. the move to usesmpl.com invalidated the old origin-bound one). If
+// permission was already granted we re-subscribe silently and never nag.
+// Mounted in both Layout branches, so it works in the app AND on the website.
 export default function PushPrompt() {
   const { currentUser, pushConfigured } = useApp()
   const t = useT()
   const [perm, setPerm] = useState('default')
+  const [subscribed, setSubscribed] = useState(true) // assume fine until checked (no flash)
   const [busy, setBusy] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -21,17 +25,37 @@ export default function PushPrompt() {
   })
 
   useEffect(() => {
-    setPerm(pushPermission())
-  }, [])
+    let alive = true
+    ;(async () => {
+      if (!pushSupported()) {
+        if (alive) setSubscribed(true)
+        return
+      }
+      const p = pushPermission()
+      if (alive) setPerm(p)
+      let sub = await isPushSubscribed()
+      // self-heal: permission already granted but the subscription is gone
+      // (domain move / SW reset) → quietly re-subscribe, no user gesture needed.
+      if (!sub && p === 'granted' && pushConfigured) {
+        const r = await enablePush()
+        sub = !!r.ok
+      }
+      if (alive) setSubscribed(sub)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [pushConfigured])
 
   if (!pushConfigured || !currentUser || dismissed) return null
-  if (!pushSupported() || perm !== 'default') return null
+  if (!pushSupported() || perm === 'denied' || subscribed) return null
 
   const enable = async () => {
     setBusy(true)
-    await enablePush()
+    const r = await enablePush()
     setBusy(false)
-    setPerm(pushPermission()) // hides the bar once the native prompt is answered
+    setPerm(pushPermission())
+    if (r.ok) setSubscribed(true)
   }
   const dismiss = () => {
     try {

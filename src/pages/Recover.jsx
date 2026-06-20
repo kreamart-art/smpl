@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { usePWA } from '../context/PWAContext.jsx'
 import { useI18n, useT } from '../i18n/index.jsx'
 import Waveform from '../components/Waveform.jsx'
+import Portal from '../components/Portal.jsx'
 import { Btn, Field, inputCls } from '../components/ui.jsx'
 
 // Shared two-column auth shell, matching the Login page.
@@ -174,21 +176,36 @@ export function ResetPassword() {
 // /verify?token=… — confirm an email address.
 export function VerifyEmail() {
   const { verifyEmailToken } = useApp()
+  const { standalone } = usePWA()
   const t = useT()
   const [params] = useSearchParams()
   const token = params.get('token') || ''
   const [state, setState] = useState(token ? 'checking' : 'notoken')
+  const [appPrompt, setAppPrompt] = useState(false)
 
   useEffect(() => {
     if (!token) return
     let alive = true
     verifyEmailToken(token).then((r) => {
-      if (alive) setState(r.ok ? 'done' : 'failed')
+      if (!alive) return
+      setState(r.ok ? 'done' : 'failed')
+      // The verify link opens in the browser. If they're not already in the
+      // installed app and they're on a phone, nudge them back to it.
+      if (r.ok && !standalone && isPhone()) setAppPrompt(true)
     })
     return () => {
       alive = false
     }
-  }, [token, verifyEmailToken])
+  }, [token, verifyEmailToken, standalone])
+
+  const openApp = () => {
+    try {
+      localStorage.setItem('smpl_app', '1')
+    } catch {
+      /* ignore */
+    }
+    window.location.href = '/?app=1'
+  }
 
   const body = {
     checking: t('auth.verify.checking'),
@@ -212,6 +229,44 @@ export function VerifyEmail() {
           </Btn>
         </div>
       )}
+
+      {appPrompt ? (
+        <Portal>
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
+            onClick={() => setAppPrompt(false)}
+          >
+            <div className="w-full max-w-sm border border-line-bright bg-panel p-6 text-left" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3">
+                <img src="/icon-192.png" alt="" className="h-10 w-10 border border-line-bright" aria-hidden />
+                <div className="font-sans text-lg font-bold uppercase tracking-tight">{t('auth.verify.appTitle')}</div>
+              </div>
+              <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-dim">{t('auth.verify.appBody')}</p>
+              <button
+                onClick={openApp}
+                className="mt-5 h-11 w-full border border-ink bg-ink font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+              >
+                {t('auth.verify.openApp')}
+              </button>
+              <button
+                onClick={() => setAppPrompt(false)}
+                className="mt-2 h-10 w-full border border-line font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
+              >
+                {t('auth.verify.continueBrowser')}
+              </button>
+            </div>
+          </div>
+        </Portal>
+      ) : null}
     </div>
+  )
+}
+
+// A phone-ish browser, where "open the home-screen app" actually makes sense.
+function isPhone() {
+  if (typeof window === 'undefined') return false
+  return (
+    window.matchMedia?.('(max-width: 820px)')?.matches ||
+    /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || '')
   )
 }
