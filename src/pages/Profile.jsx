@@ -538,7 +538,14 @@ export default function Profile() {
           active={activeTab}
           onSelect={setTab}
           tabs={[
-            user.role !== 'listener' && { key: 'clips', label: t('profile.tab.clips'), count: clips.length, icon: IconBattles },
+            // curators (incl. the @SMPL mother account) only curate, never make
+            // beats — so no clips tab unless they somehow have some.
+            ((!isCuratorProfile && user.role !== 'listener') || clips.length > 0) && {
+              key: 'clips',
+              label: t('profile.tab.clips'),
+              count: clips.length,
+              icon: IconBattles,
+            },
             { key: 'crate', label: t('crate.tab'), count: crate.length, icon: IconCrate },
             { key: 'stats', label: t('profile.tab.stats'), icon: IconStats },
             user.role !== 'listener' && {
