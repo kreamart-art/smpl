@@ -17,6 +17,7 @@ export default function BeatPlayer({
   votes,
   showVotes = false,
   isWinner = false,
+  seal,
   rank,
   rightSlot,
 }) {
@@ -59,6 +60,11 @@ export default function BeatPlayer({
             )}
           </span>
           {isWinner ? <span className="font-mono text-[10px] font-bold">★ WINNER</span> : null}
+          {isWinner && seal ? (
+            <span className="shrink-0 border border-black/30 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.18em]">
+              {seal}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center gap-3">
           {showVotes ? (

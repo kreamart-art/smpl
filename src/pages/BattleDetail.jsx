@@ -12,6 +12,7 @@ import CommentThread from '../components/CommentThread.jsx'
 import CrateButton from '../components/CrateButton.jsx'
 import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
+import WinnerStamp from '../components/WinnerStamp.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { BattleTour } from '../components/Tour.jsx'
@@ -107,6 +108,7 @@ export default function BattleDetail() {
 
   const battle = getBattle(id)
   const [msg, setMsg] = useState(null)
+  const [winReplay, setWinReplay] = useState(0)
   const [form, setForm] = useState({ audioUrl: '', soundcloudUrl: '', youtubeUrl: '' })
   const [beatName, setBeatName] = useState('')
   const [uploadingBeat, setUploadingBeat] = useState(false)
@@ -542,10 +544,6 @@ export default function BattleDetail() {
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.house')}
               </div>
-            ) : isRegistered ? (
-              <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
-                {t('battleDetail.voting.competing')}
-              </div>
             ) : myVote ? (
               <div className="mb-4 border border-ink px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.voteIn')}
@@ -585,14 +583,9 @@ export default function BattleDetail() {
                       {t('battleDetail.voting.houseTag')}
                     </span>
                   )
-                } else if (isRegistered) {
-                  // a competitor can't vote on rival beats — show why, no dead button
-                  btn = (
-                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-                      {t('battleDetail.voting.cantVote')}
-                    </span>
-                  )
                 } else {
+                  // everyone else votes, including competitors (just not their own
+                  // beat, which is handled by the isOwn branch above).
                   // neutral CTA per beat (keeps the accent to the single picked
                   // one); 44px tap target.
                   btn = (
@@ -651,9 +644,11 @@ export default function BattleDetail() {
               {rankedSubmissions(battle.id).map((s, i) => {
                 const rank = i + 1
                 const meta = beatMeta(s, rank, true)
-                const isWinner = battle.winnerSubmissionId
-                  ? s.id === battle.winnerSubmissionId
-                  : rank === 1
+                const declared = !!battle.winnerSubmissionId
+                const isWinner = declared ? s.id === battle.winnerSubmissionId : rank === 1
+                // The celebration only fires for a TRULY declared winner who is
+                // you — never the provisional rank-1 fallback used for styling.
+                const iWon = declared && isWinner && !!s.mine
                 return (
                   <div key={s.id}>
                     <BeatPlayer
@@ -667,7 +662,29 @@ export default function BattleDetail() {
                       votes={voteCount(s.id)}
                       showVotes
                       isWinner={isWinner}
+                      seal={declared && isWinner ? 'FIRST PRESSING' : undefined}
                     />
+                    {iWon ? (
+                      <>
+                        <WinnerStamp
+                          battle={battle}
+                          alias={getUser(s.producerId)?.alias}
+                          votes={voteCount(s.id)}
+                          replay={winReplay}
+                        />
+                        <div className="flex items-center justify-between border border-t-0 border-line bg-panel px-3 py-2">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                            {t('battleDetail.winner.youTook')}
+                          </span>
+                          <button
+                            onClick={() => setWinReplay((n) => n + 1)}
+                            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+                          >
+                            ↻ {t('battleDetail.winner.replay')}
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
                     <div className="flex flex-wrap items-center gap-2 border border-t-0 border-line bg-panel px-3 py-2">
                       <CrateButton submissionId={s.id} />
                     </div>

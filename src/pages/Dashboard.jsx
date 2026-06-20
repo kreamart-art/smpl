@@ -27,6 +27,7 @@ const empty = {
   description: '',
   sampleRevealed: true,
   blind: false,
+  tieBreak: 'earliest',
   scheduled: false,
   signupDays: 2,
   submissionDays: 5,
@@ -77,8 +78,40 @@ export default function Dashboard() {
   const [drafts, setDrafts] = useState([])
   const [draftId, setDraftId] = useState(null) // the draft currently being edited
   const [savingDraft, setSavingDraft] = useState(false)
+  const [tiePick, setTiePick] = useState({}) // battleId -> [{submissionId, alias}] when a curator must break a tie
+  const [closeMsg, setCloseMsg] = useState({}) // battleId -> error string when closing voting fails
   // Only SMPL curators organise battles (makers pay a curation fee — phase 2).
   const canHost = isCurator
+
+  // Close voting and let the crowd's vote crown the winner. The server resolves
+  // it automatically; it only hands back a tie when this is a 'curator' battle
+  // with an exact top-vote tie, in which case we surface a pick.
+  const closeAndDeclare = async (b) => {
+    const r = await declareWinner(b.id)
+    setCloseMsg((m) => {
+      const n = { ...m }
+      delete n[b.id]
+      return n
+    })
+    if (r?.tie) {
+      setTiePick((m) => ({ ...m, [b.id]: r.tied }))
+      return
+    }
+    setTiePick((m) => {
+      const n = { ...m }
+      delete n[b.id]
+      return n
+    })
+    if (r && r.ok === false) setCloseMsg((m) => ({ ...m, [b.id]: r.error || 'Could not close voting.' }))
+  }
+  const pickWinner = async (battleId, submissionId) => {
+    await declareWinner(battleId, submissionId)
+    setTiePick((m) => {
+      const n = { ...m }
+      delete n[battleId]
+      return n
+    })
+  }
 
   useEffect(() => {
     if (!isCurator) return
@@ -516,6 +549,29 @@ export default function Dashboard() {
                 {form.blind ? (
                   <p className="-mt-3 font-mono text-[10px] leading-relaxed text-muted">{t('dashboard.create.blindHint')}</p>
                 ) : null}
+
+                <div className="border-t border-line pt-4">
+                  <Label>{t('dashboard.create.tieBreak')}</Label>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {['earliest', 'curator'].map((tb) => (
+                      <button
+                        key={tb}
+                        type="button"
+                        onClick={() => setForm({ ...form, tieBreak: tb })}
+                        className={`border px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+                          form.tieBreak === tb
+                            ? 'border-ink bg-ink text-bg'
+                            : 'border-line text-muted hover:border-line-bright hover:text-ink'
+                        }`}
+                      >
+                        {t(`dashboard.create.tieBreak.${tb}`)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">
+                    {t(`dashboard.create.tieBreakHint.${form.tieBreak}`)}
+                  </p>
+                </div>
                   </>
                 ) : null}
 
@@ -783,19 +839,16 @@ export default function Dashboard() {
                                           ? t('dashboard.manage.unapprove')
                                           : t('dashboard.manage.approve')}
                                       </button>
-                                      {b.status === STATUS.VOTING_PHASE ||
-                                      b.status === STATUS.WINNER_DECLARED ? (
+                                      {isWinner ? (
+                                        <span className="h-7 border border-ink bg-ink px-2 font-mono text-[9px] uppercase leading-7 tracking-[0.12em] text-bg">
+                                          {t('dashboard.manage.winner')}
+                                        </span>
+                                      ) : tiePick[b.id]?.some((c) => c.submissionId === s.id) ? (
                                         <button
-                                          onClick={() => declareWinner(b.id, s.id)}
-                                          className={`h-7 border px-2 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors ${
-                                            isWinner
-                                              ? 'border-ink bg-ink text-bg'
-                                              : 'border-line-bright text-ink hover:bg-ink hover:text-bg'
-                                          }`}
+                                          onClick={() => pickWinner(b.id, s.id)}
+                                          className="h-7 border border-line-bright px-2 font-mono text-[9px] uppercase tracking-[0.12em] text-ink transition-colors hover:bg-ink hover:text-bg"
                                         >
-                                          {isWinner
-                                            ? t('dashboard.manage.winner')
-                                            : t('dashboard.manage.declareWinner')}
+                                          {t('dashboard.manage.pick')}
                                         </button>
                                       ) : null}
                                     </div>
@@ -806,6 +859,25 @@ export default function Dashboard() {
                               <p className="font-mono text-[11px] text-muted">{t('dashboard.manage.noSubmissions')}</p>
                             )}
                           </div>
+                          {b.status === STATUS.VOTING_PHASE ||
+                          (b.status === STATUS.WINNER_DECLARED && !b.winnerSubmissionId) ? (
+                            <div className="mt-4 border-t border-line pt-3">
+                              <button
+                                onClick={() => closeAndDeclare(b)}
+                                className="h-9 w-full border border-ink bg-ink px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+                              >
+                                {tiePick[b.id] ? t('dashboard.manage.tiePick') : t('dashboard.manage.closeVoting')}
+                              </button>
+                              <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted">
+                                {tiePick[b.id]
+                                  ? t('dashboard.manage.tieHint')
+                                  : t(`dashboard.manage.closeHint.${b.tieBreak || 'earliest'}`)}
+                              </p>
+                              {closeMsg[b.id] ? (
+                                <p className="mt-2 font-mono text-[10px] leading-relaxed text-verified">{closeMsg[b.id]}</p>
+                              ) : null}
+                            </div>
+                          ) : null}
                           <div className="mt-4 border-t border-line pt-3">
                             <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
                               {t('dashboard.manage.registeredLabel')}

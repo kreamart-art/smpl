@@ -265,6 +265,180 @@ body {
   animation: smpl-spin 0.7s linear infinite;
 }
 
+/* --- winner "first pressing" stamp (one-time celebration overlay) --- */
+.winstamp {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  cursor: pointer;
+}
+.winstamp-wash {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+  opacity: 0;
+  animation: smpl-stamp-wash 3.3s ease forwards;
+}
+.winstamp-grain {
+  position: absolute;
+  z-index: 2;
+}
+.winstamp-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 24px;
+  text-align: center;
+  opacity: 0;
+  animation: smpl-stamp-dock 3.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.winstamp-word {
+  position: relative;
+  animation: smpl-stamp-kick 0.16s ease 0.45s both;
+}
+.winstamp-main,
+.winstamp-ghost {
+  display: block;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  font-size: clamp(2.75rem, 16vw, 8rem);
+  opacity: 0;
+  transform: rotate(var(--rot));
+  animation: smpl-stamp-slam 0.24s cubic-bezier(0.2, 0.9, 0.1, 1.05) 0.45s both;
+}
+.winstamp-main {
+  position: relative;
+  color: var(--color-accent);
+}
+.winstamp-ghost {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  z-index: -1;
+  color: var(--color-accent-hover);
+}
+.winstamp-reg {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 2.6vw, 13px);
+  letter-spacing: 0.14em;
+  color: var(--color-ink);
+  clip-path: inset(0 100% 0 0);
+  animation: smpl-stamp-wipe 0.4s ease 0.95s both;
+}
+.winstamp-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 2.4vw, 11px);
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+}
+.winstamp-ticks span {
+  opacity: 0;
+  animation: smpl-stamp-tick 0.3s ease both;
+}
+.winstamp-ticks span:nth-child(1) {
+  animation-delay: 1.08s;
+}
+.winstamp-ticks span:nth-child(2) {
+  animation-delay: 1.15s;
+}
+.winstamp-ticks span:nth-child(3) {
+  animation-delay: 1.22s;
+}
+@keyframes smpl-stamp-wash {
+  0% {
+    opacity: 0;
+  }
+  9% {
+    opacity: 0.93;
+  }
+  80% {
+    opacity: 0.93;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes smpl-stamp-dock {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  64% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(22vh) scale(0.16);
+  }
+}
+@keyframes smpl-stamp-slam {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--rot)) scale(1.18);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(var(--rot)) scale(0.97);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(var(--rot)) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes smpl-stamp-kick {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes smpl-stamp-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes smpl-stamp-tick {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* light/paper: never red text on cream — the mark becomes a filled accent plate
+   with the word knocked out in accent-ink, like a rubber stamp. */
+[data-theme='light'] .winstamp-main {
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  padding: 0.04em 0.18em;
+}
+
 /* new-follower toast */
 @keyframes smpl-toast-in {
   from {

@@ -109,6 +109,8 @@ export const battleDetail = {
     // WINNER_DECLARED panel
     'battleDetail.winner.title': 'Winner declared',
     'battleDetail.winner.sub': 'Names revealed · the room has spoken',
+    'battleDetail.winner.youTook': 'You took this one',
+    'battleDetail.winner.replay': 'Replay',
 
     // not-found fallback
     'battleDetail.notFound': 'BATTLE NOT FOUND · {id}',
@@ -220,6 +222,8 @@ export const battleDetail = {
     // WINNER_DECLARED panel
     'battleDetail.winner.title': 'winnaar bekend',
     'battleDetail.winner.sub': 'namen onthuld · de room heeft gesproken',
+    'battleDetail.winner.youTook': 'deze is van jou',
+    'battleDetail.winner.replay': 'Opnieuw',
 
     // not-found fallback
     'battleDetail.notFound': 'BATTLE NIET GEVONDEN · {id}',

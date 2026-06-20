@@ -25,6 +25,7 @@ export default function EditBattleModal({ battle, onClose, onSaved, onDeleted })
     maxProducers: battle.maxProducers || 8,
     sampleRevealed: !!battle.sampleRevealed,
     blind: !!battle.blind,
+    tieBreak: battle.tieBreak === 'curator' ? 'curator' : 'earliest',
     scheduled: !!battle.scheduled,
     signupStart: toLocal(battle.signupStart),
     submissionsOpen: toLocal(battle.signupEnd),
@@ -46,6 +47,7 @@ export default function EditBattleModal({ battle, onClose, onSaved, onDeleted })
       maxProducers: form.maxProducers,
       sampleRevealed: form.sampleRevealed,
       blind: form.blind,
+      tieBreak: form.tieBreak,
       scheduled: form.scheduled,
     }
     if (form.scheduled) {
@@ -131,6 +133,26 @@ export default function EditBattleModal({ battle, onClose, onSaved, onDeleted })
               <input type="checkbox" checked={form.blind} onChange={(e) => upd('blind', e.target.checked)} className="h-4 w-4 accent-white" />
               {t('dashboard.create.blind')}
             </label>
+
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{t('dashboard.create.tieBreak')}</div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {['earliest', 'curator'].map((tb) => (
+                  <button
+                    key={tb}
+                    type="button"
+                    onClick={() => upd('tieBreak', tb)}
+                    className={`border px-3 py-2 text-left font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+                      form.tieBreak === tb
+                        ? 'border-ink bg-ink text-bg'
+                        : 'border-line text-muted hover:border-line-bright hover:text-ink'
+                    }`}
+                  >
+                    {t(`dashboard.create.tieBreak.${tb}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="border-t border-line pt-4">
               <label className="flex items-center gap-3 font-mono text-[11px] text-ink">
