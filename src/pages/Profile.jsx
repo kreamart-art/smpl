@@ -17,6 +17,9 @@ import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconSettings, IconPoster, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
 import { ProfileTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
+import SuggestInput from '../components/SuggestInput.jsx'
+import SuggestedPeople from '../components/SuggestedPeople.jsx'
+import { suggestCities } from '../data/cities.js'
 import { fmtDate, fmtMonthYear } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
 import { useT } from '../i18n/index.jsx'
@@ -159,7 +162,25 @@ export function Editor({ user, onClose }) {
           />
         </Field>
         <Field label={t('profile.field.location')}>
-          <input className={inputCls} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+          <SuggestInput
+            value={form.location}
+            onChange={(v) => setForm({ ...form, location: v })}
+            groups={
+              form.location.trim()
+                ? [
+                    {
+                      label: t('social.search.places'),
+                      items: suggestCities(form.location, 6).map((c) => ({
+                        key: c.name,
+                        label: c.name,
+                        sub: c.country,
+                        onPick: () => setForm({ ...form, location: c.name }),
+                      })),
+                    },
+                  ]
+                : []
+            }
+          />
         </Field>
         <div>
           <Label>{t('profile.field.genres')}</Label>
@@ -464,14 +485,23 @@ export default function Profile() {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => toggleFollow(user.id)}
-                  className={`h-10 flex-1 border px-5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 sm:flex-none sm:px-7 ${
-                    following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
-                  }`}
-                >
-                  {following ? t('common.followingState') : t('common.follow')}
-                </button>
+                {currentUser?.alias === 'SMPL' ? null : user.alias === 'SMPL' ? (
+                  <span
+                    className="flex h-10 flex-1 items-center justify-center border border-ink bg-ink px-5 font-mono text-[11px] uppercase tracking-[0.14em] text-bg sm:flex-none sm:px-7"
+                    title={t('common.smplFollowLocked')}
+                  >
+                    {t('common.followingState')}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => toggleFollow(user.id)}
+                    className={`h-10 flex-1 border px-5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 sm:flex-none sm:px-7 ${
+                      following ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+                    }`}
+                  >
+                    {following ? t('common.followingState') : t('common.follow')}
+                  </button>
+                )}
                 {currentUser ? (
                   <Link
                     to={`/messages/${encodeURIComponent(user.alias)}`}
@@ -530,6 +560,9 @@ export default function Profile() {
           {t('safety.blockedNote', { alias: user.alias })}
         </div>
       ) : null}
+
+      {/* suggested people to follow — only on your own profile */}
+      {isSelf ? <SuggestedPeople className="mt-12" limit={3} /> : null}
 
       {/* PROFILE CONTENT — clips / stats / record folded into ONE tabbed section */}
       <div ref={contentRef} className="mt-12 scroll-mt-20">

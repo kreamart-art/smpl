@@ -44,6 +44,7 @@ export const common = {
     'common.following': 'Following',
     'common.follow': '+ Follow',
     'common.followingState': '✓ Following',
+    'common.smplFollowLocked': 'Everyone follows the SMPL account.',
 
     'common.vote': 'Vote',
     'common.voted': '✓ Voted',
@@ -95,6 +96,7 @@ export const common = {
     'common.following': 'Volgend',
     'common.follow': '+ Volgen',
     'common.followingState': '✓ Volg je',
+    'common.smplFollowLocked': 'Iedereen volgt het SMPL-account.',
 
     'common.vote': 'Stem',
     'common.voted': '✓ Gestemd',

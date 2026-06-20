@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Handle from '../components/Handle.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
-import { inputCls } from '../components/ui.jsx'
+import SuggestInput from '../components/SuggestInput.jsx'
+import SuggestedPeople from '../components/SuggestedPeople.jsx'
+import { GENRES } from '../data/genres.js'
+import { suggestCities } from '../data/cities.js'
 
 const TABS = [
   { key: 'all', labelKey: 'social.people.filterAll' },
@@ -69,6 +72,10 @@ function PersonCard({ user }) {
           >
             {t('common.follow')}
           </Link>
+        ) : currentUser.alias === 'SMPL' ? null : user.alias === 'SMPL' ? (
+          <span className="border border-ink bg-ink px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-bg">
+            {t('common.followingState')}
+          </span>
         ) : (
           <button
             onClick={() => toggleFollow(user.id)}
@@ -86,7 +93,8 @@ function PersonCard({ user }) {
 
 export default function People() {
   const t = useT()
-  const { users, followerCount, isBlocked } = useApp()
+  const navigate = useNavigate()
+  const { users, followerCount, isBlocked, currentUser } = useApp()
   const [tab, setTab] = useState('all')
   const [q, setQ] = useState('')
 
@@ -114,6 +122,62 @@ export default function People() {
         return followerCount(b.id) - followerCount(a.id)
       })
   }, [users, tab, q, followerCount, isBlocked])
+
+  // typeahead: matching people (→ profile), places (→ filter), genres (→ filter)
+  const suggestGroups = useMemo(() => {
+    const query = q.trim().toLowerCase()
+    if (!query) return []
+    const visible = users.filter((u) => !isBlocked(u.id))
+
+    const people = visible
+      .filter((u) => u.alias.toLowerCase().includes(query))
+      .sort((a, b) => followerCount(b.id) - followerCount(a.id))
+      .slice(0, 5)
+      .map((u) => ({
+        key: `p_${u.id}`,
+        label: `@${u.alias}`,
+        sub: u.location || (u.dualRole ? t('role.dual') : t('role.' + u.role)),
+        onPick: () => navigate(`/profile/${encodeURIComponent(u.alias)}`),
+      }))
+
+    // places: clean catalogue cities (prefix-ranked) first, then any city people
+    // are actually in that isn't in the catalogue. Dedup by city name so
+    // "Rotterdam, NL" (a saved location) and "Rotterdam" don't both show.
+    const seenPlaces = new Set()
+    const placeList = []
+    for (const c of suggestCities(query, 12)) {
+      const key = c.name.toLowerCase()
+      if (seenPlaces.has(key)) continue
+      seenPlaces.add(key)
+      placeList.push({ name: c.name, country: c.country })
+    }
+    for (const u of visible) {
+      const loc = (u.location || '').trim()
+      const city = loc.split(',')[0].trim()
+      const key = city.toLowerCase()
+      if (!key || seenPlaces.has(key)) continue
+      if (key.includes(query) || loc.toLowerCase().includes(query)) {
+        seenPlaces.add(key)
+        placeList.push({ name: city, country: null })
+      }
+    }
+    const places = placeList.slice(0, 5).map((c) => ({
+      key: `c_${c.name}`,
+      label: c.name,
+      sub: c.country || undefined,
+      onPick: () => setQ(c.name),
+    }))
+
+    const genres = GENRES.filter((g) => g.toLowerCase().includes(query))
+      .slice(0, 5)
+      .map((g) => ({ key: `g_${g}`, label: g, onPick: () => setQ(g) }))
+
+    return [
+      { label: t('common.people'), items: people },
+      { label: t('social.search.places'), items: places },
+      { label: t('social.search.genres'), items: genres },
+    ].filter((grp) => grp.items.length)
+  }, [q, users, isBlocked, followerCount, navigate, t])
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-14 sm:px-6 sm:py-20">
@@ -143,14 +207,38 @@ export default function People() {
       </div>
 
       <div className="mt-6">
-        <input
+        <SuggestInput
           type="search"
-          className={inputCls}
-          placeholder={t('social.people.searchPlaceholder')}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={setQ}
+          groups={suggestGroups}
+          placeholder={t('social.people.searchPlaceholder')}
         />
+        {currentUser && !q.trim() && (currentUser.location || currentUser.genres?.length) ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-faint">{t('discover.by')}</span>
+            {currentUser.location ? (
+              <button
+                onClick={() => setQ(currentUser.location.split(',')[0].trim())}
+                className="border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted transition-colors hover:border-line-bright hover:text-ink"
+              >
+                {t('discover.nearCity', { city: currentUser.location.split(',')[0].trim() })}
+              </button>
+            ) : null}
+            {(currentUser.genres || []).slice(0, 4).map((g) => (
+              <button
+                key={g}
+                onClick={() => setQ(g)}
+                className="border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted transition-colors hover:border-line-bright hover:text-ink"
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
+
+      {!q.trim() ? <SuggestedPeople className="mt-10" limit={6} /> : null}
 
       {creators.length ? (
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

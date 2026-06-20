@@ -467,8 +467,14 @@ export function AppProvider({ children }) {
     [mutate],
   )
   const toggleFollow = useCallback(
-    (userId) => mutate(() => api.post(`/api/users/${userId}/follow`)),
-    [mutate],
+    (userId) => {
+      const target = getUser(userId)
+      // @SMPL stays neutral: it follows nobody, and nobody can unfollow it.
+      if (currentUser?.alias === 'SMPL') return Promise.resolve({ ok: false })
+      if (target?.alias === 'SMPL' && isFollowing(userId)) return Promise.resolve({ ok: true, following: true })
+      return mutate(() => api.post(`/api/users/${userId}/follow`))
+    },
+    [mutate, getUser, currentUser, isFollowing],
   )
   // --- safety: block / report ---------------------------------------------
   const toggleBlock = useCallback(

@@ -75,7 +75,11 @@ export default function FollowList({ userId, initialTab = 'followers', onClose }
                       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{roleLabel(u.role)}</div>
                     </div>
                   </Link>
-                  {currentUser && u.id !== currentUser.id ? (
+                  {!currentUser || u.id === currentUser.id || currentUser.alias === 'SMPL' ? null : u.alias === 'SMPL' ? (
+                    <span className="shrink-0 border border-ink bg-ink px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-bg">
+                      {t('common.followingState')}
+                    </span>
+                  ) : (
                     <button
                       onClick={() => toggleFollow(u.id)}
                       className={`shrink-0 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
@@ -84,7 +88,7 @@ export default function FollowList({ userId, initialTab = 'followers', onClose }
                     >
                       {isFollowing(u.id) ? t('common.followingState') : t('common.follow')}
                     </button>
-                  ) : null}
+                  )}
                 </div>
               ))
             )}
