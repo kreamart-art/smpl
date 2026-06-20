@@ -47,6 +47,7 @@ export const common = {
 
     'common.vote': 'Vote',
     'common.voted': '✓ Voted',
+    'common.switchVote': 'Vote this',
     'common.votes': 'votes',
     'common.voteOne': 'vote',
     'common.live': 'live',
@@ -97,6 +98,7 @@ export const common = {
 
     'common.vote': 'Stem',
     'common.voted': '✓ Gestemd',
+    'common.switchVote': 'Stem hierop',
     'common.votes': 'stemmen',
     'common.voteOne': 'stem',
     'common.live': 'live',

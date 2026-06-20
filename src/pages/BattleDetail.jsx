@@ -101,6 +101,7 @@ export default function BattleDetail() {
     voteCount,
     mailConfigured,
     isCurator,
+    isHouse,
     disqualifySubmission,
   } = app
 
@@ -232,9 +233,43 @@ export default function BattleDetail() {
 
   const onVote = async (submissionId) => {
     if (!currentUser) return requireLogin('vote')
+    if (myVote && myVote.submissionId === submissionId) return // already on this beat
+    const changing = !!myVote
     const r = await castVote(battle.id, submissionId)
-    setMsg(r.ok ? { ok: true, text: t('battleDetail.fb.voteCast') } : { ok: false, text: r.error })
+    setMsg(
+      r.ok
+        ? { ok: true, text: t(changing ? 'battleDetail.fb.voteChanged' : 'battleDetail.fb.voteCast') }
+        : { ok: false, text: r.error },
+    )
   }
+
+  // The official @SMPL / house account can spin up a promo waveform for any
+  // entry; a producer can still make one of their own. Names stay hidden on a
+  // live blind battle so the format isn't spoiled.
+  const canMakeWave = (s) => !!s.audioUrl && (s.mine || isHouse)
+  const waveProducer = (s) => {
+    if (s.mine) return currentUser?.alias || ''
+    if (battle.blind && battle.status !== STATUS.WINNER_DECLARED) return ''
+    return getUser(s.producerId)?.alias || ''
+  }
+  const waveRow = (s, tag) =>
+    canMakeWave(s) ? (
+      <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
+        <button
+          onClick={() =>
+            setWaveVideo({
+              audioUrl: mediaUrl(s.audioUrl),
+              producer: waveProducer(s),
+              tag,
+              battleId: battle.id,
+            })
+          }
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
+        >
+          {t('battleDetail.waveform.make')}
+        </button>
+      </div>
+    ) : null
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6">
@@ -500,6 +535,10 @@ export default function BattleDetail() {
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.loginToVote')} <Link to="/login" className="underline">{t('battleDetail.voting.loginLink')}</Link>
               </div>
+            ) : isRegistered ? (
+              <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
+                {t('battleDetail.voting.competing')}
+              </div>
             ) : myVote ? (
               <div className="mb-4 border border-ink px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.voteIn')}
@@ -531,18 +570,20 @@ export default function BattleDetail() {
                       {t('battleDetail.voting.yourBeat')}
                     </span>
                   )
+                } else if (isRegistered) {
+                  // a competitor can't vote on rival beats — show why, no dead button
+                  btn = (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                      {t('battleDetail.voting.cantVote')}
+                    </span>
+                  )
                 } else {
                   btn = (
                     <button
                       onClick={() => onVote(s.id)}
-                      disabled={!!myVote}
-                      className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
-                        myVote
-                          ? 'border-line text-muted opacity-40 pointer-events-none'
-                          : 'border-line-bright text-ink hover:bg-ink hover:text-bg'
-                      }`}
+                      className="border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
                     >
-                      {t('common.vote')}
+                      {t(myVote ? 'common.switchVote' : 'common.vote')}
                     </button>
                   )
                 }
@@ -557,6 +598,11 @@ export default function BattleDetail() {
                       verified={!battle.blind && !!getUser(s.producerId)?.verified}
                       rightSlot={btn}
                     />
+                    {votedThis ? (
+                      <div className="flex items-center gap-2 border border-t-0 border-ink bg-ink/5 px-3 py-2 font-mono text-[11px] text-ink">
+                        ✓ {t('battleDetail.fb.voteCast')}
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap items-center gap-2 border border-t-0 border-line bg-panel px-3 py-2">
                       <CrateButton submissionId={s.id} />
                     </div>
@@ -570,23 +616,7 @@ export default function BattleDetail() {
                         </button>
                       </div>
                     ) : null}
-                    {s.mine && s.audioUrl ? (
-                      <div className="flex items-center gap-3 border border-t-0 border-line bg-panel px-3 py-2">
-                        <button
-                          onClick={() =>
-                            setWaveVideo({
-                              audioUrl: mediaUrl(s.audioUrl),
-                              producer: currentUser?.alias || '',
-                              tag: `${battle.title} · ${c.drop.toUpperCase()} ${index}/${shuffled.length}`,
-                              battleId: battle.id,
-                            })
-                          }
-                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:text-ink"
-                        >
-                          Waveform video
-                        </button>
-                      </div>
-                    ) : null}
+                    {waveRow(s, `${battle.title} · ${c.drop.toUpperCase()} ${index}/${shuffled.length}`)}
                     {!battle.blind ? <CommentThread submissionId={s.id} producerId={s.producerId} /> : null}
                   </div>
                 )
@@ -624,6 +654,7 @@ export default function BattleDetail() {
                     <div className="flex flex-wrap items-center gap-2 border border-t-0 border-line bg-panel px-3 py-2">
                       <CrateButton submissionId={s.id} />
                     </div>
+                    {waveRow(s, `${battle.title} · #${rank} · ${getUser(s.producerId)?.alias || ''}`)}
                     <CommentThread submissionId={s.id} producerId={s.producerId} />
                   </div>
                 )
