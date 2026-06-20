@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, writeFileSync, unlinkSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync, unlinkSync, readdirSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { execFile } from 'node:child_process'
@@ -442,6 +442,48 @@ setInterval(() => {
   const now = Date.now()
   for (const [k, v] of rlHits) if (now > v.reset) rlHits.delete(k)
 }, 5 * 60_000)
+
+// Tidy up orphaned waveform-clip files: a clip is uploaded + transcoded the
+// moment it's generated (so share/download get a clean MP4), even if the user
+// never saves it to a profile. Periodically drop the v_* video/poster files that
+// aren't referenced by any saved clip AND are older than a grace window (so a
+// fresh, about-to-be-saved clip is never touched). Audio (a_*) + images (i_*)
+// are left alone — those belong to submissions, samples and DMs.
+const CLIP_ORPHAN_GRACE = 24 * 60 * 60_000
+function cleanupOrphanClips() {
+  let referenced
+  try {
+    referenced = new Set()
+    for (const r of db.prepare('SELECT url, poster FROM waveform_videos').all()) {
+      if (r.url) referenced.add(path.basename(r.url))
+      if (r.poster) referenced.add(path.basename(r.poster))
+    }
+  } catch {
+    return
+  }
+  let files
+  try {
+    files = readdirSync(UPLOAD_DIR)
+  } catch {
+    return
+  }
+  const now = Date.now()
+  let removed = 0
+  for (const f of files) {
+    if (!f.startsWith('v_') || referenced.has(f)) continue
+    const full = path.join(UPLOAD_DIR, f)
+    try {
+      if (now - statSync(full).mtimeMs < CLIP_ORPHAN_GRACE) continue
+      unlinkSync(full)
+      removed++
+    } catch {
+      /* skip */
+    }
+  }
+  if (removed) console.log(`[cleanup] removed ${removed} orphaned clip file(s)`)
+}
+setInterval(cleanupOrphanClips, 6 * 60 * 60_000) // every 6h
+cleanupOrphanClips() // and once at startup
 
 // Is one of these two users blocking the other?
 const isBlocked = (a, b) =>
