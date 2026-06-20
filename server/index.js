@@ -1081,6 +1081,10 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   if (!b) return fail(res, 404, 'Battle not found.')
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Voting is not open.')
   if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Voting has closed.')
+  // the house never votes — the founder's own accounts (@SMPL / admin) stay
+  // neutral so no battle can ever be called rigged. They can still comment.
+  if (isHouse(req.user))
+    return fail(res, 403, 'House accounts don’t vote — it keeps every battle fair.')
   // anyone may vote on a battle — except the producers/artists competing in it
   if (b.signups.includes(req.user.id))
     return fail(res, 403, 'You’re competing in this battle, so you can’t vote here.')
