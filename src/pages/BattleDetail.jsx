@@ -527,6 +527,11 @@ export default function BattleDetail() {
                       verified={!battle.blind && !!getUser(s.producerId)?.verified}
                       rightSlot={btn}
                     />
+                    {votedThis ? (
+                      <div className="flex items-center gap-2 border border-t-0 border-ink bg-ink/5 px-3 py-2 font-mono text-[11px] text-ink">
+                        ✓ {t('battleDetail.fb.voteCast')}
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap items-center gap-2 border border-t-0 border-line bg-panel px-3 py-2">
                       <CrateButton submissionId={s.id} />
                     </div>
