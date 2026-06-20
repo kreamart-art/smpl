@@ -93,6 +93,8 @@ export const battleDetail = {
     'battleDetail.voting.loginToVote': 'Log in to vote.',
     'battleDetail.voting.loginLink': 'Login ▸',
     'battleDetail.voting.voteIn': '✓ Your vote is in — you can switch it while voting is open. Names + tallies appear when the curator declares the winner.',
+    'battleDetail.voting.competing': 'You’re competing in this battle, so you can’t vote here.',
+    'battleDetail.voting.cantVote': 'Competing',
     'battleDetail.voting.yourBeat': 'Your beat',
     'battleDetail.voting.empty': 'No beats were submitted.',
 
@@ -194,6 +196,8 @@ export const battleDetail = {
     'battleDetail.voting.loginToVote': 'log in om te stemmen.',
     'battleDetail.voting.loginLink': 'inloggen ▸',
     'battleDetail.voting.voteIn': '✓ je stem is binnen — je kunt ’m wisselen zolang de stemfase loopt. namen + tellingen verschijnen als de curator de winnaar uitroept.',
+    'battleDetail.voting.competing': 'je doet zelf mee aan deze battle, dus je kunt hier niet stemmen.',
+    'battleDetail.voting.cantVote': 'deelnemer',
     'battleDetail.voting.yourBeat': 'jouw beat',
     'battleDetail.voting.empty': 'er zijn geen beats ingezonden.',
 

@@ -476,6 +476,10 @@ export default function BattleDetail() {
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.loginToVote')} <Link to="/login" className="underline">{t('battleDetail.voting.loginLink')}</Link>
               </div>
+            ) : isRegistered ? (
+              <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
+                {t('battleDetail.voting.competing')}
+              </div>
             ) : myVote ? (
               <div className="mb-4 border border-ink px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.voteIn')}
@@ -505,6 +509,13 @@ export default function BattleDetail() {
                   btn = (
                     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
                       {t('battleDetail.voting.yourBeat')}
+                    </span>
+                  )
+                } else if (isRegistered) {
+                  // a competitor can't vote on rival beats — show why, no dead button
+                  btn = (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                      {t('battleDetail.voting.cantVote')}
                     </span>
                   )
                 } else {
