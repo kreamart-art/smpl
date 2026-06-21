@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { useApp } from '../context/AppContext.jsx'
 import { useI18n } from '../i18n/index.jsx'
-import Avatar from '../components/Avatar.jsx'
-import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import Vinyl from '../components/Vinyl.jsx'
+import LeagueBoard from '../components/LeagueBoard.jsx'
 import { Btn, Label } from '../components/ui.jsx'
-import { IconPlay, IconPause } from '../components/icons.jsx'
+import { IconPlay, IconPause, IconLock, IconCheck } from '../components/icons.jsx'
 
 // ---- audio: official ~30s previews from the iTunes catalogue, capped to 15s.
 // We resolve the preview URL through OUR server (/api/game/preview) instead of
@@ -34,9 +33,7 @@ async function findPreview(term) {
 // A single mono "play 15s" pill with its own audio element + lifecycle. `term`
 // is the search string; `label` the idle text. iOS/Safari only allow audio that
 // STARTS synchronously inside the tap gesture, so we warm the preview URL on
-// mount and, on tap, play straight from the cache with no await in between. The
-// old code awaited the lookup first, which on iPhone dropped the gesture and the
-// button fell back to "no preview".
+// mount and, on tap, play straight from the cache with no await in between.
 function PlayClip({ term, label }) {
   const { t } = useI18n()
   const [state, setState] = useState('idle') // idle | loading | playing | na
@@ -171,9 +168,13 @@ export default function Game() {
   const { t, lang } = useI18n()
   const { currentUser } = useApp()
 
-  const [phase, setPhase] = useState('start') // start | play | end
+  const [phase, setPhase] = useState('start') // start | select | play | end
+  const [progress, setProgress] = useState(null) // { levelCount, clearMin, unlocked, authed, levels[] }
   const [starting, setStarting] = useState(false)
   const [sid, setSid] = useState(null)
+  const [level, setLevel] = useState(1)
+  const [levelCount, setLevelCount] = useState(1)
+  const [clearMin, setClearMin] = useState(10)
   const [total, setTotal] = useState(14)
   const [questions, setQuestions] = useState([])
   const [idx, setIdx] = useState(0)
@@ -182,23 +183,34 @@ export default function Game() {
   const [best, setBest] = useState(0)
   const [picked, setPicked] = useState(null) // index chosen this round
   const [reveal, setReveal] = useState(null) // { correctIndex, answer, fact }
-  const [saved, setSaved] = useState(false)
-  const [board, setBoard] = useState(null)
+  const [cleared, setCleared] = useState(false) // did the just-finished level clear
+  const [leagueKey, setLeagueKey] = useState(0)
 
-  const loadBoard = useCallback(async () => {
-    const r = await api.get('/api/game/leaderboard')
-    if (r.ok) setBoard(r)
+  const loadProgress = useCallback(async () => {
+    const r = await api.get('/api/game/progress')
+    if (r.ok) {
+      setProgress(r)
+      setLevelCount(r.levelCount)
+      setClearMin(r.clearMin)
+    }
   }, [])
   useEffect(() => {
-    loadBoard()
-  }, [loadBoard])
+    loadProgress()
+  }, [loadProgress])
 
-  async function start() {
+  async function start(lvl) {
     setStarting(true)
-    const r = await api.post('/api/game/start')
+    const r = await api.post('/api/game/start', { level: lvl })
     setStarting(false)
-    if (!r.ok) return
+    if (!r.ok) {
+      loadProgress()
+      setPhase('select')
+      return
+    }
     setSid(r.sid)
+    setLevel(r.level)
+    setLevelCount(r.levelCount)
+    setClearMin(r.clearMin)
     setTotal(r.total)
     setQuestions(r.questions)
     setIdx(0)
@@ -207,8 +219,13 @@ export default function Game() {
     setBest(0)
     setPicked(null)
     setReveal(null)
-    setSaved(false)
+    setCleared(false)
     setPhase('play')
+  }
+
+  function openLevels() {
+    loadProgress()
+    setPhase('select')
   }
 
   async function choose(pick) {
@@ -216,18 +233,21 @@ export default function Game() {
     setPicked(pick)
     const r = await api.post('/api/game/answer', { sid, q: idx, pick, lang })
     if (!r.ok) {
-      // session expired → bounce home with a soft reset
-      setPhase('start')
+      setPhase('select')
       setPicked(null)
+      loadProgress()
       return
     }
     setScore(r.score)
     setStreak(r.streak)
     setBest((b) => Math.max(b, r.streak))
     setReveal({ correctIndex: r.correctIndex, answer: r.answer, fact: r.fact })
-    if (r.done && currentUser) {
-      setSaved(true)
-      loadBoard()
+    if (r.done) {
+      setCleared(!!r.cleared)
+      if (currentUser) {
+        loadProgress()
+        setLeagueKey((k) => k + 1)
+      }
     }
   }
 
@@ -244,10 +264,10 @@ export default function Game() {
   const q = questions[idx]
   const modTerm = q ? `${q.artist} ${q.track}` : ''
 
-  // ---------------- START ----------------
+  // ---------------- START (intro) ----------------
   if (phase === 'start') {
     return (
-      <Shell board={board} t={t}>
+      <Shell leagueKey={leagueKey} t={t}>
         <div className="border border-line bg-panel">
           <div className="flex items-center gap-3 border-b border-line px-5 py-3">
             <span className="block h-1.5 w-1.5 bg-accent pulse-dot" />
@@ -265,11 +285,11 @@ export default function Game() {
                 </h1>
                 <p className="mt-5 max-w-xl font-sans text-[15px] leading-relaxed text-ink-dim">{t('game.tagline')}</p>
                 <p className="mt-4 max-w-xl font-mono text-[12px] leading-relaxed text-muted">
-                  {t('game.how', { n: total })}
+                  {t('game.howLevels', { size: total, min: clearMin, levels: levelCount })}
                 </p>
                 <div className="mt-9">
-                  <Btn variant="accent" size="lg" onClick={start} disabled={starting}>
-                    {starting ? t('game.starting') : t('game.start')}
+                  <Btn variant="accent" size="lg" onClick={openLevels} disabled={starting}>
+                    {t('game.start')}
                   </Btn>
                 </div>
               </div>
@@ -281,45 +301,120 @@ export default function Game() {
     )
   }
 
+  // ---------------- SELECT (level map) ----------------
+  if (phase === 'select') {
+    const levels = progress?.levels || [{ level: 1, unlocked: true, cleared: false, bestScore: 0 }]
+    const current = levels.find((l) => l.unlocked && !l.cleared)?.level
+    return (
+      <Shell leagueKey={leagueKey} t={t}>
+        <div className="border border-line bg-panel">
+          <div className="flex items-center justify-between border-b border-line px-5 py-3">
+            <Label>{t('game.levels')}</Label>
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint tnum">
+              {(progress?.unlocked ?? 1)} / {levelCount}
+            </span>
+          </div>
+          <div className="px-5 py-7 sm:px-8">
+            <p className="mb-5 font-mono text-[12px] leading-relaxed text-muted">{t('game.pickLevelSub', { min: clearMin })}</p>
+            <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-6">
+              {levels.map((lv) => {
+                const locked = !lv.unlocked
+                const isCur = lv.level === current
+                let cls = 'border-line-bright bg-panel-2 text-ink hover:border-ink'
+                if (locked) cls = 'border-line bg-bg text-faint opacity-50 cursor-default'
+                else if (lv.cleared) cls = 'border-accent/50 bg-accent/5 text-ink hover:border-accent'
+                if (isCur) cls += ' border-accent'
+                return (
+                  <button
+                    key={lv.level}
+                    type="button"
+                    disabled={locked || starting}
+                    onClick={() => start(lv.level)}
+                    className={`relative flex aspect-square flex-col items-center justify-center gap-1 border transition-colors duration-150 ${cls}`}
+                  >
+                    {locked ? (
+                      <IconLock size={16} />
+                    ) : (
+                      <span className="font-sans text-lg font-bold leading-none tnum">{lv.level}</span>
+                    )}
+                    {lv.cleared ? (
+                      <span className="absolute right-1 top-1 text-accent" aria-hidden>
+                        <IconCheck size={11} />
+                      </span>
+                    ) : null}
+                    {!locked && lv.bestScore ? (
+                      <span className="font-mono text-[8px] text-muted tnum">
+                        {lv.bestScore}/{total}
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+            {progress && !progress.authed ? (
+              <p className="mt-6 border border-line bg-bg px-4 py-3 font-mono text-[11px] leading-relaxed text-muted">
+                {t('game.signInToClimb')}{' '}
+                <Link to="/login" className="text-ink underline underline-offset-4 hover:text-accent">
+                  {t('common.login')}
+                </Link>
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
   // ---------------- END ----------------
   if (phase === 'end') {
     const ri = rankFor(score, total)
+    const hasNext = level < levelCount
     return (
-      <Shell board={board} t={t}>
+      <Shell leagueKey={leagueKey} t={t}>
         <div className="border border-line bg-panel px-5 py-10 text-center sm:px-8 sm:py-14">
           <div className="mb-7 flex justify-center">
             <Vinyl size={120} spin={false} />
           </div>
-          <Label className="!tracking-[0.28em]">{t('game.finalScore')}</Label>
+          <Label className="!tracking-[0.28em]">
+            {t('game.level')} {level} · {t('game.finalScore')}
+          </Label>
           <div className="mt-3 font-sans text-[clamp(4rem,20vw,9rem)] font-bold leading-[0.82] tracking-tighter text-accent tnum">
             {score}
             <span className="text-muted">/{total}</span>
           </div>
-          <div className="mt-4 font-sans text-2xl font-bold uppercase tracking-tight">{t(`game.rank.${ri}.name`)}</div>
+          <div className={`mt-4 font-sans text-2xl font-bold uppercase tracking-tight ${cleared ? 'text-accent' : 'text-ink'}`}>
+            {cleared ? t('game.levelCleared') : t(`game.rank.${ri}.name`)}
+          </div>
           <p className="mx-auto mt-3 max-w-md font-sans text-[14px] leading-relaxed text-ink-dim">
-            {t(`game.rank.${ri}.blurb`)}
+            {cleared
+              ? hasNext
+                ? t('game.clearedNext')
+                : t('game.clearedAll')
+              : t('game.notCleared', { min: clearMin })}
           </p>
           <div className="mt-5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
             {t('game.longestStreak')}: <span className="text-ink tnum">{best}</span>
           </div>
-          <div className="mt-5 font-mono text-[11px] tracking-[0.04em]">
-            {currentUser ? (
-              <span className="text-accent">{t('game.savedToBoard')}</span>
-            ) : (
-              <span className="text-muted">
-                {t('game.signInToSave')}{' '}
-                <Link to="/login" className="text-ink underline underline-offset-4 hover:text-accent">
-                  {t('common.login')}
-                </Link>
-              </span>
-            )}
-          </div>
+          {!currentUser ? (
+            <div className="mt-5 font-mono text-[11px] tracking-[0.04em] text-muted">
+              {t('game.signInToSave')}{' '}
+              <Link to="/login" className="text-ink underline underline-offset-4 hover:text-accent">
+                {t('common.login')}
+              </Link>
+            </div>
+          ) : null}
           <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <Btn variant="accent" size="lg" onClick={start} disabled={starting}>
-              {starting ? t('game.starting') : t('game.again')}
-            </Btn>
-            <Btn variant="ghost" size="lg" onClick={() => setPhase('start')}>
-              {t('game.backToStart')}
+            {cleared && hasNext ? (
+              <Btn variant="accent" size="lg" onClick={() => start(level + 1)} disabled={starting}>
+                {t('game.nextLevel')}
+              </Btn>
+            ) : (
+              <Btn variant="accent" size="lg" onClick={() => start(level)} disabled={starting}>
+                {t('game.again')}
+              </Btn>
+            )}
+            <Btn variant="ghost" size="lg" onClick={openLevels}>
+              {t('game.levels')}
             </Btn>
           </div>
         </div>
@@ -333,8 +428,22 @@ export default function Game() {
   const correct = reveal && picked === reveal.correctIndex
 
   return (
-    <Shell board={board} t={t}>
+    <Shell leagueKey={leagueKey} t={t}>
       <div className="border border-line bg-panel">
+        {/* level strip */}
+        <div className="flex items-center justify-between border-b border-line px-5 py-2 font-mono text-[10px] uppercase tracking-[0.18em]">
+          <span className="text-accent">
+            {t('game.level')} {level}
+            <span className="text-faint"> / {levelCount}</span>
+          </span>
+          <button
+            type="button"
+            onClick={openLevels}
+            className="text-muted underline underline-offset-4 transition-colors hover:text-ink"
+          >
+            {t('game.levels')}
+          </button>
+        </div>
         {/* HUD */}
         <div className="flex items-center justify-between border-b border-line px-5 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
           <span>
@@ -418,8 +527,8 @@ export default function Game() {
   )
 }
 
-// Shared page shell: header + the game slot + the leaderboard underneath.
-function Shell({ children, board, t }) {
+// Shared page shell: header + the game slot + the league underneath.
+function Shell({ children, leagueKey, t }) {
   return (
     <div className="mx-auto max-w-[760px] px-4 py-12 sm:px-6 sm:py-16">
       <div className="border-b border-line pb-5">
@@ -439,96 +548,9 @@ function Shell({ children, board, t }) {
 
       <div className="mt-8">{children}</div>
 
-      <Leaderboard board={board} t={t} />
-    </div>
-  )
-}
-
-function Leaderboard({ board, t }) {
-  if (!board) return null
-  const { top = [], me, total = 0, endsAt } = board
-  // days until the board rolls over (Monday 00:00 UTC). 0 → resets today.
-  const daysLeft = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 86_400_000)) : null
-  const resetText =
-    daysLeft === null ? '' : daysLeft <= 1 ? t('game.resetsToday') : t('game.resetsIn', { n: daysLeft })
-  return (
-    <div className="mt-12">
-      <div className="flex items-end justify-between border-b border-line pb-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="font-sans text-lg font-bold uppercase tracking-wide">{t('game.board')}</h2>
-            <span className="border border-accent px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-accent">
-              {t('game.thisWeek')}
-            </span>
-          </div>
-          <div className="mt-1 font-mono text-[11px] text-muted">
-            {t('game.boardSub')}
-            {resetText ? <span className="text-faint"> · {resetText}</span> : null}
-          </div>
-        </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint tnum">{total}</span>
+      <div className="mt-12">
+        <LeagueBoard refreshKey={leagueKey} />
       </div>
-
-      {top.length === 0 ? (
-        <div className="mt-6 border border-line bg-panel px-5 py-8 text-center font-mono text-[12px] text-muted">
-          {t('game.emptyBoard')}
-        </div>
-      ) : (
-        <div className="mt-4 border border-line bg-panel">
-          <div className="grid grid-cols-[2.5rem_1fr_3rem_3rem] gap-2 border-b border-line px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.16em] text-faint sm:grid-cols-[2.5rem_1fr_3.5rem_3.5rem_3rem]">
-            <span>{t('game.rankCol')}</span>
-            <span>{t('game.player')}</span>
-            <span className="text-right">{t('game.bestCol')}</span>
-            <span className="hidden text-right sm:block">{t('game.streakCol')}</span>
-            <span className="text-right">{t('game.playsCol')}</span>
-          </div>
-          {top.map((row) => {
-            const mine = me && me.alias && row.alias === me.alias
-            return (
-              <div
-                key={row.alias}
-                className={`grid grid-cols-[2.5rem_1fr_3rem_3rem] items-center gap-2 border-b border-line px-4 py-2.5 last:border-b-0 sm:grid-cols-[2.5rem_1fr_3.5rem_3.5rem_3rem] ${
-                  mine ? 'bg-accent/10' : ''
-                }`}
-              >
-                <span className={`font-mono text-[13px] tnum ${row.rank <= 3 ? 'text-accent' : 'text-muted'}`}>
-                  {String(row.rank).padStart(2, '0')}
-                </span>
-                <Link
-                  to={`/profile/${encodeURIComponent(row.alias)}`}
-                  className="flex items-center gap-2.5 overflow-hidden"
-                >
-                  <Avatar alias={row.alias} src={row.avatar} size={26} />
-                  <span className="truncate font-mono text-[12px] text-ink">@{row.alias}</span>
-                  {row.verified ? <VerifiedBadge size={12} /> : null}
-                  {mine ? (
-                    <span className="shrink-0 border border-accent px-1 font-mono text-[8px] uppercase tracking-[0.12em] text-accent">
-                      {t('game.you')}
-                    </span>
-                  ) : null}
-                </Link>
-                <span className="text-right font-mono text-[13px] text-ink tnum">{row.best}</span>
-                <span className="hidden text-right font-mono text-[12px] text-muted tnum sm:block">{row.bestStreak}</span>
-                <span className="text-right font-mono text-[12px] text-muted tnum">{row.plays}</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* your standing, when you're signed in but not in the visible top-20 */}
-      {me ? (
-        <div className="mt-3 flex items-center justify-between border border-line-bright bg-bg px-4 py-3">
-          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{t('game.yourStanding')}</div>
-          <div className="flex items-center gap-4 font-mono text-[12px]">
-            <span className="text-accent tnum">#{me.rank}</span>
-            <span className="text-faint">{t('game.outOf', { n: total })}</span>
-            <span className="text-ink tnum">
-              {me.best} {t('game.bestCol')}
-            </span>
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }

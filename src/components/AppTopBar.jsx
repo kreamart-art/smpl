@@ -1,15 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
-import { STATUS } from '../data/status.js'
 import MessagesLink from './MessagesLink.jsx'
+import { IconBell } from './icons.jsx'
 
-// Minimal app header (standalone mode): just the wordmark + a quiet live count.
-// No login/logout chrome — that lives under Profile.
+// Minimal app header (standalone mode): DMs on the left, alerts on the right,
+// wordmark in the middle. No login/logout chrome — that lives under Profile.
 export default function AppTopBar() {
-  const { battles } = useApp()
-  const live = battles.filter(
-    (b) => b.status === STATUS.VOTING_PHASE || b.status === STATUS.SUBMISSION_PHASE,
-  ).length
+  const { unread } = useApp()
 
   return (
     <header
@@ -23,9 +20,15 @@ export default function AppTopBar() {
         <Link to="/battles" aria-label="SMPL, home">
           <img src="/logo.png" alt="SMPL" className="logo-chrome h-5 w-auto" />
         </Link>
-        <span className="flex w-12 items-center justify-end gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-          <span className="block h-1.5 w-1.5 bg-accent pulse-dot" />
-          {live}
+        <span className="flex w-12 items-center justify-end" data-tour="alerts">
+          <Link to="/notifications" aria-label="Alerts" title="Alerts" className="relative inline-flex items-center text-ink">
+            <IconBell size={20} />
+            {unread ? (
+              <span className="absolute -right-2 -top-1.5 min-w-[15px] border border-black bg-accent px-1 text-center font-mono text-[8px] leading-[13px] text-bg">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            ) : null}
+          </Link>
         </span>
       </div>
     </header>

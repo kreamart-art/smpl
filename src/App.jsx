@@ -25,6 +25,7 @@ import Legal from './pages/Legal.jsx'
 import Contact from './pages/Contact.jsx'
 import Help from './pages/Help.jsx'
 import Game from './pages/Game.jsx'
+import League from './pages/League.jsx'
 import Play from './pages/Play.jsx'
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/Recover.jsx'
 import AuthMagic from './pages/AuthMagic.jsx'
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="/battles" element={<Battles />} />
         <Route path="/battles/:id" element={<BattleDetail />} />
         <Route path="/game" element={<Game />} />
+        <Route path="/league" element={<League />} />
         <Route path="/play" element={<Play />} />
         <Route path="/clip/:id" element={<ClipPage />} />
         <Route path="/profile/:alias" element={<Profile />} />

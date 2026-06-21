@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import { usePWA } from '../context/PWAContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from './Avatar.jsx'
 import VerifiedBadge from './VerifiedBadge.jsx'
@@ -12,6 +13,7 @@ const countryOf = (loc) => {
 }
 
 const HIDE_KEY = 'smpl_sugg_hidden'
+const SECTION_KEY = 'smpl_sugg_section' // following-count at the moment you hid the whole block
 const readHidden = () => {
   try {
     return new Set(JSON.parse(localStorage.getItem(HIDE_KEY) || '[]'))
@@ -34,7 +36,37 @@ const writeHidden = (set) => {
 export default function SuggestedPeople({ limit = 6, className = '' }) {
   const t = useT()
   const { users, follows, currentUser, isBlocked, toggleFollow, isFollowing, followerCount } = useApp()
+  const { standalone } = usePWA()
   const [hidden, setHidden] = useState(readHidden)
+
+  // The whole block can be dismissed (app only). It comes back on its own the
+  // moment you follow someone new: we remember the follow-count at dismiss time
+  // and re-show once it grows past that.
+  const followingCount = useMemo(
+    () => (currentUser ? follows.filter((f) => f.followerId === currentUser.id).length : 0),
+    [follows, currentUser],
+  )
+  const [sectionHidden, setSectionHidden] = useState(() => {
+    if (!standalone) return false
+    try {
+      const v = localStorage.getItem(SECTION_KEY)
+      return v !== null && followingCount <= Number(v)
+    } catch {
+      return false
+    }
+  })
+  useEffect(() => {
+    if (!standalone) return
+    try {
+      const v = localStorage.getItem(SECTION_KEY)
+      if (v !== null && followingCount > Number(v)) {
+        localStorage.removeItem(SECTION_KEY)
+        setSectionHidden(false)
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [followingCount, standalone])
 
   const suggestions = useMemo(() => {
     if (!currentUser) return []
@@ -101,6 +133,16 @@ export default function SuggestedPeople({ limit = 6, className = '' }) {
 
   // @SMPL follows nobody, so it gets no follow suggestions.
   if (!currentUser || currentUser.alias === 'SMPL' || suggestions.length === 0) return null
+  if (sectionHidden) return null
+
+  const dismissSection = () => {
+    try {
+      localStorage.setItem(SECTION_KEY, String(followingCount))
+    } catch {
+      /* ignore */
+    }
+    setSectionHidden(true)
+  }
 
   const dismiss = (id) => {
     const next = new Set(hidden)
@@ -116,9 +158,21 @@ export default function SuggestedPeople({ limit = 6, className = '' }) {
           <h2 className="font-sans text-lg font-bold uppercase tracking-tight">{t('suggest.title')}</h2>
           <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('suggest.sub')}</div>
         </div>
-        <Link to="/people" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
-          {t('suggest.seeAll')}
-        </Link>
+        <div className="flex shrink-0 items-center gap-3">
+          <Link to="/people" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
+            {t('suggest.seeAll')}
+          </Link>
+          {standalone ? (
+            <button
+              onClick={dismissSection}
+              aria-label={t('suggest.dismiss')}
+              title={t('suggest.dismiss')}
+              className="flex h-6 w-6 items-center justify-center font-mono text-[12px] text-faint transition-colors hover:text-ink"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="-mx-1 mt-4 flex gap-3 overflow-x-auto px-1 pb-1">

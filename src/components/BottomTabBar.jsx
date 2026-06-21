@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
-import { IconTrophy, IconFeed, IconBell, IconUser, IconPeople, IconGamepad } from './icons.jsx'
+import { IconTrophy, IconFeed, IconUser, IconPeople, IconGamepad } from './icons.jsx'
 
 function Tab({ to, label, icon, badge, tourKey }) {
   return (
@@ -29,7 +29,7 @@ function Tab({ to, label, icon, badge, tourKey }) {
 // Floating, pill-shaped tab bar (hovers above the bottom — Instagram-style).
 // Icons only, no labels.
 export default function BottomTabBar() {
-  const { currentUser, unread } = useApp()
+  const { currentUser } = useApp()
   const t = useT()
   const profileTo = currentUser ? `/profile/${encodeURIComponent(currentUser.alias)}` : '/login'
 
@@ -43,7 +43,6 @@ export default function BottomTabBar() {
         <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={22} />} tourKey="feed" />
         <Tab to="/people" label={t('common.people')} icon={<IconPeople size={22} />} tourKey="people" />
         <Tab to="/play" label={t('play.nav')} icon={<IconGamepad size={22} />} tourKey="play" />
-        <Tab to="/notifications" label={t('common.alerts')} icon={<IconBell size={22} />} badge={unread} tourKey="alerts" />
         <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={22} />} tourKey="profile" />
       </div>
     </nav>

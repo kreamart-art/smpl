@@ -53,6 +53,35 @@ export function IconGamepad(props) {
   )
 }
 
+// award medal (ribbons + star medallion) — the League
+export function IconLeague(props) {
+  return (
+    <Svg {...props}>
+      <path d="M8.5 3l2.3 5.2" />
+      <path d="M15.5 3l-2.3 5.2" />
+      <circle cx="12" cy="14" r="5.6" />
+      <path d="M12 10.7l.8 2.2 2.3.1-1.8 1.5.6 2.2-1.9-1.3-1.9 1.3.6-2.2-1.8-1.5 2.3-.1z" />
+    </Svg>
+  )
+}
+
+export function IconLock(props) {
+  return (
+    <Svg {...props}>
+      <rect x="4.5" y="10.5" width="15" height="9.5" />
+      <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+    </Svg>
+  )
+}
+
+export function IconCheck(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 12.5l5 5 11-11" />
+    </Svg>
+  )
+}
+
 export function IconCrate(props) {
   return (
     <Svg {...props}>

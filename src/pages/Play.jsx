@@ -1,38 +1,40 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api.js'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Vinyl from '../components/Vinyl.jsx'
-import Avatar from '../components/Avatar.jsx'
-import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import TopCallers from '../components/TopCallers.jsx'
+import LeagueBoard from '../components/LeagueBoard.jsx'
 import { PlayTour } from '../components/Tour.jsx'
 import { Btn } from '../components/ui.jsx'
+import { IconLeague } from '../components/icons.jsx'
 import { STATUS } from '../data/status.js'
 
-// "Play" — the listener-games hub. One place for both games (Guess the Sample +
-// Predict the winner) and both weekly boards, so they cross-feed each other.
+// "Play" — the games hub. One place for both games (Guess the Sample + Predict
+// the winner) and both boards (the level league + the predict callers).
 export default function Play() {
   const t = useT()
   const { battles } = useApp()
-  const [gameBoard, setGameBoard] = useState(null)
-
-  useEffect(() => {
-    api.get('/api/game/leaderboard').then((r) => r.ok && setGameBoard(r))
-  }, [])
 
   const livePredict = battles.find((b) => b.status === STATUS.VOTING_PHASE)
-  const top = gameBoard?.top || []
 
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-14 sm:px-6 sm:py-20">
       <PlayTour />
       <div className="border-b border-line pb-6">
-        <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">{t('play.eyebrow')}</div>
-        <h1 className="mt-3 font-sans text-[clamp(2.4rem,6vw,4rem)] font-bold uppercase leading-none tracking-tighter">
-          {t('play.title')}
-        </h1>
+        <div className="flex items-end justify-between gap-4">
+          <h1 className="font-sans text-[clamp(2.4rem,6vw,4rem)] font-bold uppercase leading-none tracking-tighter">
+            {t('play.title')}
+          </h1>
+          <Link
+            to="/league"
+            aria-label={t('league.title')}
+            title={t('league.title')}
+            className="flex shrink-0 items-center gap-2 border border-line-bright px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink transition-colors hover:border-ink hover:bg-panel"
+          >
+            <IconLeague size={16} />
+            <span>{t('league.title')}</span>
+          </Link>
+        </div>
         <p className="mt-4 max-w-xl font-mono text-[12px] leading-relaxed text-muted">{t('play.sub')}</p>
       </div>
 
@@ -68,42 +70,10 @@ export default function Play() {
         </div>
       </div>
 
-      {/* the two boards, side by side */}
+      {/* the two boards, side by side: the level league + the predict callers */}
       <div className="mt-12 grid gap-8 lg:grid-cols-2">
+        <LeagueBoard limit={8} />
         <TopCallers limit={8} />
-
-        <section>
-          <div className="flex items-end justify-between border-b border-line pb-3">
-            <div>
-              <h2 className="font-sans text-lg font-bold uppercase tracking-tight">{t('play.topPlayers')}</h2>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('callers.sub')}</div>
-            </div>
-            <Link to="/game" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
-              {t('play.playGame')} ▸
-            </Link>
-          </div>
-          {top.length ? (
-            <div className="mt-2">
-              {top.slice(0, 8).map((row) => (
-                <div key={row.alias} className="flex items-center gap-3 border-b border-line py-2.5 font-mono text-[12px] last:border-b-0">
-                  <span className={`w-6 font-sans text-sm font-bold ${row.rank <= 3 ? 'text-accent' : 'text-muted'}`}>
-                    {String(row.rank).padStart(2, '0')}
-                  </span>
-                  <Link to={`/profile/${encodeURIComponent(row.alias)}`} className="flex flex-1 items-center gap-2.5 overflow-hidden hover:underline">
-                    <Avatar alias={row.alias} src={row.avatar} size={24} />
-                    <span className="truncate text-ink">@{row.alias}</span>
-                    {row.verified ? <VerifiedBadge size={11} /> : null}
-                  </Link>
-                  <span className="w-12 text-right font-sans text-sm font-bold text-ink tnum">{row.best}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-6 border border-line bg-panel px-5 py-8 text-center font-mono text-[12px] text-muted">
-              {t('play.boardEmpty')}
-            </p>
-          )}
-        </section>
       </div>
     </div>
   )
