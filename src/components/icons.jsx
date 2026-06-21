@@ -26,6 +26,33 @@ export function IconBattles(props) {
   )
 }
 
+// trophy — the Battles tab
+export function IconTrophy(props) {
+  return (
+    <Svg {...props}>
+      <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
+      <path d="M7 5H4v1.5a3 3 0 0 0 3 3" />
+      <path d="M17 5h3v1.5a3 3 0 0 1-3 3" />
+      <line x1="12" y1="13" x2="12" y2="16" />
+      <path d="M10 16l-.5 4M14 16l.5 4" />
+      <line x1="8" y1="20" x2="16" y2="20" />
+    </Svg>
+  )
+}
+
+// game controller (joy-con) — the Play tab
+export function IconGamepad(props) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="8" width="18" height="9" rx="4.5" />
+      <line x1="7" y1="10.6" x2="7" y2="14.4" />
+      <line x1="5.1" y1="12.5" x2="8.9" y2="12.5" />
+      <circle cx="16" cy="11.6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="13.6" r="1" fill="currentColor" stroke="none" />
+    </Svg>
+  )
+}
+
 export function IconCrate(props) {
   return (
     <Svg {...props}>

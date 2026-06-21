@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
-import { IconBattles, IconFeed, IconBell, IconUser, IconPeople } from './icons.jsx'
+import { IconTrophy, IconFeed, IconBell, IconUser, IconPeople, IconGamepad } from './icons.jsx'
 
 function Tab({ to, label, icon, badge, tourKey }) {
   return (
-    <NavLink to={to} className="flex-1" data-tour={tourKey}>
+    <NavLink to={to} aria-label={label} title={label} className="flex-1" data-tour={tourKey}>
       {({ isActive }) => (
         <div
-          className={`tab-pill-item flex flex-col items-center justify-center gap-0.5 py-2 transition-colors duration-200 ${
+          className={`tab-pill-item flex items-center justify-center py-2.5 transition-colors duration-200 ${
             isActive ? 'bg-ink/10 text-ink' : 'text-muted'
           }`}
         >
@@ -20,7 +20,6 @@ function Tab({ to, label, icon, badge, tourKey }) {
               </span>
             ) : null}
           </span>
-          <span className="font-mono text-[8px] uppercase tracking-[0.12em]">{label}</span>
         </div>
       )}
     </NavLink>
@@ -28,6 +27,7 @@ function Tab({ to, label, icon, badge, tourKey }) {
 }
 
 // Floating, pill-shaped tab bar (hovers above the bottom — Instagram-style).
+// Icons only, no labels.
 export default function BottomTabBar() {
   const { currentUser, unread } = useApp()
   const t = useT()
@@ -39,11 +39,12 @@ export default function BottomTabBar() {
       style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
     >
       <div className="tab-pill flex w-full max-w-[440px] items-center gap-1 border border-line-bright bg-black/70 px-2 py-1.5 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)] backdrop-blur-xl">
-        <Tab to="/battles" label={t('common.battles')} icon={<IconBattles size={20} />} tourKey="battles" />
-        <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={20} />} tourKey="feed" />
-        <Tab to="/people" label={t('common.people')} icon={<IconPeople size={20} />} tourKey="people" />
-        <Tab to="/notifications" label={t('common.alerts')} icon={<IconBell size={20} />} badge={unread} tourKey="alerts" />
-        <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={20} />} tourKey="profile" />
+        <Tab to="/battles" label={t('common.battles')} icon={<IconTrophy size={22} />} tourKey="battles" />
+        <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={22} />} tourKey="feed" />
+        <Tab to="/people" label={t('common.people')} icon={<IconPeople size={22} />} tourKey="people" />
+        <Tab to="/play" label={t('play.nav')} icon={<IconGamepad size={22} />} tourKey="play" />
+        <Tab to="/notifications" label={t('common.alerts')} icon={<IconBell size={22} />} badge={unread} tourKey="alerts" />
+        <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={22} />} tourKey="profile" />
       </div>
     </nav>
   )

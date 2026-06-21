@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Handle from '../components/Handle.jsx'
 import KindBadge from '../components/KindBadge.jsx'
-import GameTeaser from '../components/GameTeaser.jsx'
 
 function ago(ts, t) {
   const d = Date.now() - ts
@@ -142,9 +141,7 @@ export default function Feed() {
         </div>
       </div>
 
-      <GameTeaser className="mt-6" />
-
-      <div className="mt-4 border border-line bg-bg">
+      <div className="mt-8 border border-line bg-bg">
         {items === null ? (
           <div className="px-5 py-10 text-center font-mono text-[12px] text-muted">{t('common.loading')}</div>
         ) : shown.length ? (

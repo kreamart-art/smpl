@@ -121,55 +121,46 @@ export default function SuggestedPeople({ limit = 6, className = '' }) {
         </Link>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {suggestions.map(({ u, reason, second }) => (
-          <div key={u.id} className="flex flex-col gap-3 border border-line bg-panel p-3">
-            <div className="flex items-start gap-3">
-              <Link to={`/profile/${encodeURIComponent(u.alias)}`} className="shrink-0">
-                <Avatar alias={u.alias} src={u.avatar} size={42} />
-              </Link>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <Link
-                    to={`/profile/${encodeURIComponent(u.alias)}`}
-                    className="truncate font-sans text-sm font-bold uppercase tracking-tight text-ink hover:underline"
-                  >
-                    @{u.alias}
-                  </Link>
-                  {u.verified ? <VerifiedBadge size={12} /> : null}
-                </div>
-                <div className="mt-0.5 truncate font-mono text-[9px] uppercase tracking-[0.16em] text-muted">
-                  {u.dualRole ? t('role.dual') : t('role.' + u.role)}
-                  {u.location ? <span className="text-faint"> · {cityOf(u.location)}</span> : null}
-                </div>
+      <div className="-mx-1 mt-4 flex gap-3 overflow-x-auto px-1 pb-1">
+        {suggestions.map(({ u, reason }) => (
+          <div
+            key={u.id}
+            className="relative flex w-[150px] shrink-0 flex-col items-center gap-2 border border-line bg-panel p-3 text-center"
+          >
+            <button
+              onClick={() => dismiss(u.id)}
+              aria-label={t('suggest.dismiss')}
+              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center font-mono text-[11px] text-faint transition-colors hover:text-ink"
+            >
+              ✕
+            </button>
+            <Link to={`/profile/${encodeURIComponent(u.alias)}`} className="mt-1.5">
+              <Avatar alias={u.alias} src={u.avatar} size={54} />
+            </Link>
+            <div className="w-full min-w-0">
+              <div className="flex items-center justify-center gap-1">
+                <Link
+                  to={`/profile/${encodeURIComponent(u.alias)}`}
+                  className="truncate font-sans text-sm font-bold uppercase tracking-tight text-ink hover:underline"
+                >
+                  @{u.alias}
+                </Link>
+                {u.verified ? <VerifiedBadge size={11} /> : null}
               </div>
-              <button
-                onClick={() => dismiss(u.id)}
-                aria-label={t('suggest.dismiss')}
-                className="-mr-1 -mt-1 flex h-6 w-6 shrink-0 items-center justify-center font-mono text-[11px] text-faint transition-colors hover:text-ink"
-              >
-                ✕
-              </button>
+              <div className="mt-0.5 truncate font-mono text-[9px] uppercase tracking-[0.16em] text-muted">
+                {u.dualRole ? t('role.dual') : t('role.' + u.role)}
+              </div>
             </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              <span
-                className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
-                  reason.accent ? 'border-accent bg-accent text-accent-ink' : 'border-line text-muted'
-                }`}
-              >
-                {reason.text}
-              </span>
-              {second ? (
-                <span className="border border-line px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-muted">
-                  {second}
-                </span>
-              ) : null}
-            </div>
-
+            <span
+              className={`max-w-full truncate border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
+                reason.accent ? 'border-accent bg-accent text-accent-ink' : 'border-line text-muted'
+              }`}
+            >
+              {reason.text}
+            </span>
             <button
               onClick={() => toggleFollow(u.id)}
-              className={`h-9 w-full border font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
+              className={`mt-auto h-8 w-full border font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
                 isFollowing(u.id)
                   ? 'border-ink bg-ink text-bg'
                   : 'border-line-bright text-ink hover:bg-ink hover:text-bg'

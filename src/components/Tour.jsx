@@ -14,6 +14,7 @@ export const WELCOME_KEY = 'smpl_tour_welcome_v1'
 export const BATTLE_KEY = 'smpl_tour_battle_v1'
 export const PROFILE_KEY = 'smpl_tour_profile_v1'
 export const SHARE_KEY = 'smpl_tour_share_v1'
+export const PLAY_KEY = 'smpl_tour_play_v1'
 
 const read = (k) => {
   try {
@@ -32,7 +33,7 @@ const write = (k) => {
 // Re-arm every tour (used by the Settings "replay" entry).
 export const resetTours = () => {
   try {
-    ;[WELCOME_KEY, BATTLE_KEY, PROFILE_KEY, SHARE_KEY].forEach((k) => localStorage.removeItem(k))
+    ;[WELCOME_KEY, BATTLE_KEY, PROFILE_KEY, SHARE_KEY, PLAY_KEY].forEach((k) => localStorage.removeItem(k))
   } catch {
     /* ignore */
   }
@@ -44,10 +45,18 @@ const WELCOME_STEPS = [
   { key: 'battles', target: '[data-tour="battles"]' },
   { key: 'feed', target: '[data-tour="feed"]' },
   { key: 'people', target: '[data-tour="people"]' },
+  { key: 'play', target: '[data-tour="play"]' },
   { key: 'alerts', target: '[data-tour="alerts"]' },
   { key: 'profile', target: '[data-tour="profile"]' },
   { key: 'messages', target: '[data-tour="messages"]' },
 ].map((s) => ({ ...s, ns: 'welcome' }))
+
+// Play hub — the games. Runs once when a new user first opens /play.
+const PLAY_STEPS = [
+  { key: 'intro' },
+  { key: 'game', target: '[data-tour="play-game"]' },
+  { key: 'predict', target: '[data-tour="play-predict"]' },
+].map((s) => ({ ...s, ns: 'play' }))
 
 // Battle-detail page. Header actions first, then down the page. Steps whose
 // target is absent in the current phase/role are filtered out before running.
@@ -244,3 +253,5 @@ export const ProfileTour = ({ enabled = true }) => (
 )
 // First time a user opens the share-card page.
 export const ShareTour = () => <PageTour allSteps={SHARE_STEPS} flagKey={SHARE_KEY} />
+// First time a user opens the Play hub.
+export const PlayTour = () => <PageTour allSteps={PLAY_STEPS} flagKey={PLAY_KEY} />

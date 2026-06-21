@@ -7,6 +7,7 @@ import Vinyl from '../components/Vinyl.jsx'
 import Avatar from '../components/Avatar.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import TopCallers from '../components/TopCallers.jsx'
+import { PlayTour } from '../components/Tour.jsx'
 import { Btn } from '../components/ui.jsx'
 import { STATUS } from '../data/status.js'
 
@@ -26,6 +27,7 @@ export default function Play() {
 
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-14 sm:px-6 sm:py-20">
+      <PlayTour />
       <div className="border-b border-line pb-6">
         <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">{t('play.eyebrow')}</div>
         <h1 className="mt-3 font-sans text-[clamp(2.4rem,6vw,4rem)] font-bold uppercase leading-none tracking-tighter">
@@ -36,7 +38,7 @@ export default function Play() {
 
       {/* the two games */}
       <div className="mt-8 grid gap-5 sm:grid-cols-2">
-        <div className="group relative flex flex-col overflow-hidden border border-line bg-panel p-6">
+        <div data-tour="play-game" className="group relative flex flex-col overflow-hidden border border-line bg-panel p-6">
           <span className="hover-bloom" aria-hidden="true" />
           <div className="relative">
             <Vinyl size={64} spin />
@@ -50,7 +52,7 @@ export default function Play() {
           </div>
         </div>
 
-        <div className="group relative flex flex-col overflow-hidden border border-line bg-panel p-6">
+        <div data-tour="play-predict" className="group relative flex flex-col overflow-hidden border border-line bg-panel p-6">
           <span className="hover-bloom" aria-hidden="true" />
           <div className="relative flex items-center gap-2">
             <span className="block h-1.5 w-1.5 bg-accent pulse-dot" />

@@ -1271,8 +1271,9 @@ app.post('/api/battles/:id/predict', rateLimit('predict', 40, 60_000), requireAu
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Predictions are only open during voting.')
   if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Predictions have closed.')
   if (req.user.alias === 'SMPL') return fail(res, 403, 'The SMPL account doesn’t predict.')
-  if (b.signups.includes(req.user.id))
-    return fail(res, 403, 'You’re competing in this battle, so you can’t predict it.')
+  // Everyone plays the prediction game — listeners, producers and artists alike,
+  // even competitors in this battle (a prediction is a guess, it never touches
+  // the result, which the crowd vote decides). Only @SMPL stays out.
   const sub = getSubmissionRow(req.body?.submissionId)
   if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not found.')
   if (sub.disqualified) return fail(res, 400, 'That entry was disqualified.')

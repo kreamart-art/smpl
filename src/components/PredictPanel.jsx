@@ -11,9 +11,9 @@ export default function PredictPanel({ battle, submissions }) {
   const { currentUser, myPrediction, predict, getUser } = useApp()
   const t = useT()
 
-  // only the official @SMPL account is barred (the founder's admin can predict)
+  // everyone predicts — listeners, producers + artists, even competitors in this
+  // battle (it's a guess, never touches the result). Only @SMPL is barred.
   if (!currentUser || currentUser.alias === 'SMPL') return null
-  if (battle.signups.includes(currentUser.id)) return null // competitors don't predict
 
   const subs = (submissions || []).filter((s) => !s.disqualified)
   if (!subs.length) return null
