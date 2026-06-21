@@ -61,48 +61,88 @@ async function findPreview(term) {
   return url
 }
 
-// A single mono "play 15s" pill — its own audio element + lifecycle. `term` is
-// the search string; `label` the idle text.
+// A single mono "play 15s" pill with its own audio element + lifecycle. `term`
+// is the search string; `label` the idle text. iOS/Safari only allow audio that
+// STARTS synchronously inside the tap gesture, so we warm the preview URL on
+// mount and, on tap, play straight from the cache with no await in between. The
+// old code awaited the lookup first, which on iPhone dropped the gesture and the
+// button fell back to "no preview".
 function PlayClip({ term, label }) {
   const { t } = useI18n()
   const [state, setState] = useState('idle') // idle | loading | playing | na
   const audioRef = useRef(null)
   const timerRef = useRef(null)
+  const liveRef = useRef(true)
 
-  const stop = useCallback(() => {
+  const clearTimer = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
     }
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.src = ''
-      audioRef.current = null
+  }
+
+  const stop = useCallback(() => {
+    clearTimer()
+    const a = audioRef.current
+    if (a) {
+      a.pause()
+      try {
+        a.currentTime = 0
+      } catch {
+        /* ignore */
+      }
     }
     setState((s) => (s === 'na' ? 'na' : 'idle'))
   }, [])
 
-  // warm the cache + stop on unmount / term change
+  // warm the preview URL on mount; tear down on unmount / term change
   useEffect(() => {
+    liveRef.current = true
     findPreview(term)
-    return stop
-  }, [term, stop])
+    return () => {
+      liveRef.current = false
+      clearTimer()
+      const a = audioRef.current
+      if (a) {
+        a.pause()
+        a.src = ''
+      }
+    }
+  }, [term])
 
-  const toggle = async () => {
-    if (state === 'playing') return stop()
-    if (state === 'loading') return
-    setState('loading')
-    const url = await findPreview(term)
-    if (!url) return setState('na')
-    const a = new Audio(url)
-    audioRef.current = a
-    a.onended = stop
+  // play on an element already unlocked by the current tap gesture
+  const begin = (a, url) => {
+    a.src = url
     a.play()
       .then(() => {
+        if (!liveRef.current) return
         setState('playing')
+        clearTimer()
         timerRef.current = setTimeout(stop, CLIP_MS)
       })
-      .catch(() => setState('na'))
+      .catch(() => liveRef.current && setState('na'))
+  }
+
+  const toggle = () => {
+    if (state === 'playing') return stop()
+    if (state === 'loading') return
+    // one persistent element: the first in-gesture play() unlocks it on iOS
+    const a = audioRef.current || (audioRef.current = new Audio())
+    a.onended = stop
+    // common path: URL is already warmed, so play synchronously inside the tap
+    if (term in previewCache) {
+      const url = previewCache[term]
+      if (!url) return setState('na')
+      return begin(a, url)
+    }
+    // not warmed yet (fast tap / slow net): resolve then play. On iOS this may
+    // need a second tap, by which point the URL is cached and playback is sync.
+    setState('loading')
+    findPreview(term).then((url) => {
+      if (!liveRef.current) return
+      if (!url) return setState('na')
+      begin(a, url)
+    })
   }
 
   const text =
