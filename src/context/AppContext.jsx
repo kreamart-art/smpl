@@ -46,6 +46,7 @@ export function AppProvider({ children }) {
   const [votes, setVotes] = useState([])
   const [follows, setFollows] = useState([])
   const [myVotes, setMyVotes] = useState({})
+  const [myPredictions, setMyPredictions] = useState({})
   const [currentUser, setCurrentUser] = useState(null)
   const [accountSessions, setAccountSessions] = useState(readSessions)
   const [toast, setToast] = useState(null)
@@ -65,6 +66,7 @@ export function AppProvider({ children }) {
     setVotes(d.votes || [])
     setFollows(d.follows || [])
     setMyVotes(d.myVotes || {})
+    setMyPredictions(d.myPredictions || {})
     setCurrentUser(d.me || null)
     setUnread(d.unread || 0)
     setUnreadMessages(d.unreadMessages || 0)
@@ -185,6 +187,7 @@ export function AppProvider({ children }) {
     (battleId) => (myVotes[battleId] ? { submissionId: myVotes[battleId] } : null),
     [myVotes],
   )
+  const myPrediction = useCallback((battleId) => myPredictions[battleId] || null, [myPredictions])
   const followerCount = useCallback(
     (userId) => follows.filter((f) => f.followeeId === userId).length,
     [follows],
@@ -466,6 +469,11 @@ export function AppProvider({ children }) {
       mutate(() => api.post(`/api/battles/${battleId}/vote`, { submissionId })),
     [mutate],
   )
+  const predict = useCallback(
+    (battleId, submissionId) =>
+      mutate(() => api.post(`/api/battles/${battleId}/predict`, { submissionId })),
+    [mutate],
+  )
   const toggleFollow = useCallback(
     (userId) => {
       const target = getUser(userId)
@@ -601,6 +609,7 @@ export function AppProvider({ children }) {
     votes,
     follows,
     myVotes,
+    myPredictions,
     currentUser,
     // admin is a superset of curator — `isCurator` means "can run battles +
     // moderate" (curator OR admin); `isAdmin` gates admin-only powers.
@@ -626,6 +635,7 @@ export function AppProvider({ children }) {
     battleSubmissions,
     voteCount,
     userVoteInBattle,
+    myPrediction,
     rankedSubmissions,
     followerCount,
     isFollowing,

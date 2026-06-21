@@ -19,6 +19,7 @@ import { ProfileTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import SuggestInput from '../components/SuggestInput.jsx'
 import SuggestedPeople from '../components/SuggestedPeople.jsx'
+import CallerCard from '../components/CallerCard.jsx'
 import { suggestCities } from '../data/cities.js'
 import { fmtDate, fmtMonthYear } from '../utils/wave.js'
 import { roleLabel } from '../data/kind.js'
@@ -560,6 +561,9 @@ export default function Profile() {
           {t('safety.blockedNote', { alias: user.alias })}
         </div>
       ) : null}
+
+      {/* prediction-game reputation — any profile that has made calls */}
+      <CallerCard user={user} className="mt-12" />
 
       {/* suggested people to follow — only on your own profile */}
       {isSelf ? <SuggestedPeople className="mt-12" limit={3} /> : null}

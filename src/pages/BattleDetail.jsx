@@ -13,6 +13,8 @@ import CrateButton from '../components/CrateButton.jsx'
 import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
 import WinnerStamp from '../components/WinnerStamp.jsx'
+import PredictPanel from '../components/PredictPanel.jsx'
+import TopCallers from '../components/TopCallers.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { BattleTour } from '../components/Tour.jsx'
@@ -151,6 +153,9 @@ export default function BattleDetail() {
   const c = kindCopy(battle.kind)
   const attending = currentUser && battle.attendees.includes(currentUser.id)
   const isRegistered = currentUser && battle.signups.includes(currentUser.id)
+  // Only the official @SMPL account is barred from voting — not the founder's
+  // admin (@KREAM). isHouse stays for the waveform-clip tooling below.
+  const isSmpl = currentUser?.alias === 'SMPL'
   const myVote = currentUser ? userVoteInBattle(battle.id, currentUser.id) : null
   // Competitors download the source to work on it: producers get the sample
   // (BEATS), artists get the beat (VERSES), curators get either.
@@ -530,6 +535,8 @@ export default function BattleDetail() {
           </PhaseBox>
         )}
 
+        <PredictPanel battle={battle} submissions={approvedSubs} />
+
         {battle.status === STATUS.VOTING_PHASE && (
           <PhaseBox
             tour="battle-action"
@@ -540,7 +547,7 @@ export default function BattleDetail() {
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.loginToVote')} <Link to="/login" className="underline">{t('battleDetail.voting.loginLink')}</Link>
               </div>
-            ) : isHouse ? (
+            ) : isSmpl ? (
               <div className="mb-4 border border-line-bright px-4 py-3 font-mono text-[11px] text-ink">
                 {t('battleDetail.voting.house')}
               </div>
@@ -576,8 +583,8 @@ export default function BattleDetail() {
                       {t('battleDetail.voting.yourBeat')}
                     </span>
                   )
-                } else if (isHouse) {
-                  // the house stays neutral — no vote button, just a quiet label
+                } else if (isSmpl) {
+                  // @SMPL stays neutral — no vote button, just a quiet label
                   btn = (
                     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
                       {t('battleDetail.voting.houseTag')}
@@ -696,6 +703,12 @@ export default function BattleDetail() {
             </div>
           </PhaseBox>
         )}
+
+        {battle.status === STATUS.WINNER_DECLARED ? (
+          <div className="border border-line bg-panel px-5 py-5">
+            <TopCallers />
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-10 flex justify-center border-t border-line pt-6">
