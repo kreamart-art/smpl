@@ -73,6 +73,12 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 CREATE TABLE IF NOT EXISTS message_reactions (
   messageId TEXT, userId TEXT, emoji TEXT, createdAt INTEGER, PRIMARY KEY (messageId, userId)
 );
+CREATE TABLE IF NOT EXISTS thread_clears (
+  userId TEXT, partnerId TEXT, clearedAt INTEGER, PRIMARY KEY (userId, partnerId)
+);
+CREATE TABLE IF NOT EXISTS message_hides (
+  userId TEXT, messageId TEXT, PRIMARY KEY (userId, messageId)
+);
 CREATE TABLE IF NOT EXISTS device_tokens (
   token TEXT PRIMARY KEY, userId TEXT, platform TEXT, createdAt INTEGER
 );

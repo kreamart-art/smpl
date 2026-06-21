@@ -1880,9 +1880,15 @@ app.get('/api/threads', requireAuth, (req, res) => {
   const followees = new Set(
     db.prepare('SELECT followeeId FROM follows WHERE followerId = ?').all(uid).map((r) => r.followeeId),
   )
+  const clears = {}
+  db.prepare('SELECT partnerId, clearedAt FROM thread_clears WHERE userId = ?').all(uid).forEach((r) => {
+    clears[r.partnerId] = r.clearedAt
+  })
+  const hides = new Set(db.prepare('SELECT messageId FROM message_hides WHERE userId = ?').all(uid).map((r) => r.messageId))
   const byPartner = {}
   for (const m of rows) {
     const partner = m.fromId === uid ? m.toId : m.fromId
+    if (m.createdAt <= (clears[partner] || 0) || hides.has(m.id)) continue // cleared / hidden for me
     const t = (byPartner[partner] ||= { partner, last: null, unread: 0, sentByMe: false })
     t.last = m // rows are ascending, so the final assignment is the newest
     if (m.fromId === uid) t.sentByMe = true
@@ -1932,11 +1938,14 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
   if (!other) return fail(res, 404, 'User not found.')
   const uid = req.user.id
   if (other.id === uid) return fail(res, 400, 'That conversation is with yourself.')
+  const clr = db.prepare('SELECT clearedAt FROM thread_clears WHERE userId = ? AND partnerId = ?').get(uid, other.id)?.clearedAt || 0
+  const hidden = new Set(db.prepare('SELECT messageId FROM message_hides WHERE userId = ?').all(uid).map((r) => r.messageId))
   const msgs = db
     .prepare(
       'SELECT * FROM messages WHERE (fromId = ? AND toId = ?) OR (fromId = ? AND toId = ?) ORDER BY createdAt ASC',
     )
     .all(uid, other.id, other.id, uid)
+    .filter((m) => m.createdAt > clr && !hidden.has(m.id))
   db.prepare('UPDATE messages SET readAt = ? WHERE toId = ? AND fromId = ? AND readAt IS NULL').run(
     Date.now(), uid, other.id,
   )
@@ -2158,9 +2167,29 @@ app.delete('/api/messages/:id', requireAuth, (req, res) => {
   if (m.fromId !== req.user.id) return fail(res, 403, 'You can only unsend your own messages.')
   if (m.deletedAt) return ok(res, {})
   db.prepare(
-    "UPDATE messages SET deletedAt=?, body='', imageUrl=NULL, audioUrl=NULL, battleId=NULL, replyTo=NULL, photoStamps=NULL WHERE id=?",
+    "UPDATE messages SET deletedAt=?, body='', imageUrl=NULL, videoUrl=NULL, audioUrl=NULL, battleId=NULL, replyTo=NULL, photoStamps=NULL WHERE id=?",
   ).run(Date.now(), m.id)
   db.prepare('DELETE FROM message_reactions WHERE messageId=?').run(m.id)
+  return ok(res, {})
+})
+
+// "delete for me": hide a single message (from either sender) from your own view.
+app.delete('/api/messages/:id/hide', requireAuth, (req, res) => {
+  const m = db.prepare('SELECT fromId, toId FROM messages WHERE id = ?').get(req.params.id)
+  if (!m) return fail(res, 404, 'Message not found.')
+  if (m.fromId !== req.user.id && m.toId !== req.user.id) return fail(res, 403, 'Not your conversation.')
+  db.prepare('INSERT OR IGNORE INTO message_hides (userId, messageId) VALUES (?, ?)').run(req.user.id, req.params.id)
+  return ok(res, {})
+})
+
+// delete a whole conversation for me: clear history up to now. It reappears only
+// if the other person messages me again afterwards (standard inbox behaviour).
+app.delete('/api/threads/:alias', requireAuth, (req, res) => {
+  const other = getUserByAliasRow(req.params.alias)
+  if (!other) return fail(res, 404, 'User not found.')
+  db.prepare(
+    'INSERT INTO thread_clears (userId, partnerId, clearedAt) VALUES (?,?,?) ON CONFLICT(userId, partnerId) DO UPDATE SET clearedAt=excluded.clearedAt',
+  ).run(req.user.id, other.id, Date.now())
   return ok(res, {})
 })
 

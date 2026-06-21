@@ -579,6 +579,8 @@ export function AppProvider({ children }) {
   )
   const reactMessage = useCallback((id, emoji) => api.post(`/api/messages/${id}/react`, { emoji }), [])
   const unsendMessage = useCallback((id) => api.del(`/api/messages/${id}`), [])
+  const hideMessage = useCallback((id) => api.del(`/api/messages/${id}/hide`), [])
+  const deleteThread = useCallback((alias) => api.del(`/api/threads/${encodeURIComponent(alias)}`), [])
   const stampPhoto = useCallback((id, { emoji, x, y }) => api.post(`/api/messages/${id}/stamp`, { emoji, x, y }), [])
   const unstampPhoto = useCallback((id, stampId) => api.del(`/api/messages/${id}/stamp/${stampId}`), [])
   const uploadImage = useCallback((file) => api.upload('/api/uploads/image', file), [])
@@ -724,6 +726,8 @@ export function AppProvider({ children }) {
     sendMessage,
     reactMessage,
     unsendMessage,
+    hideMessage,
+    deleteThread,
     stampPhoto,
     unstampPhoto,
     uploadImage,

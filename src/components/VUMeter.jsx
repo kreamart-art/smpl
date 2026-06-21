@@ -77,26 +77,11 @@ export default function VUMeter({
       const w = W,
         h = H
       ctx.clearRect(0, 0, w, h)
+      // transparent background: the dial sits straight on the card, no black box.
+      // The pivot is kept high enough that the metal cap stays fully in frame.
       const cx = w / 2,
-        cy = h * 0.97,
-        R = h * 0.84
-      // recessed window: dark vertical gradient + inner shadow top + left
-      let g = ctx.createLinearGradient(0, 0, 0, h)
-      g.addColorStop(0, '#1b1812')
-      g.addColorStop(0.5, '#0c0b09')
-      g.addColorStop(1, '#050403')
-      ctx.fillStyle = g
-      ctx.fillRect(0, 0, w, h)
-      let st = ctx.createLinearGradient(0, 0, 0, h * 0.5)
-      st.addColorStop(0, 'rgba(0,0,0,0.6)')
-      st.addColorStop(1, 'rgba(0,0,0,0)')
-      ctx.fillStyle = st
-      ctx.fillRect(0, 0, w, h * 0.5)
-      let sl = ctx.createLinearGradient(0, 0, w * 0.45, 0)
-      sl.addColorStop(0, 'rgba(0,0,0,0.5)')
-      sl.addColorStop(1, 'rgba(0,0,0,0)')
-      ctx.fillStyle = sl
-      ctx.fillRect(0, 0, w * 0.45, h)
+        cy = h * 0.82,
+        R = h * 0.78
       // scale ticks in an arc; thicker every 5; top 30% is the red peak zone
       for (let i = 0; i <= 20; i++) {
         const v = i / 20,

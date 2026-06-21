@@ -8,7 +8,7 @@ import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import PhotoViewer from '../components/PhotoViewer.jsx'
 import BroadcastComposer from '../components/BroadcastComposer.jsx'
-import { IconImage, IconVideo, IconMic } from '../components/icons.jsx'
+import { IconImage, IconVideo, IconMic, IconTrash } from '../components/icons.jsx'
 import { Btn, inputCls, textareaCls } from '../components/ui.jsx'
 import { roleLabel } from '../data/kind.js'
 import { mediaUrl } from '../api.js'
@@ -94,9 +94,92 @@ export default function Messages() {
   return alias ? <Thread alias={alias} /> : <Inbox />
 }
 
+// A conversation row that reveals a delete action when you swipe it left.
+function ThreadRow({ th, onOpen, onDelete, lastLabel }) {
+  const t = useT()
+  const [dx, setDx] = useState(0)
+  const [open, setOpen] = useState(false)
+  const [animate, setAnimate] = useState(true)
+  const startX = useRef(0)
+  const startDx = useRef(0)
+  const dxRef = useRef(0) // live drag offset, read in `end` (state can be stale)
+  const drag = useRef(false)
+  const REVEAL = 84
+
+  const begin = (x) => {
+    startX.current = x
+    startDx.current = dxRef.current
+    drag.current = true
+    setAnimate(false)
+  }
+  const move = (x) => {
+    if (!drag.current) return
+    const nx = Math.max(-REVEAL, Math.min(0, startDx.current + (x - startX.current)))
+    dxRef.current = nx
+    setDx(nx)
+  }
+  const end = () => {
+    if (!drag.current) return
+    drag.current = false
+    setAnimate(true)
+    const o = dxRef.current < -REVEAL / 2
+    setOpen(o)
+    dxRef.current = o ? -REVEAL : 0
+    setDx(dxRef.current)
+  }
+
+  return (
+    <div className="relative overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onDelete(th.user.alias)}
+        aria-label={t('messages.deleteChat')}
+        title={t('messages.deleteChat')}
+        tabIndex={open ? 0 : -1}
+        className="absolute inset-y-0 right-0 flex w-[84px] items-center justify-center bg-accent text-accent-ink"
+      >
+        <IconTrash size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (open) {
+            setOpen(false)
+            dxRef.current = 0
+            setDx(0)
+          } else onOpen(th.user.alias)
+        }}
+        onTouchStart={(e) => begin(e.touches[0].clientX)}
+        onTouchMove={(e) => move(e.touches[0].clientX)}
+        onTouchEnd={end}
+        className="relative flex w-full items-center gap-3 bg-panel px-4 py-3.5 text-left hover:bg-bg"
+        style={{ transform: `translateX(${dx}px)`, transition: animate ? 'transform 0.18s ease' : 'none' }}
+      >
+        <Avatar alias={th.user.alias} src={th.user.avatar} size={44} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="truncate font-mono text-[12px] text-ink">@{th.user.alias}</span>
+              {th.user.verified ? <VerifiedBadge size={11} /> : null}
+            </span>
+            <span className="shrink-0 font-mono text-[10px] text-faint">{shortAgo(th.last.createdAt)}</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className={`truncate font-mono text-[11px] ${th.unread ? 'text-ink' : 'text-muted'}`}>
+              {th.last.mine ? t('messages.you') : ''}
+              {lastLabel(th.last)}
+            </span>
+            {th.unread > 0 ? <span className="ml-auto block h-2 w-2 shrink-0 bg-ink" /> : null}
+          </div>
+        </div>
+      </button>
+    </div>
+  )
+}
+
 // ----- inbox -----------------------------------------------------------------
 function Inbox() {
-  const { fetchThreads, currentUser } = useApp()
+  const { fetchThreads, currentUser, deleteThread } = useApp()
   const t = useT()
   const navigate = useNavigate()
   const [threads, setThreads] = useState([])
@@ -132,6 +215,11 @@ function Inbox() {
     return last.body
   }
 
+  const handleDelete = async (alias) => {
+    setThreads((prev) => prev.filter((x) => x.user.alias !== alias))
+    await deleteThread(alias)
+  }
+
   const TabBtn = ({ id, label, count, dot }) => (
     <button
       onClick={() => setTab(id)}
@@ -165,29 +253,13 @@ function Inbox() {
       <div className="mt-4 divide-y divide-line border border-line bg-panel">
         {list.length ? (
           list.map((th) => (
-            <button
+            <ThreadRow
               key={th.user.alias}
-              onClick={() => navigate(`/messages/${encodeURIComponent(th.user.alias)}`)}
-              className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-bg"
-            >
-              <Avatar alias={th.user.alias} src={th.user.avatar} size={44} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-1">
-                    <span className="truncate font-mono text-[12px] text-ink">@{th.user.alias}</span>
-                    {th.user.verified ? <VerifiedBadge size={11} /> : null}
-                  </span>
-                  <span className="shrink-0 font-mono text-[10px] text-faint">{shortAgo(th.last.createdAt)}</span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-2">
-                  <span className={`truncate font-mono text-[11px] ${th.unread ? 'text-ink' : 'text-muted'}`}>
-                    {th.last.mine ? t('messages.you') : ''}
-                    {lastLabel(th.last)}
-                  </span>
-                  {th.unread > 0 ? <span className="ml-auto block h-2 w-2 shrink-0 bg-ink" /> : null}
-                </div>
-              </div>
-            </button>
+              th={th}
+              lastLabel={lastLabel}
+              onOpen={(a) => navigate(`/messages/${encodeURIComponent(a)}`)}
+              onDelete={handleDelete}
+            />
           ))
         ) : (
           <div className="px-4 py-10 text-center">
@@ -304,7 +376,7 @@ function AudioClip({ src, mine }) {
 
 // ----- one conversation ------------------------------------------------------
 function Thread({ alias }) {
-  const { fetchThread, sendMessage, reactMessage, unsendMessage, stampPhoto, unstampPhoto, uploadImage, uploadVideo, uploadAudio, refresh, currentUser } = useApp()
+  const { fetchThread, sendMessage, reactMessage, unsendMessage, hideMessage, stampPhoto, unstampPhoto, uploadImage, uploadVideo, uploadAudio, refresh, currentUser } = useApp()
   const { standalone } = usePWA()
   const t = useT()
   const [data, setData] = useState(null)
@@ -468,6 +540,11 @@ function Thread({ alias }) {
   const unsend = async (id) => {
     setActiveMsg(null)
     await unsendMessage(id)
+    load(false)
+  }
+  const deleteForMe = async (id) => {
+    setActiveMsg(null)
+    await hideMessage(id)
     load(false)
   }
   const addStamp = async (id, s) => {
@@ -681,11 +758,18 @@ function Thread({ alias }) {
                           {m.mine ? (
                             <button
                               onClick={() => unsend(m.id)}
-                              className="px-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted hover:text-ink"
+                              className="flex items-center gap-1 px-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted hover:text-ink"
                             >
-                              🗑 {t('messages.unsend')}
+                              <IconTrash size={12} /> {t('messages.unsend')}
                             </button>
-                          ) : null}
+                          ) : (
+                            <button
+                              onClick={() => deleteForMe(m.id)}
+                              className="flex items-center gap-1 px-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted hover:text-ink"
+                            >
+                              <IconTrash size={12} /> {t('messages.deleteForMe')}
+                            </button>
+                          )}
                         </div>
                       ) : null}
 
