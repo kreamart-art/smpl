@@ -39,11 +39,11 @@ export default function BottomTabBar() {
       style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
     >
       <div className="tab-pill flex w-full max-w-[440px] items-center gap-1 border border-line-bright bg-black/70 px-2 py-1.5 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)] backdrop-blur-xl">
-        <Tab to="/battles" label={t('common.battles')} icon={<IconTrophy size={22} />} tourKey="battles" />
-        <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={22} />} tourKey="feed" />
-        <Tab to="/people" label={t('common.people')} icon={<IconPeople size={22} />} tourKey="people" />
-        <Tab to="/play" label={t('play.nav')} icon={<IconGamepad size={22} />} tourKey="play" />
-        <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={22} />} tourKey="profile" />
+        <Tab to="/battles" label={t('common.battles')} icon={<IconTrophy size={26} />} tourKey="battles" />
+        <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={26} />} tourKey="feed" />
+        <Tab to="/people" label={t('common.people')} icon={<IconPeople size={26} />} tourKey="people" />
+        <Tab to="/play" label={t('play.nav')} icon={<IconGamepad size={26} />} tourKey="play" />
+        <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={26} />} tourKey="profile" />
       </div>
     </nav>
   )
