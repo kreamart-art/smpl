@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n/index.jsx'
 import Vinyl from '../components/Vinyl.jsx'
+import VUMeter from '../components/VUMeter.jsx'
 import TopCallers from '../components/TopCallers.jsx'
 import LeagueBoard from '../components/LeagueBoard.jsx'
 import { PlayTour } from '../components/Tour.jsx'
@@ -51,11 +52,14 @@ export default function Play() {
 
         <div data-tour="play-predict" className="group relative flex flex-col overflow-hidden border border-line bg-panel p-6">
           <span className="hover-bloom" aria-hidden="true" />
-          <div className="relative flex items-center gap-2">
+          <div className="relative">
+            <VUMeter size={58} ambient />
+          </div>
+          <div className="relative mt-4 flex items-center gap-2">
             <span className="block h-1.5 w-1.5 bg-accent pulse-dot" />
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('play.predictTag')}</span>
           </div>
-          <h2 className="relative mt-4 font-sans text-xl font-bold uppercase tracking-tight">{t('predict.title')}</h2>
+          <h2 className="relative mt-3 font-sans text-xl font-bold uppercase tracking-tight">{t('predict.title')}</h2>
           <p className="relative mt-2 flex-1 font-mono text-[12px] leading-relaxed text-muted">{t('play.predictSub')}</p>
           <div className="relative mt-5">
             <Btn to="/predict" variant="accent">
