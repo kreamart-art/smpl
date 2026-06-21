@@ -51,7 +51,7 @@ export default function BottomTabBar() {
         {ind ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute z-0 bg-ink/10 transition-all duration-300 ease-out motion-reduce:transition-none"
+            className="tab-pill-item pointer-events-none absolute z-0 bg-ink/10 transition-all duration-300 ease-out motion-reduce:transition-none"
             style={{ left: ind.left, top: ind.top, width: ind.width, height: ind.height }}
           />
         ) : null}
