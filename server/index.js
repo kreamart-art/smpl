@@ -2042,6 +2042,48 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
   return ok(res, { id })
 })
 
+// @SMPL broadcast: an admin fans a one-way DM out from the official @SMPL
+// account to every member at once (news / announcements). It lands in each
+// person's @SMPL thread as a normal, unread message.
+app.post('/api/admin/broadcast', rateLimit('broadcast', 10, 60_000), requireAuth, (req, res) => {
+  if (req.user.role !== 'admin') return fail(res, 403, 'Admins only.')
+  const smpl = getUserByAliasRow('SMPL')
+  if (!smpl) return fail(res, 500, 'No SMPL account configured.')
+  const text = String(req.body?.body || '').trim()
+  const img = typeof req.body?.imageUrl === 'string' && /^\/api\/uploads\/i_/.test(req.body.imageUrl) ? req.body.imageUrl : null
+  if (!text && !img) return fail(res, 400, 'Write something first.')
+  if (text.length > 2000) return fail(res, 400, 'That message is too long.')
+
+  const recipients = db.prepare('SELECT id FROM users WHERE id != ?').all(smpl.id)
+  const insert = db.prepare(
+    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId, replyTo, imageUrl, audioUrl, shareKind, shareRef) VALUES (?,?,?,?,?,NULL,NULL,NULL,?,NULL,NULL,NULL)',
+  )
+  const now = Date.now()
+  let sent = 0
+  db.exec('BEGIN')
+  try {
+    for (const r of recipients) {
+      if (isBlocked(smpl.id, r.id)) continue
+      insert.run(`m_${randomUUID().slice(0, 10)}`, smpl.id, r.id, text, now, img)
+      sent++
+    }
+    db.exec('COMMIT')
+  } catch {
+    db.exec('ROLLBACK')
+    return fail(res, 500, 'Broadcast failed.')
+  }
+  // best-effort push to everyone (fire and forget)
+  for (const r of recipients) {
+    sendPush(r.id, {
+      title: '@SMPL',
+      body: text ? text.slice(0, 140) : 'Sent a photo',
+      tag: 'smpl-broadcast',
+      url: '/messages/SMPL',
+    }).catch(() => {})
+  }
+  return ok(res, { sent })
+})
+
 // toggle an emoji reaction on a message in your conversation
 const REACTIONS = ['❤️', '🔥', '😂', '👍', '😮', '😢', '🙏']
 app.post('/api/messages/:id/react', requireAuth, (req, res) => {

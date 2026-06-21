@@ -7,6 +7,7 @@ import Avatar from '../components/Avatar.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import PhotoViewer from '../components/PhotoViewer.jsx'
+import BroadcastComposer from '../components/BroadcastComposer.jsx'
 import { IconImage, IconMic } from '../components/icons.jsx'
 import { Btn, inputCls, textareaCls } from '../components/ui.jsx'
 import { roleLabel } from '../data/kind.js'
@@ -95,7 +96,7 @@ export default function Messages() {
 
 // ----- inbox -----------------------------------------------------------------
 function Inbox() {
-  const { fetchThreads, currentUser } = useApp()
+  const { fetchThreads, currentUser, isAdmin } = useApp()
   const t = useT()
   const navigate = useNavigate()
   const [threads, setThreads] = useState([])
@@ -152,6 +153,8 @@ function Inbox() {
         </h1>
       </div>
       <p className="mt-4 font-mono text-[11px] text-muted">{t('messages.networkHint')}</p>
+
+      {isAdmin ? <BroadcastComposer /> : null}
 
       <div className="mt-8 flex gap-6">
         <TabBtn id="primary" label={t('messages.primary')} count={primary.length} />
