@@ -24,6 +24,7 @@ const PAGE_TITLES = {
   '/battles': 'Battles: SMPL',
   '/feed': 'Feed: SMPL',
   '/people': 'People: SMPL',
+  '/game': 'Guess the Sample: SMPL',
   '/signup': 'Join SMPL: Beat & Verse Battles',
   '/login': 'Log in: SMPL',
   '/contact': 'Contact: SMPL',

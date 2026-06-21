@@ -51,6 +51,9 @@ export default function Nav() {
           <NavLink to="/people" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
             {t('common.people')}
           </NavLink>
+          <NavLink to="/game" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
+            {t('game.nav')}
+          </NavLink>
           {currentUser ? (
             <NavLink to="/feed" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
               {t('common.feed')}

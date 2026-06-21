@@ -205,6 +205,17 @@ body {
   animation: smpl-grain 6s steps(5) infinite;
 }
 
+/* --- de Plaat: the spinning record (listener game) --- */
+@keyframes smpl-record {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.record-spin {
+  transform-origin: 50% 50%;
+  animation: smpl-record 4s linear infinite;
+}
+
 /* --- soft cinematic vignette --- */
 .vignette {
   position: fixed;
@@ -560,6 +571,7 @@ body {
   .hero-bloom,
   .wave-bar,
   .marquee-track,
+  .record-spin,
   .pulse-dot {
     animation: none !important;
   }

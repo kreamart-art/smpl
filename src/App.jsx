@@ -24,6 +24,7 @@ import ClipPage from './pages/ClipPage.jsx'
 import Legal from './pages/Legal.jsx'
 import Contact from './pages/Contact.jsx'
 import Help from './pages/Help.jsx'
+import Game from './pages/Game.jsx'
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/Recover.jsx'
 import AuthMagic from './pages/AuthMagic.jsx'
 import NotFound from './pages/NotFound.jsx'
@@ -95,6 +96,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/battles" element={<Battles />} />
         <Route path="/battles/:id" element={<BattleDetail />} />
+        <Route path="/game" element={<Game />} />
         <Route path="/clip/:id" element={<ClipPage />} />
         <Route path="/profile/:alias" element={<Profile />} />
         <Route path="/feed" element={<Feed />} />
