@@ -155,6 +155,11 @@ export const extra = {
     'push.blockedShort': 'Blocked',
     'push.unsupported': 'Your browser doesn’t support notifications.',
     'push.enableHint': 'Get pinged for new messages, battles + results.',
+    'push.disable': 'Turn off',
+    'push.listTitle': 'You get a ping for',
+    'push.list1': 'New battles, and when there is a winner to call',
+    'push.list2': 'Votes, comments and results on your entries',
+    'push.list3': 'Direct messages',
 
     'legal.privacy': 'Privacy',
     'legal.terms': 'Terms',
@@ -525,6 +530,11 @@ export const extra = {
     'push.blockedShort': 'Geblokkeerd',
     'push.unsupported': 'Je browser ondersteunt geen meldingen.',
     'push.enableHint': 'Krijg een seintje bij nieuwe berichten, battles en uitslagen.',
+    'push.disable': 'Uitzetten',
+    'push.listTitle': 'Je krijgt een seintje bij',
+    'push.list1': 'Nieuwe battles, en als er een winnaar te voorspellen is',
+    'push.list2': 'Stemmen, reacties en uitslagen op je inzendingen',
+    'push.list3': 'Directe berichten',
 
     'admin.makeCurator': 'Maak curator',
     'admin.removeCurator': 'Curator verwijderen',

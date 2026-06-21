@@ -23,11 +23,11 @@ function PrivateCell({ label, value }) {
   )
 }
 
-function NotificationsRow() {
+// Menu entry: opens the notifications block, with the current state at a glance.
+function NotificationsRow({ onOpen }) {
   const { pushConfigured } = useApp()
   const t = useT()
   const [on, setOn] = useState(false)
-  const [busy, setBusy] = useState(false)
   const [perm, setPerm] = useState('default')
 
   useEffect(() => {
@@ -37,7 +37,45 @@ function NotificationsRow() {
 
   if (!pushConfigured || !pushSupported()) return null
 
+  const status = perm === 'denied' ? t('push.blockedShort') : on ? t('push.on') : t('push.off')
+  const tone = perm === 'denied' ? 'text-faint' : on ? 'text-good' : 'text-muted'
+
+  return (
+    <button
+      onClick={onOpen}
+      className="flex w-full items-center gap-3 px-5 py-4 text-left font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim transition-colors hover:bg-bg"
+    >
+      <IconBell size={18} />
+      <span>{t('push.settings')}</span>
+      <span className="ml-auto flex items-center gap-2 text-muted">
+        <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${tone}`}>{status}</span>
+        <span>▸</span>
+      </span>
+    </button>
+  )
+}
+
+// The notifications block: turn web push on/off, see the state, and what it
+// covers. Sound + location are not web permissions, so this is notifications
+// only; the native app can later add an "open system settings" entry here.
+function NotificationsPanel({ onBack }) {
+  const { pushConfigured } = useApp()
+  const t = useT()
+  const [on, setOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [perm, setPerm] = useState('default')
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    setPerm(pushPermission())
+    isPushSubscribed().then(setOn)
+  }, [])
+
+  const supported = pushSupported() && pushConfigured
+  const blocked = perm === 'denied'
+
   const toggle = async () => {
+    setErr('')
     setBusy(true)
     if (on) {
       await disablePush()
@@ -45,30 +83,71 @@ function NotificationsRow() {
     } else {
       const r = await enablePush()
       setOn(!!r.ok)
+      if (!r.ok && r.error) setErr(r.error)
     }
     setPerm(pushPermission())
     setBusy(false)
   }
 
   return (
-    <div className="flex w-full items-center gap-3 px-5 py-4 font-mono text-[12px] uppercase tracking-[0.12em] text-ink-dim">
-      <IconBell size={18} />
-      <span>{t('push.settings')}</span>
-      <span className="ml-auto">
-        {perm === 'denied' ? (
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{t('push.blockedShort')}</span>
+    <div className="border border-line-bright bg-panel">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+          <IconBell size={15} /> {t('push.settings')}
+        </span>
+        <button onClick={onBack} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
+          ◂ {t('common.back')}
+        </button>
+      </div>
+      <div className="space-y-5 p-5">
+        <p className="font-mono text-[12px] leading-relaxed text-ink-dim">{t('push.modalBody')}</p>
+
+        {!supported ? (
+          <p className="border border-line bg-bg px-4 py-3 font-mono text-[11px] leading-relaxed text-muted">
+            {t('push.unsupported')}
+          </p>
+        ) : blocked ? (
+          <div className="border border-line bg-bg px-4 py-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">{t('push.blockedShort')}</div>
+            <p className="mt-1.5 font-mono text-[11px] leading-relaxed text-muted">{t('push.blocked')}</p>
+          </div>
         ) : (
-          <button
-            onClick={toggle}
-            disabled={busy}
-            className={`border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
-              on ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
-            }`}
-          >
-            {on ? t('push.on') : t('push.off')}
-          </button>
+          <div className="flex items-center justify-between gap-3 border border-line bg-bg px-4 py-3">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink">{t('push.settings')}</div>
+              <div className={`mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] ${on ? 'text-good' : 'text-muted'}`}>
+                {on ? t('push.on') : t('push.off')}
+              </div>
+            </div>
+            <button
+              onClick={toggle}
+              disabled={busy}
+              className={`h-9 min-w-[92px] border px-4 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors disabled:opacity-50 ${
+                on ? 'border-line-bright text-ink hover:border-ink' : 'border-ink bg-ink text-bg hover:bg-bright'
+              }`}
+            >
+              {busy ? t('push.enabling') : on ? t('push.disable') : t('push.enable')}
+            </button>
+          </div>
         )}
-      </span>
+
+        {err ? <p className="font-mono text-[11px] text-accent">{err}</p> : null}
+
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{t('push.listTitle')}</div>
+          <ul className="mt-2 space-y-1.5 font-mono text-[12px] leading-relaxed text-ink-dim">
+            <li className="flex gap-2">
+              <span className="text-ink">·</span> {t('push.list1')}
+            </li>
+            <li className="flex gap-2">
+              <span className="text-ink">·</span> {t('push.list2')}
+            </li>
+            <li className="flex gap-2">
+              <span className="text-ink">·</span> {t('push.list3')}
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   )
 }
@@ -757,6 +836,7 @@ export default function Settings() {
   if (view === 'install') return <Shell><InstallPanel onBack={() => setView('menu')} /></Shell>
   if (view === 'compete') return <Shell><CuratorCompetePanel user={user} onBack={() => setView('menu')} /></Shell>
   if (view === 'insights') return <Shell><CrateInsightsPanel onBack={() => setView('menu')} /></Shell>
+  if (view === 'notifications') return <Shell><NotificationsPanel onBack={() => setView('menu')} /></Shell>
 
   const Item = ({ icon, label, onClick, danger, right }) => (
     <button
@@ -827,7 +907,7 @@ export default function Settings() {
               <ThemeToggle />
             </span>
           </div>
-          <NotificationsRow />
+          <NotificationsRow onOpen={() => setView('notifications')} />
           {user.name || user.dob || user.email ? (
             <Item icon={<IconUser size={18} />} label={t('settings.personalData')} onClick={() => setView('private')} />
           ) : null}
