@@ -48,6 +48,10 @@ CREATE TABLE IF NOT EXISTS submissions (
 CREATE TABLE IF NOT EXISTS votes (
   id TEXT PRIMARY KEY, battleId TEXT, submissionId TEXT, userId TEXT
 );
+CREATE TABLE IF NOT EXISTS predictions (
+  id TEXT PRIMARY KEY, battleId TEXT, userId TEXT, submissionId TEXT, createdAt INTEGER
+);
+CREATE UNIQUE INDEX IF NOT EXISTS pred_uniq ON predictions (battleId, userId);
 CREATE TABLE IF NOT EXISTS follows (
   followerId TEXT, followeeId TEXT, PRIMARY KEY (followerId, followeeId)
 );

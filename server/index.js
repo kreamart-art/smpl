@@ -25,6 +25,7 @@ import { sendEmail, mailConfigured, resetEmail, verifyEmail as verifyEmailTpl, s
 import { runBackup, listBackups, scheduleBackups } from './backup.js'
 import { pushConfigured, vapidPublicKey, saveSubscription, removeSubscription, sendPush } from './push.js'
 import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
+import { mountGame } from './game.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -97,18 +98,48 @@ const getBattleRow = (id) => db.prepare('SELECT * FROM battles WHERE id = ?').ge
 const getSubmissionRow = (id) => db.prepare('SELECT * FROM submissions WHERE id = ?').get(id)
 
 const allBattles = () => db.prepare('SELECT * FROM battles').all().map(rowToBattle)
-// Public users, each with a cheap `wins` count (battles they've won) so the
-// client can surface "rising maker" in people suggestions. One pass over the
-// declared winners — small.
+// Public users, each with a cheap `wins` count (battles won) for the "rising
+// maker" suggestion, and `caller` prediction-game stats (calls / correct /
+// points / current streak). Both are one pass over the declared winners.
 const allUsersPub = () => {
+  const resolved = db
+    .prepare('SELECT id, winnerSubmissionId FROM battles WHERE status = ? AND winnerSubmissionId IS NOT NULL ORDER BY voteEnd ASC')
+    .all(STATUS.WINNER_DECLARED)
   const wins = {}
-  for (const b of db
-    .prepare(`SELECT winnerSubmissionId FROM battles WHERE status = ? AND winnerSubmissionId IS NOT NULL`)
-    .all(STATUS.WINNER_DECLARED)) {
+  const winnerOf = {}
+  const order = []
+  for (const b of resolved) {
+    winnerOf[b.id] = b.winnerSubmissionId
+    order.push(b.id)
     const s = getSubmissionRow(b.winnerSubmissionId)
     if (s) wins[s.producerId] = (wins[s.producerId] || 0) + 1
   }
-  return db.prepare('SELECT * FROM users').all().map((u) => ({ ...pubUser(u), wins: wins[u.id] || 0 }))
+  // caller stats: walk each predictor's resolved calls in battle order
+  const byUser = {}
+  for (const p of db.prepare('SELECT battleId, userId, submissionId FROM predictions').all()) {
+    ;(byUser[p.userId] ||= {})[p.battleId] = p.submissionId
+  }
+  const caller = {}
+  for (const uid in byUser) {
+    let calls = 0
+    let correct = 0
+    let streak = 0
+    for (const bid of order) {
+      const pick = byUser[uid][bid]
+      if (pick === undefined) continue
+      calls += 1
+      if (pick === winnerOf[bid]) {
+        correct += 1
+        streak += 1
+      } else streak = 0
+    }
+    caller[uid] = { calls, correct, points: correct * 10, streak }
+  }
+  return db.prepare('SELECT * FROM users').all().map((u) => ({
+    ...pubUser(u),
+    wins: wins[u.id] || 0,
+    caller: caller[u.id] || { calls: 0, correct: 0, points: 0, streak: 0 },
+  }))
 }
 const allFollows = () => db.prepare('SELECT followerId, followeeId FROM follows').all()
 
@@ -365,6 +396,11 @@ function buildBootstrap(uid, userRow) {
   const myVotes = {}
   if (uid) for (const v of voteRows) if (v.userId === uid) myVotes[v.battleId] = v.submissionId
 
+  const myPredictions = {}
+  if (uid)
+    for (const p of db.prepare('SELECT battleId, submissionId FROM predictions WHERE userId = ?').all(uid))
+      myPredictions[p.battleId] = p.submissionId
+
   let unread = 0
   let unreadMessages = 0
   let blocked = []
@@ -386,6 +422,7 @@ function buildBootstrap(uid, userRow) {
     submissions,
     votes,
     myVotes,
+    myPredictions,
     follows: allFollows(),
     unread,
     unreadMessages,
@@ -1175,12 +1212,13 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   if (!b) return fail(res, 404, 'Battle not found.')
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Voting is not open.')
   if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Voting has closed.')
-  // the house never votes — the founder's own accounts (@SMPL / admin) stay
-  // neutral so no battle can ever be called rigged. They can still comment.
-  if (isHouse(req.user))
-    return fail(res, 403, 'House accounts don’t vote — it keeps every battle fair.')
+  // Only the official @SMPL account stays out of voting (it's the platform, so
+  // no battle can be called rigged). The founder's @KREAM/admin account votes
+  // like anyone else. @SMPL can still comment.
+  if (req.user.alias === 'SMPL')
+    return fail(res, 403, 'The SMPL account doesn’t vote — it keeps every battle fair.')
   // Producers + artists competing in the battle MAY vote too — just never for
-  // their own beat (enforced below). Only the house stays out entirely.
+  // their own beat (enforced below). Only @SMPL stays out entirely.
   // a voter may change their pick while voting is open — keep one row per
   // (battle, user) and just move it to the new submission.
   const existing = db
@@ -1219,6 +1257,36 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
         url: `/battles/${b.id}`,
       }).catch(() => {})
     }
+  }
+  return ok(res, {})
+})
+
+// ----- predictions (listener "call the winner" game) -------------------------
+// Call who you think WILL win, during voting (tallies are hidden, so it's a
+// blind read of the beats). One call per battle, changeable until voting closes.
+// Open to anyone who can vote — not competitors, not the house.
+app.post('/api/battles/:id/predict', rateLimit('predict', 40, 60_000), requireAuth, (req, res) => {
+  const b = rowToBattle(getBattleRow(req.params.id))
+  if (!b) return fail(res, 404, 'Battle not found.')
+  if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Predictions are only open during voting.')
+  if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Predictions have closed.')
+  if (req.user.alias === 'SMPL') return fail(res, 403, 'The SMPL account doesn’t predict.')
+  if (b.signups.includes(req.user.id))
+    return fail(res, 403, 'You’re competing in this battle, so you can’t predict it.')
+  const sub = getSubmissionRow(req.body?.submissionId)
+  if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not found.')
+  if (sub.disqualified) return fail(res, 400, 'That entry was disqualified.')
+  const existing = db.prepare('SELECT id FROM predictions WHERE battleId = ? AND userId = ?').get(b.id, req.user.id)
+  if (existing) {
+    db.prepare('UPDATE predictions SET submissionId = ? WHERE id = ?').run(sub.id, existing.id)
+  } else {
+    db.prepare('INSERT INTO predictions (id,battleId,userId,submissionId,createdAt) VALUES (?,?,?,?,?)').run(
+      `pr_${randomUUID().slice(0, 8)}`,
+      b.id,
+      req.user.id,
+      sub.id,
+      Date.now(),
+    )
   }
   return ok(res, {})
 })
@@ -2441,6 +2509,11 @@ app.get('/sitemap.xml', (req, res) => {
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`,
   )
 })
+
+// ----- listener mini-game: "Guess the Sample" (+ leaderboard) ----------------
+// Server-authoritative: the answer key + grading live in game.js, so a score
+// can't be forged client-side. Registered before the SPA catch-all below.
+mountGame(app, { db, ok, fail, rateLimit, langOf })
 
 // ----- production: serve the built SPA from the same origin ------------------
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
