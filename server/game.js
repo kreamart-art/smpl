@@ -255,6 +255,37 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
     return ok(res, { correct, correctIndex: correctIdx, answer, fact, score: s.score, streak: s.streak, done })
   })
 
+  // ---- audio preview proxy. The phone asks OUR server for an iTunes 30s
+  // preview URL instead of reaching itunes.apple.com itself: in-app webviews,
+  // iOS content blockers and some networks silently kill the cross-origin
+  // lookup from the device (it shows up as "no preview"). Cached hard, since the
+  // catalogue is static. A non-200 from Apple (e.g. rate-limit) is reported as
+  // transient so the client can retry instead of caching a false "no preview".
+  const itunesCache = new Map() // term -> { url, at }
+  const PREVIEW_TTL = 7 * 24 * 60 * 60_000
+
+  app.get('/api/game/preview', rateLimit('gamePreview', 300, 10 * 60_000), async (req, res) => {
+    const term = String(req.query.term || '').slice(0, 120).trim()
+    if (!term) return fail(res, 400, 'Missing term.')
+    const hit = itunesCache.get(term)
+    if (hit && Date.now() - hit.at < PREVIEW_TTL) return ok(res, { url: hit.url })
+    let url = null
+    try {
+      const r = await fetch(
+        'https://itunes.apple.com/search?media=music&entity=song&limit=6&term=' + encodeURIComponent(term),
+        { headers: { 'User-Agent': 'SMPL/1.0 (+https://usesmpl.com)' } },
+      )
+      if (!r.ok) return ok(res, { url: null, transient: true })
+      const data = await r.json()
+      const found = (data.results || []).find((x) => x.previewUrl)
+      if (found) url = found.previewUrl
+    } catch {
+      return ok(res, { url: null, transient: true })
+    }
+    itunesCache.set(term, { url, at: Date.now() })
+    return ok(res, { url })
+  })
+
   // upsert "keep the best, count the play" against either score table.
   function bumpBest(table, keyCols, keyVals, score, bestStreak, now) {
     const where = keyCols.map((c) => `${c} = ?`).join(' AND ')

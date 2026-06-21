@@ -9,55 +9,25 @@ import Vinyl from '../components/Vinyl.jsx'
 import { Btn, Label } from '../components/ui.jsx'
 import { IconPlay, IconPause } from '../components/icons.jsx'
 
-// ---- audio: official ~30s previews via the iTunes Search API, capped to 15s.
-// JSONP so it works straight from the browser with no key (same as the original
-// standalone game). Cache per search term across the whole session.
+// ---- audio: official ~30s previews from the iTunes catalogue, capped to 15s.
+// We resolve the preview URL through OUR server (/api/game/preview) instead of
+// calling itunes.apple.com from the page: the in-app webview / iOS content
+// blockers / some networks silently kill that cross-origin lookup, which showed
+// up as "no preview" on iPhone. Cache per search term across the whole session.
 const CLIP_MS = 15000
-const previewCache = {}
-
-function jsonp(term) {
-  return new Promise((resolve, reject) => {
-    const cb = 'smplit_' + Math.random().toString(36).slice(2)
-    const s = document.createElement('script')
-    const cleanup = () => {
-      delete window[cb]
-      s.remove()
-      clearTimeout(timer)
-    }
-    const timer = setTimeout(() => {
-      if (window[cb]) {
-        cleanup()
-        reject(new Error('net'))
-      }
-    }, 8000)
-    window[cb] = (d) => {
-      cleanup()
-      resolve(d)
-    }
-    s.onerror = () => {
-      cleanup()
-      reject(new Error('net'))
-    }
-    s.src =
-      'https://itunes.apple.com/search?media=music&entity=song&limit=6&term=' +
-      encodeURIComponent(term) +
-      '&callback=' +
-      cb
-    document.body.appendChild(s)
-  })
-}
+const previewCache = {} // term -> url | null (resolved, definitive)
 
 async function findPreview(term) {
   if (term in previewCache) return previewCache[term]
-  let url = null
+  let r
   try {
-    const data = await jsonp(term)
-    const hit = data?.results?.find((r) => r.previewUrl)
-    if (hit) url = hit.previewUrl
+    r = await api.get('/api/game/preview?term=' + encodeURIComponent(term))
   } catch {
-    url = null
+    return null // transient: leave uncached so a later tap can retry
   }
-  previewCache[term] = url
+  if (!r || !r.ok || r.transient) return null // transient: allow retry
+  const url = r.url || null
+  previewCache[term] = url // definitive: a real URL, or a genuine no-preview
   return url
 }
 
