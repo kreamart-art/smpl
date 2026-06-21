@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom'
 import { useT } from '../i18n/index.jsx'
 import Vinyl from './Vinyl.jsx'
 
-// Pulls people into the listener game from the Feed — the main place app + web
-// users land, so it covers the gap where the game was only in the desktop nav.
-// One accent: the small GAME tag.
+// Pulls people into the listener-games hub from the Feed — the main place app +
+// web users land, so it covers the gap where the games were only in the nav.
+// One accent: the small GAMES tag.
 export default function GameTeaser({ className = '' }) {
   const t = useT()
   return (
     <Link
-      to="/game"
+      to="/play"
       className={`group relative flex items-center gap-4 overflow-hidden border border-line-bright bg-panel px-4 py-3.5 transition-colors hover:bg-panel-2 ${className}`}
     >
       <span className="hover-bloom" aria-hidden="true" />
@@ -21,7 +21,7 @@ export default function GameTeaser({ className = '' }) {
           </span>
           <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-faint">{t('game.teaserWeekly')}</span>
         </div>
-        <div className="mt-1.5 font-sans text-lg font-bold uppercase leading-none tracking-tight">{t('game.title')}</div>
+        <div className="mt-1.5 font-sans text-lg font-bold uppercase leading-none tracking-tight">{t('play.title')}</div>
         <div className="mt-1 truncate font-mono text-[11px] text-muted">{t('game.teaserSub')}</div>
       </div>
       <span className="relative shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-muted transition-colors group-hover:text-ink">
