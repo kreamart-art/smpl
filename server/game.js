@@ -25,14 +25,14 @@ const QUESTIONS = [
     answer: 'Queen & David Bowie — "Under Pressure"',
     distractors: ['The Police — "Every Breath You Take"', 'David Bowie — "Let\'s Dance"', 'Blondie — "Rapture"'],
     fact: {
-      en: `That instantly recognizable bassline is lifted straight from the 1981 Queen/Bowie collaboration. Vanilla Ice first claimed it was different — it wasn't — and the originals were eventually credited.`,
+      en: `That instantly recognizable bassline is lifted straight from the 1981 Queen/Bowie collaboration. Vanilla Ice first claimed it was different, it wasn't, and the originals were eventually credited.`,
       nl: `Die meteen herkenbare baslijn is rechtstreeks overgenomen van de samenwerking tussen Queen en Bowie uit 1981. Vanilla Ice beweerde eerst dat hij anders was, dat was niet zo, en uiteindelijk kregen de originele makers de credits.` } },
 
   { track: 'U Can\'t Touch This', artist: 'MC Hammer', year: 1990,
     answer: 'Rick James — "Super Freak"',
     distractors: ['Prince — "Kiss"', 'Chic — "Le Freak"', 'James Brown — "Sex Machine"'],
     fact: {
-      en: `Hammer built the whole record on Rick James' 1981 funk riff. James sued, won a writing credit — and a Grammy out of it.`,
+      en: `Hammer built the whole record on Rick James' 1981 funk riff. James sued, won a writing credit, and a Grammy out of it.`,
       nl: `Hammer bouwde de hele plaat op de funkriff van Rick James uit 1981. James klaagde hem aan, kreeg een schrijverscredit, en er een Grammy bovenop.` } },
 
   { track: 'Crazy in Love', artist: 'Beyoncé', year: 2003,
@@ -46,14 +46,14 @@ const QUESTIONS = [
     answer: 'The Police — "Every Breath You Take"',
     distractors: ['Phil Collins — "In the Air Tonight"', 'Sting — "Fields of Gold"', 'Hall & Oates — "Maneater"'],
     fact: {
-      en: `Built on the Police's 1983 guitar figure as a tribute to The Notorious B.I.G. — though Sting reportedly ended up with the lion's share of the royalties.`,
+      en: `Built on the Police's 1983 guitar figure as a tribute to The Notorious B.I.G., though Sting reportedly ended up with the lion's share of the royalties.`,
       nl: `Gebouwd op de gitaarfiguur van The Police uit 1983 als eerbetoon aan The Notorious B.I.G., al zou Sting uiteindelijk het leeuwendeel van de royalty's hebben opgestreken.` } },
 
   { track: 'Gold Digger', artist: 'Kanye West', year: 2005,
     answer: 'Ray Charles — "I Got a Woman"',
     distractors: ['Otis Redding — "Dock of the Bay"', 'Sam Cooke — "A Change Is Gonna Come"', 'Marvin Gaye — "Let\'s Get It On"'],
     fact: {
-      en: `Jamie Foxx — fresh off playing Ray Charles in the film 'Ray' — re-sang the hook that interpolates Charles' 1954 classic.`,
+      en: `Jamie Foxx, fresh off playing Ray Charles in the film 'Ray', re-sang the hook that interpolates Charles' 1954 classic.`,
       nl: `Jamie Foxx, net na zijn rol als Ray Charles in de film 'Ray', zong de hook opnieuw in, die de klassieker van Charles uit 1954 interpoleert.` } },
 
   { track: 'Stan', artist: 'Eminem', year: 2000,
@@ -88,7 +88,7 @@ const QUESTIONS = [
     answer: 'Etta James — "Something\'s Got a Hold on Me"',
     distractors: ['Aretha Franklin — "Respect"', 'Nina Simone — "Feeling Good"', 'Tina Turner — "River Deep – Mountain High"'],
     fact: {
-      en: `The euphoric vocal hook is sampled from Etta James' 1962 gospel-soul belter — the same line Flo Rida also borrowed for 'Good Feeling'.`,
+      en: `The euphoric vocal hook is sampled from Etta James' 1962 gospel-soul belter, the same line Flo Rida also borrowed for 'Good Feeling'.`,
       nl: `De euforische zang-hook is gesampled uit Etta James' gospel-soul-kraker uit 1962, dezelfde regel die Flo Rida ook leende voor 'Good Feeling'.` } },
 
   { track: 'Gangsta\'s Paradise', artist: 'Coolio', year: 1995,
@@ -102,14 +102,14 @@ const QUESTIONS = [
     answer: 'Diana Ross — "I\'m Coming Out"',
     distractors: ['Donna Summer — "I Feel Love"', 'Sister Sledge — "We Are Family"', 'Gloria Gaynor — "I Will Survive"'],
     fact: {
-      en: `That shiny disco riff is straight off Diana Ross' 1980 anthem — itself crafted by Chic's Nile Rodgers and Bernard Edwards.`,
+      en: `That shiny disco riff is straight off Diana Ross' 1980 anthem, itself crafted by Chic's Nile Rodgers and Bernard Edwards.`,
       nl: `Die glanzende discoriff komt rechtstreeks van Diana Ross' hymne uit 1980, die op zijn beurt werd geschreven door Nile Rodgers en Bernard Edwards van Chic.` } },
 
   { track: 'Break My Soul', artist: 'Beyoncé', year: 2022,
     answer: 'Robin S — "Show Me Love"',
     distractors: ['CeCe Peniston — "Finally"', 'Crystal Waters — "Gypsy Woman"', 'Black Box — "Ride on Time"'],
     fact: {
-      en: `The pumping organ stab revives Robin S's 1993 house classic — a cornerstone of the genre Beyoncé saluted across the 'Renaissance' album.`,
+      en: `The pumping organ stab revives Robin S's 1993 house classic, a cornerstone of the genre Beyoncé saluted across the 'Renaissance' album.`,
       nl: `De stuwende orgelstoot blaast Robin S' house-klassieker uit 1993 nieuw leven in, een hoeksteen van het genre dat Beyoncé eerde op het album 'Renaissance'.` } },
 ]
 

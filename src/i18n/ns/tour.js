@@ -25,7 +25,7 @@ export const tour = {
     'tour.welcome.messages.body': 'Direct messages with anyone you follow.',
 
     'tour.play.intro.title': 'Play',
-    'tour.play.intro.body': 'The games hub — play between battles and climb the weekly boards.',
+    'tour.play.intro.body': 'The games hub. Play between battles and climb the weekly boards.',
     'tour.play.game.title': 'Guess the Sample',
     'tour.play.game.body': 'Name the older record behind 14 modern hits. ~15s clips.',
     'tour.play.predict.title': 'Predict the winner',
@@ -86,7 +86,7 @@ export const tour = {
     'tour.welcome.messages.body': 'Directe berichten met iedereen die je volgt.',
 
     'tour.play.intro.title': 'Play',
-    'tour.play.intro.body': 'De games-hub — speel tussen battles door en klim in de weekboards.',
+    'tour.play.intro.body': 'De games-hub. Speel tussen battles door en klim in de weekboards.',
     'tour.play.game.title': 'Guess the Sample',
     'tour.play.game.body': 'Noem de oudere plaat achter 14 moderne hits. ~15s clips.',
     'tour.play.predict.title': 'Voorspel de winnaar',

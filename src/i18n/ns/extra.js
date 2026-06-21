@@ -14,7 +14,7 @@ export const extra = {
     'crate.anon': 'Anonymous',
     'crate.insights': 'Crate reach',
     'crate.inCratesLabel': 'crates your work is in',
-    'crate.insightsNote': 'Private. Only you can see this — it never shows on your profile.',
+    'crate.insightsNote': 'Private. Only you can see this. It never shows on your profile.',
     'cd.days': 'DAYS',
     'cd.hrs': 'HRS',
     'cd.min': 'MIN',

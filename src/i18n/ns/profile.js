@@ -75,7 +75,7 @@ export const profile = {
     // genres (browse + pick on its own page)
     'profile.manageGenres': 'Add genres',
     'profile.genrePick': 'Pick your genres',
-    'profile.genreHint': 'Pick up to {max} — multiple allowed.',
+    'profile.genreHint': 'Pick up to {max}, multiple allowed.',
     'profile.genreSearch': 'Search genres',
     'profile.genreNone': 'No genres match.',
     // links manager
@@ -239,7 +239,7 @@ export const profile = {
     // genres (bladeren + kiezen op een eigen pagina)
     'profile.manageGenres': 'Genres toevoegen',
     'profile.genrePick': 'Kies je genres',
-    'profile.genreHint': 'Kies er max {max} — meerdere mag.',
+    'profile.genreHint': 'Kies er max {max}, meerdere mag.',
     'profile.genreSearch': 'Zoek genres',
     'profile.genreNone': 'Geen genres gevonden.',
     // links beheren

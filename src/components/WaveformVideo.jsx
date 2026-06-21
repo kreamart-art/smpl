@@ -351,7 +351,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
     setSaving(true)
     const p = await ensurePrepared()
     if (!p.url) {
-      setErr(p.error || (nl ? 'Opslaan mislukt — probeer opnieuw.' : 'Could not save — try again.'))
+      setErr(p.error || (nl ? 'Opslaan mislukt, probeer opnieuw.' : 'Could not save, try again.'))
       setSaving(false)
       return
     }

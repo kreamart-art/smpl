@@ -335,7 +335,7 @@ function submissionReminders(now = Date.now()) {
       }
     }
     if (b.reminderAt && now >= b.reminderAt && now <= b.reminderAt + REMINDER_WINDOW && !reminderSent(b.id, 'custom')) {
-      notifyNonSubmitters(b, `Reminder — “${b.title}” submissions close soon. Upload your beat.`, 'custom')
+      notifyNonSubmitters(b, `Reminder: “${b.title}” submissions close soon. Upload your beat.`, 'custom')
     }
   }
 }
@@ -1064,7 +1064,7 @@ app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
   if (picked) {
     // a curator may ONLY pick when breaking a real top-vote tie on their battle.
     if (resv.state !== 'tie' || !resv.tied.includes(picked))
-      return fail(res, 400, 'The crowd decides the winner — you can only break a true tie.')
+      return fail(res, 400, 'The crowd decides the winner, you can only break a true tie.')
     winnerId = picked
   } else if (resv.state === 'winner') {
     winnerId = resv.winnerId
@@ -1076,7 +1076,7 @@ app.post('/api/battles/:id/winner', requireAuth, (req, res) => {
     })
     return ok(res, { tie: true, tied })
   } else {
-    return fail(res, 400, 'No votes yet — there’s no winner to declare.')
+    return fail(res, 400, 'No votes yet, there’s no winner to declare.')
   }
   const sub = getSubmissionRow(winnerId)
   db.prepare('UPDATE battles SET status = ?, winnerSubmissionId = ? WHERE id = ?').run(
@@ -1216,7 +1216,7 @@ app.post('/api/battles/:id/vote', rateLimit('vote', 40, 60_000), requireAuth, (r
   // no battle can be called rigged). The founder's @KREAM/admin account votes
   // like anyone else. @SMPL can still comment.
   if (req.user.alias === 'SMPL')
-    return fail(res, 403, 'The SMPL account doesn’t vote — it keeps every battle fair.')
+    return fail(res, 403, 'The SMPL account doesn’t vote, it keeps every battle fair.')
   // Producers + artists competing in the battle MAY vote too — just never for
   // their own beat (enforced below). Only @SMPL stays out entirely.
   // a voter may change their pick while voting is open — keep one row per

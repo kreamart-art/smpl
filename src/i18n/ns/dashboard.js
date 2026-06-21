@@ -112,7 +112,7 @@ export const dashboard = {
     'dashboard.manage.closeVoting': 'Close voting & crown the winner',
     'dashboard.manage.closeHint.earliest': 'The most-voted entry wins automatically. On an exact tie, the earliest submission wins.',
     'dashboard.manage.closeHint.curator': 'The most-voted entry wins automatically. On an exact tie, you pick the winner below.',
-    'dashboard.manage.tiePick': 'Tie at the top — pick the winner',
+    'dashboard.manage.tiePick': 'Tie at the top, pick the winner',
     'dashboard.manage.tieHint': 'These entries are tied on votes. Choose the winner.',
     'dashboard.manage.pick': 'Pick winner',
     'dashboard.manage.noSubmissions': 'No submissions yet.',

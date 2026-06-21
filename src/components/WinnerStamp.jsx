@@ -79,7 +79,7 @@ export default function WinnerStamp({ battle, alias, votes, replay = 0 }) {
             <span className="winstamp-main">{word}</span>
           </div>
           <div className="winstamp-reg">
-            {cat} — FIRST PRESSING — @{alias}
+            {cat} · FIRST PRESSING · @{alias}
           </div>
           <div className="winstamp-ticks">
             <span>
