@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
-import { IconMessage } from './icons.jsx'
+import { IconSend } from './icons.jsx'
 
-// Inbox shortcut with an unread badge — used in the nav + app top bar.
+// Inbox shortcut with an unread dot — used in the nav + app top bar. Boxless,
+// sized to match the alerts bell on the other side of the header.
 export default function MessagesLink({ className = '' }) {
   const { currentUser, unreadMessages } = useApp()
   if (!currentUser) return null
@@ -10,12 +11,13 @@ export default function MessagesLink({ className = '' }) {
     <Link
       to="/messages"
       aria-label="messages"
-      className={`relative flex h-9 w-9 items-center justify-center border border-line text-muted transition-colors hover:border-line-bright hover:text-ink ${className}`}
+      title="Messages"
+      className={`relative inline-flex items-center text-ink transition-colors hover:text-accent ${className}`}
     >
-      <IconMessage size={15} />
+      <IconSend size={20} />
       {unreadMessages > 0 ? (
         <span
-          className="absolute -right-1 -top-1 h-2.5 w-2.5 border border-bg bg-verified"
+          className="absolute -right-1.5 -top-1 h-2.5 w-2.5 border border-bg bg-accent"
           aria-label="unread messages"
         />
       ) : null}

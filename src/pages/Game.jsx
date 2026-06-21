@@ -382,7 +382,7 @@ export default function Game() {
             {score}
             <span className="text-muted">/{total}</span>
           </div>
-          <div className={`mt-4 font-sans text-2xl font-bold uppercase tracking-tight ${cleared ? 'text-accent' : 'text-ink'}`}>
+          <div className={`mt-4 font-sans text-2xl font-bold uppercase tracking-tight ${cleared ? 'text-good' : 'text-ink'}`}>
             {cleared ? t('game.levelCleared') : t(`game.rank.${ri}.name`)}
           </div>
           <p className="mx-auto mt-3 max-w-md font-sans text-[14px] leading-relaxed text-ink-dim">
@@ -478,8 +478,8 @@ export default function Game() {
             {q.options.map((opt, i) => {
               let cls = 'border-line bg-bg text-ink hover:border-line-bright hover:bg-panel-2'
               if (reveal) {
-                if (i === reveal.correctIndex) cls = 'border-accent bg-accent/10 text-ink'
-                else if (i === picked) cls = 'border-line-bright bg-panel-2 text-muted line-through'
+                if (i === reveal.correctIndex) cls = 'border-good bg-good/10 text-ink'
+                else if (i === picked) cls = 'border-accent bg-accent/10 text-muted line-through'
                 else cls = 'border-line bg-bg text-faint opacity-50'
               }
               return (
@@ -492,7 +492,15 @@ export default function Game() {
                     reveal ? 'cursor-default' : ''
                   }`}
                 >
-                  <span className={`font-bold ${reveal && i === reveal.correctIndex ? 'text-accent' : 'text-muted'}`}>
+                  <span
+                    className={`font-bold ${
+                      reveal && i === reveal.correctIndex
+                        ? 'text-good'
+                        : reveal && i === picked
+                          ? 'text-accent'
+                          : 'text-muted'
+                    }`}
+                  >
                     {letters[i]}
                   </span>
                   <span>{opt}</span>
@@ -503,8 +511,8 @@ export default function Game() {
 
           {/* reveal */}
           {reveal ? (
-            <div className="mt-6 border-l-2 border-accent bg-bg px-5 py-4">
-              <div className={`font-sans text-base font-bold uppercase tracking-tight ${correct ? 'text-accent' : 'text-ink'}`}>
+            <div className={`mt-6 border-l-2 bg-bg px-5 py-4 ${correct ? 'border-good' : 'border-accent'}`}>
+              <div className={`font-sans text-base font-bold uppercase tracking-tight ${correct ? 'text-good' : 'text-accent'}`}>
                 {correct ? t('game.niceEar') : t('game.notQuite')}
               </div>
               <div className="mt-2 font-mono text-[12px] text-muted">

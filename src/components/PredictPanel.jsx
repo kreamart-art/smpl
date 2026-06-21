@@ -75,20 +75,20 @@ export default function PredictPanel({ battle, submissions }) {
     return (
       <div
         className={`flex items-center gap-3 border px-4 py-3 font-mono text-[11px] ${
-          correct ? 'border-accent bg-accent/5 text-ink' : 'border-line bg-panel text-muted'
+          correct ? 'border-good bg-good/10 text-ink' : 'border-accent bg-accent/5 text-muted'
         }`}
       >
         {correct ? (
-          <span className="bg-accent px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-accent-ink">
+          <span className="bg-good px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-bg">
             {t('predict.correctTag')}
           </span>
         ) : (
-          <span className="border border-line-bright px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-muted">
+          <span className="border border-accent px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-accent">
             {t('predict.missTag')}
           </span>
         )}
         <span>{t('predict.youCalled', { alias: calledAlias })}</span>
-        {correct ? <span className="ml-auto font-sans text-base font-bold text-accent">+10</span> : null}
+        {correct ? <span className="ml-auto font-sans text-base font-bold text-good">+10</span> : null}
       </div>
     )
   }

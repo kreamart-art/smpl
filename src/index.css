@@ -20,6 +20,10 @@
   --color-accent-ink: #0a0a0a; /* dark text on an accent fill (~4.57:1, AA) */
   --color-accent-hover: #c72d1a;
 
+  /* correct-answer green — ONLY for "you got it right" feedback in the games.
+     Distinct from the red accent, which now means "wrong" in those moments. */
+  --color-good: #3fb950; /* ~6.7:1 as text on black (AA) */
+
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
 }
@@ -477,6 +481,7 @@ body {
   --color-ink-dim: #46423a;
   --color-ink: #15120d;
   --color-bright: #000000;
+  --color-good: #1a7f37; /* darker green so "correct" reads on cream */
   /* accent stays the same red; on cream it is only ever a filled block with
      accent-ink text, never red text on cream. */
 }
