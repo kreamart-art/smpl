@@ -7,9 +7,9 @@ const base = {
   strokeLinejoin: 'miter',
 }
 
-function Svg({ size = 22, className = '', children }) {
+function Svg({ size = 22, className = '', children, ...rest }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base} {...rest}>
       {children}
     </svg>
   )
@@ -40,15 +40,16 @@ export function IconTrophy(props) {
   )
 }
 
-// game controller (joy-con) — the Play tab
+// game controller with grips (PlayStation-style) — the Play tab. Bigger + bolder
+// than a flat pad so it reads clearly at small sizes.
 export function IconGamepad(props) {
   return (
-    <Svg {...props}>
-      <rect x="3" y="8" width="18" height="9" rx="4.5" />
-      <line x1="7" y1="10.6" x2="7" y2="14.4" />
-      <line x1="5.1" y1="12.5" x2="8.9" y2="12.5" />
-      <circle cx="16" cy="11.6" r="1" fill="currentColor" stroke="none" />
-      <circle cx="18" cy="13.6" r="1" fill="currentColor" stroke="none" />
+    <Svg {...props} strokeLinejoin="round">
+      <path d="M9 7.5h6a5.5 5.5 0 0 1 5.2 3.8l1 4.5a2.4 2.4 0 0 1-4.3 1.9l-1.3-1.9a2.4 2.4 0 0 0-2-1.1h-3.2a2.4 2.4 0 0 0-2 1.1l-1.3 1.9a2.4 2.4 0 0 1-4.3-1.9l1-4.5A5.5 5.5 0 0 1 9 7.5Z" />
+      <line x1="7" y1="11" x2="7" y2="13.6" />
+      <line x1="5.7" y1="12.3" x2="8.3" y2="12.3" />
+      <circle cx="15.8" cy="11.8" r="1.05" fill="currentColor" stroke="none" />
+      <circle cx="17.9" cy="13.7" r="1.05" fill="currentColor" stroke="none" />
     </Svg>
   )
 }
