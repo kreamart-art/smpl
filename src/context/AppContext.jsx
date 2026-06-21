@@ -573,6 +573,7 @@ export function AppProvider({ children }) {
         replyTo: opts.replyTo,
         imageUrl: opts.imageUrl,
         audioUrl: opts.audioUrl,
+        videoUrl: opts.videoUrl,
       }),
     [],
   )

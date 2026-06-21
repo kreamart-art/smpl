@@ -277,6 +277,8 @@ export function migrate() {
   addColumn('users', 'contactEmail', 'TEXT')
   // 2026-06-13: emoji "stickers" stamped onto a DM photo (JSON: [{id,emoji,x,y,by}]).
   addColumn('messages', 'photoStamps', 'TEXT')
+  // 2026-06-21: video attachments in DMs.
+  addColumn('messages', 'videoUrl', 'TEXT')
   // 2026-06-14: a curator who opted to also compete in battles (never their own).
   addColumn('users', 'curatorCompetes', 'INTEGER')
   // 2026-06-14: community sample makers — apply, get reviewed, submit samples.

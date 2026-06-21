@@ -1898,15 +1898,17 @@ app.get('/api/threads', requireAuth, (req, res) => {
         ? 'deleted'
         : L.imageUrl
           ? 'image'
-          : L.audioUrl
-            ? 'audio'
-            : L.shareKind === 'profile'
-              ? 'profile'
-              : L.shareKind === 'event'
-                ? 'event'
-                : L.battleId || L.shareKind === 'battle'
-                  ? 'battle'
-                  : 'text'
+          : L.videoUrl
+            ? 'video'
+            : L.audioUrl
+              ? 'audio'
+              : L.shareKind === 'profile'
+                ? 'profile'
+                : L.shareKind === 'event'
+                  ? 'event'
+                  : L.battleId || L.shareKind === 'battle'
+                    ? 'battle'
+                    : 'text'
       return {
         user: u,
         last: {
@@ -1957,6 +1959,7 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
     const mine = m.fromId === uid
     if (m.deletedAt) return { id: m.id, mine, kind: 'deleted' }
     if (m.imageUrl) return { id: m.id, mine, kind: 'image' }
+    if (m.videoUrl) return { id: m.id, mine, kind: 'video' }
     if (m.audioUrl) return { id: m.id, mine, kind: 'audio' }
     if (m.shareKind) return { id: m.id, mine, kind: m.shareKind }
     return { id: m.id, mine, kind: 'text', snippet: (m.body || '').slice(0, 90) }
@@ -1970,6 +1973,7 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
       mine: m.fromId === uid,
       battleId: m.deletedAt ? null : m.battleId || null,
       imageUrl: m.deletedAt ? null : m.imageUrl || null,
+      videoUrl: m.deletedAt ? null : m.videoUrl || null,
       audioUrl: m.deletedAt ? null : m.audioUrl || null,
       shareKind: m.deletedAt ? null : m.shareKind || null,
       shareRef: m.deletedAt ? null : m.shareRef || null,
@@ -1983,7 +1987,7 @@ app.get('/api/threads/:alias', requireAuth, (req, res) => {
 })
 
 app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) => {
-  const { toAlias, body, battleId, replyTo, imageUrl, audioUrl, shareKind, shareRef } = req.body || {}
+  const { toAlias, body, battleId, replyTo, imageUrl, audioUrl, videoUrl, shareKind, shareRef } = req.body || {}
   const text = String(body || '').trim()
   let bId = null
   if (battleId) {
@@ -1993,6 +1997,7 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
   // attachments must be our own opaque uploads
   const img = typeof imageUrl === 'string' && /^\/api\/uploads\/i_/.test(imageUrl) ? imageUrl : null
   const aud = typeof audioUrl === 'string' && /^\/api\/uploads\/a_/.test(audioUrl) ? audioUrl : null
+  const vid = typeof videoUrl === 'string' && /^\/api\/uploads\/v_/.test(videoUrl) ? videoUrl : null
   // a shared card: a profile (alias), a battle (id) or a future event (id)
   let sKind = null
   let sRef = null
@@ -2013,7 +2018,7 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
       sRef = shareRef.slice(0, 64)
     }
   }
-  if (!text && !bId && !img && !aud && !sKind) return fail(res, 400, 'Write something first.')
+  if (!text && !bId && !img && !aud && !vid && !sKind) return fail(res, 400, 'Write something first.')
   if (text.length > 2000) return fail(res, 400, 'That message is too long.')
   const other = getUserByAliasRow(toAlias)
   if (!other) return fail(res, 404, 'User not found.')
@@ -2029,13 +2034,13 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
   }
   const id = `m_${randomUUID().slice(0, 10)}`
   db.prepare(
-    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId, replyTo, imageUrl, audioUrl, shareKind, shareRef) VALUES (?,?,?,?,?,NULL,?,?,?,?,?,?)',
-  ).run(id, req.user.id, other.id, text, Date.now(), bId, rId, img, aud, sKind, sRef)
+    'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId, replyTo, imageUrl, audioUrl, videoUrl, shareKind, shareRef) VALUES (?,?,?,?,?,NULL,?,?,?,?,?,?,?)',
+  ).run(id, req.user.id, other.id, text, Date.now(), bId, rId, img, aud, vid, sKind, sRef)
   // notify the recipient on their devices (no-op if they have no subscriptions)
   const shareWord = sKind === 'profile' ? 'Shared a profile with you' : sKind === 'event' ? 'Shared an event with you' : 'Shared a battle with you'
   sendPush(other.id, {
     title: `@${req.user.alias}`,
-    body: text ? text.slice(0, 140) : img ? 'Sent a photo' : aud ? 'Sent a voice clip' : shareWord,
+    body: text ? text.slice(0, 140) : img ? 'Sent a photo' : vid ? 'Sent a video' : aud ? 'Sent a voice clip' : shareWord,
     tag: `dm-${req.user.id}`,
     url: `/messages/${req.user.alias}`,
   }).catch(() => {})

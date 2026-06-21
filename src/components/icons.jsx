@@ -133,6 +133,15 @@ export function IconImage(props) {
   )
 }
 
+export function IconVideo(props) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="6" width="13" height="12" />
+      <path d="M16 10l5-3v10l-5-3" />
+    </Svg>
+  )
+}
+
 export function IconMic(props) {
   return (
     <Svg {...props}>

@@ -8,7 +8,7 @@ import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import PhotoViewer from '../components/PhotoViewer.jsx'
 import BroadcastComposer from '../components/BroadcastComposer.jsx'
-import { IconImage, IconMic } from '../components/icons.jsx'
+import { IconImage, IconVideo, IconMic } from '../components/icons.jsx'
 import { Btn, inputCls, textareaCls } from '../components/ui.jsx'
 import { roleLabel } from '../data/kind.js'
 import { mediaUrl } from '../api.js'
@@ -124,6 +124,7 @@ function Inbox() {
   const lastLabel = (last) => {
     if (last.kind === 'deleted') return `↺ ${t('messages.deleted')}`
     if (last.kind === 'image') return `▣ ${t('messages.photo')}`
+    if (last.kind === 'video') return `▶ ${t('messages.video')}`
     if (last.kind === 'audio') return `▶ ${t('messages.voiceClip')}`
     if (last.kind === 'battle') return `↗ ${t('messages.sharedBattle')}`
     if (last.kind === 'profile') return `↗ ${t('messages.sharedProfile')}`
@@ -303,7 +304,7 @@ function AudioClip({ src, mine }) {
 
 // ----- one conversation ------------------------------------------------------
 function Thread({ alias }) {
-  const { fetchThread, sendMessage, reactMessage, unsendMessage, stampPhoto, unstampPhoto, uploadImage, uploadAudio, refresh, currentUser } = useApp()
+  const { fetchThread, sendMessage, reactMessage, unsendMessage, stampPhoto, unstampPhoto, uploadImage, uploadVideo, uploadAudio, refresh, currentUser } = useApp()
   const { standalone } = usePWA()
   const t = useT()
   const [data, setData] = useState(null)
@@ -315,6 +316,7 @@ function Thread({ alias }) {
   const [recording, setRecording] = useState(false)
   const [recSecs, setRecSecs] = useState(0)
   const fileRef = useRef(null)
+  const videoRef = useRef(null)
   const endRef = useRef(null)
   const recRef = useRef(null)
   const didRefresh = useRef(false)
@@ -372,15 +374,40 @@ function Thread({ alias }) {
   }
 
   const onPickImage = async (e) => {
+    const files = [...(e.target.files || [])].slice(0, 10) // up to 10 photos at once
+    e.target.value = ''
+    if (!files.length) return
+    setSending(true)
+    setErr('')
+    let reply = replyTo?.id // only the first photo carries the reply
+    for (const file of files) {
+      const small = await downscaleImage(file)
+      const up = await uploadImage(small)
+      if (!up.ok || !up.url) {
+        setErr(up.error || t('messages.uploadFailed'))
+        break
+      }
+      const r = await sendMessage(alias, '', { imageUrl: up.url, replyTo: reply })
+      reply = undefined
+      if (!r.ok) {
+        setErr(r.error)
+        break
+      }
+    }
+    setReplyTo(null)
+    load(false)
+    setSending(false)
+  }
+
+  const onPickVideo = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setSending(true)
     setErr('')
-    const small = await downscaleImage(file)
-    const up = await uploadImage(small)
+    const up = await uploadVideo(file)
     if (up.ok && up.url) {
-      const r = await sendMessage(alias, '', { imageUrl: up.url, replyTo: replyTo?.id })
+      const r = await sendMessage(alias, '', { videoUrl: up.url, replyTo: replyTo?.id })
       if (r.ok) {
         setReplyTo(null)
         load(false)
@@ -574,6 +601,15 @@ function Thread({ alias }) {
                                 ) : null}
                               </span>
                             ) : null}
+                            {m.videoUrl ? (
+                              <video
+                                src={mediaUrl(m.videoUrl)}
+                                controls
+                                playsInline
+                                preload="metadata"
+                                className="block max-h-72 w-auto max-w-full border border-line"
+                              />
+                            ) : null}
                             {m.audioUrl ? (
                               <div className={`border px-2 ${m.mine ? 'border-ink bg-ink' : 'border-line bg-panel'}`}>
                                 <AudioClip src={m.audioUrl} mine={m.mine} />
@@ -680,7 +716,7 @@ function Thread({ alias }) {
       {replyTo ? (
         <div className="flex shrink-0 items-center gap-2 border-t border-line bg-panel px-3 py-2">
           <span className="border-l-2 border-line-bright pl-2 font-mono text-[10px] text-muted">
-            ↩ {replyTo.imageUrl ? `▣ ${t('messages.photo')}` : replyTo.audioUrl ? `▶ ${t('messages.voiceClip')}` : (replyTo.body || '').slice(0, 60)}
+            ↩ {replyTo.imageUrl ? `▣ ${t('messages.photo')}` : replyTo.videoUrl ? `▶ ${t('messages.video')}` : replyTo.audioUrl ? `▶ ${t('messages.voiceClip')}` : (replyTo.body || '').slice(0, 60)}
           </span>
           <button onClick={() => setReplyTo(null)} className="ml-auto font-mono text-[12px] text-faint hover:text-ink">
             ✕
@@ -707,7 +743,8 @@ function Thread({ alias }) {
         </div>
       ) : (
         <form onSubmit={onSend} className="flex shrink-0 items-end gap-2 border-t border-line py-3">
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickImage} />
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickImage} />
+          <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={onPickVideo} />
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
@@ -716,6 +753,15 @@ function Thread({ alias }) {
             className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors hover:border-ink disabled:opacity-40"
           >
             <IconImage size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => videoRef.current?.click()}
+            disabled={sending}
+            aria-label={t('messages.video')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors hover:border-ink disabled:opacity-40"
+          >
+            <IconVideo size={18} />
           </button>
           <button
             type="button"
