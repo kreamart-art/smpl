@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { STATUS } from '../data/status.js'
@@ -17,6 +18,13 @@ export default function Nav() {
   const { currentUser, isCurator, logout, battles } = useApp()
   const t = useT()
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+  // links that are hidden on the mobile bar — surfaced via the mobile menu
+  const menuLinks = [
+    ['/people', t('common.people')],
+    ['/play', t('play.nav')],
+    ...(currentUser ? [['/feed', t('common.feed')]] : []),
+  ]
   const liveCount = battles.filter(
     (b) => b.status === STATUS.VOTING_PHASE || b.status === STATUS.SUBMISSION_PHASE,
   ).length
@@ -51,8 +59,8 @@ export default function Nav() {
           <NavLink to="/people" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
             {t('common.people')}
           </NavLink>
-          <NavLink to="/game" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
-            {t('game.nav')}
+          <NavLink to="/play" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
+            {t('play.nav')}
           </NavLink>
           {currentUser ? (
             <NavLink to="/feed" className={(s) => `${navClass(s)} hidden sm:inline-flex`}>
@@ -64,6 +72,44 @@ export default function Nav() {
               {t('common.dashboard')}
             </NavLink>
           ) : null}
+
+          {/* mobile menu: the links hidden on the small bar (People / Game / Feed) */}
+          <div className="relative sm:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              className="flex h-9 w-9 items-center justify-center border border-line text-muted transition-colors hover:border-line-bright hover:text-ink"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="1" y="3" width="14" height="1.5" fill="currentColor" />
+                <rect x="1" y="7.25" width="14" height="1.5" fill="currentColor" />
+                <rect x="1" y="11.5" width="14" height="1.5" fill="currentColor" />
+              </svg>
+            </button>
+            {menuOpen ? (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+                <div className="absolute right-0 top-full z-40 mt-2 w-44 border border-line-bright bg-black/95 backdrop-blur-md">
+                  {menuLinks.map(([to, label]) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `block border-b border-line px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors last:border-b-0 ${
+                          isActive ? 'text-ink' : 'text-muted hover:text-ink'
+                        }`
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </div>
 
           {currentUser ? (
             <div className="flex items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
