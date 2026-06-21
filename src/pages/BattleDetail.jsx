@@ -13,7 +13,6 @@ import CrateButton from '../components/CrateButton.jsx'
 import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
 import WinnerStamp from '../components/WinnerStamp.jsx'
-import PredictPanel from '../components/PredictPanel.jsx'
 import TopCallers from '../components/TopCallers.jsx'
 import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
@@ -535,7 +534,19 @@ export default function BattleDetail() {
           </PhaseBox>
         )}
 
-        <PredictPanel battle={battle} submissions={approvedSubs} />
+        {battle.status === STATUS.VOTING_PHASE && !isSmpl ? (
+          <Link
+            to={`/predict/${battle.id}`}
+            className="flex items-center gap-3 border border-line bg-panel px-4 py-3 transition-colors hover:border-line-bright"
+          >
+            <span className="block h-1.5 w-1.5 shrink-0 bg-accent pulse-dot" />
+            <div className="min-w-0">
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink">{t('predict.title')}</div>
+              <div className="mt-0.5 font-mono text-[10px] leading-relaxed text-muted">{t('predict.fromBattle')}</div>
+            </div>
+            <span className="ml-auto shrink-0 font-mono text-[12px] text-muted">▸</span>
+          </Link>
+        ) : null}
 
         {battle.status === STATUS.VOTING_PHASE && (
           <PhaseBox

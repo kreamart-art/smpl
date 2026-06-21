@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Vinyl from '../components/Vinyl.jsx'
 import TopCallers from '../components/TopCallers.jsx'
@@ -7,15 +6,11 @@ import LeagueBoard from '../components/LeagueBoard.jsx'
 import { PlayTour } from '../components/Tour.jsx'
 import { Btn } from '../components/ui.jsx'
 import { IconLeague } from '../components/icons.jsx'
-import { STATUS } from '../data/status.js'
 
 // "Play" — the games hub. One place for both games (Guess the Sample + Predict
 // the winner) and both boards (the level league + the predict callers).
 export default function Play() {
   const t = useT()
-  const { battles } = useApp()
-
-  const livePredict = battles.find((b) => b.status === STATUS.VOTING_PHASE)
 
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-14 sm:px-6 sm:py-20">
@@ -63,8 +58,8 @@ export default function Play() {
           <h2 className="relative mt-4 font-sans text-xl font-bold uppercase tracking-tight">{t('predict.title')}</h2>
           <p className="relative mt-2 flex-1 font-mono text-[12px] leading-relaxed text-muted">{t('play.predictSub')}</p>
           <div className="relative mt-5">
-            <Btn to={livePredict ? `/battles/${livePredict.id}` : '/battles'} variant="accent">
-              {livePredict ? t('play.predictCta') : t('play.predictBrowse')}
+            <Btn to="/predict" variant="accent">
+              {t('play.predictCta')}
             </Btn>
           </div>
         </div>
