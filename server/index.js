@@ -2051,7 +2051,8 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
 // account to every member at once (news / announcements). It lands in each
 // person's @SMPL thread as a normal, unread message.
 app.post('/api/admin/broadcast', rateLimit('broadcast', 10, 60_000), requireAuth, (req, res) => {
-  if (req.user.role !== 'admin') return fail(res, 403, 'Admins only.')
+  // ONLY the official @SMPL account broadcasts, not other admins (@KREAM).
+  if (req.user.alias !== 'SMPL') return fail(res, 403, 'Only @SMPL can broadcast.')
   const smpl = getUserByAliasRow('SMPL')
   if (!smpl) return fail(res, 500, 'No SMPL account configured.')
   const text = String(req.body?.body || '').trim()

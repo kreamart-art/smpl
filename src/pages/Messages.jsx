@@ -96,7 +96,7 @@ export default function Messages() {
 
 // ----- inbox -----------------------------------------------------------------
 function Inbox() {
-  const { fetchThreads, currentUser, isAdmin } = useApp()
+  const { fetchThreads, currentUser } = useApp()
   const t = useT()
   const navigate = useNavigate()
   const [threads, setThreads] = useState([])
@@ -155,7 +155,7 @@ function Inbox() {
       </div>
       <p className="mt-4 font-mono text-[11px] text-muted">{t('messages.networkHint')}</p>
 
-      {isAdmin ? <BroadcastComposer /> : null}
+      {currentUser.alias === 'SMPL' ? <BroadcastComposer /> : null}
 
       <div className="mt-8 flex gap-6">
         <TabBtn id="primary" label={t('messages.primary')} count={primary.length} />
