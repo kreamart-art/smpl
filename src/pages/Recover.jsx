@@ -189,23 +189,15 @@ export function VerifyEmail() {
     verifyEmailToken(token).then((r) => {
       if (!alive) return
       setState(r.ok ? 'done' : 'failed')
-      // The verify link opens in the browser. If they're not already in the
-      // installed app and they're on a phone, nudge them back to it.
+      // Verified in the browser. If they came from the installed app on a phone,
+      // tell them to head back to it — we can't reopen a PWA programmatically, so
+      // it's a message ("go back to the app"), not an "open app" action.
       if (r.ok && !standalone && isPhone()) setAppPrompt(true)
     })
     return () => {
       alive = false
     }
   }, [token, verifyEmailToken, standalone])
-
-  const openApp = () => {
-    try {
-      localStorage.setItem('smpl_app', '1')
-    } catch {
-      /* ignore */
-    }
-    window.location.href = '/?app=1'
-  }
 
   const body = {
     checking: t('auth.verify.checking'),
@@ -243,14 +235,8 @@ export function VerifyEmail() {
               </div>
               <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-dim">{t('auth.verify.appBody')}</p>
               <button
-                onClick={openApp}
-                className="mt-5 h-11 w-full border border-ink bg-ink font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
-              >
-                {t('auth.verify.openApp')}
-              </button>
-              <button
                 onClick={() => setAppPrompt(false)}
-                className="mt-2 h-10 w-full border border-line font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
+                className="mt-5 h-11 w-full border border-line font-mono text-[11px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
               >
                 {t('auth.verify.continueBrowser')}
               </button>
@@ -262,7 +248,7 @@ export function VerifyEmail() {
   )
 }
 
-// A phone-ish browser, where "open the home-screen app" actually makes sense.
+// A phone-ish browser, where "head back to the home-screen app" makes sense.
 function isPhone() {
   if (typeof window === 'undefined') return false
   return (

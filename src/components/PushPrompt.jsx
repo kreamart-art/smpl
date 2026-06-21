@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import { IconBell } from './icons.jsx'
-import Portal from './Portal.jsx'
 import { pushSupported, pushPermission, isPushSubscribed, enablePush } from '../lib/push.js'
 
 // Notification opt-in popup. When a signed-in member opens the app/site with
@@ -72,36 +71,35 @@ export default function PushPrompt() {
     setDismissed(true)
   }
 
+  // A slim bottom bar, same shape as the "Get the SMPL app" install banner — so
+  // it sits in the app/site itself rather than interrupting as a modal. The
+  // install banner already yields to this via its topBannerShowing() check.
   return (
-    <Portal>
-      <div
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
-        onClick={dismiss}
-      >
-        <div className="w-full max-w-sm border border-line-bright bg-panel p-6" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center border border-line-bright text-ink">
-              <IconBell size={18} />
-            </span>
-            <div className="font-sans text-lg font-bold uppercase tracking-tight">{t('push.modalTitle')}</div>
-          </div>
-          <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-dim">{t('push.modalBody')}</p>
-          <button
-            onClick={enable}
-            disabled={busy}
-            className="mt-5 flex h-11 w-full items-center justify-center gap-2 border border-ink bg-ink font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright disabled:opacity-50"
-          >
-            <IconBell size={14} />
-            {busy ? t('push.enabling') : t('push.enable')}
-          </button>
-          <button
-            onClick={dismiss}
-            className="mt-2 h-10 w-full border border-line font-mono text-[10px] uppercase tracking-[0.14em] text-muted transition-colors hover:border-line-bright hover:text-ink"
-          >
-            {t('push.notNow')}
-          </button>
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line-bright bg-black/95 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-4 py-3 sm:px-6">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink">
+          <IconBell size={18} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-sans text-sm font-bold uppercase tracking-tight">{t('push.modalTitle')}</div>
+          <div className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{t('push.bannerSub')}</div>
         </div>
+        <button
+          onClick={enable}
+          disabled={busy}
+          className="flex h-10 shrink-0 items-center gap-2 border border-ink bg-ink px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright disabled:opacity-50"
+        >
+          <IconBell size={14} />
+          {busy ? t('push.enabling') : t('push.enable')}
+        </button>
+        <button
+          onClick={dismiss}
+          aria-label={t('push.notNow')}
+          className="flex h-10 w-9 shrink-0 items-center justify-center border border-line font-mono text-muted hover:border-line-bright hover:text-ink"
+        >
+          ✕
+        </button>
       </div>
-    </Portal>
+    </div>
   )
 }
