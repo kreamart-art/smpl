@@ -2375,8 +2375,9 @@ async function renderWaveform(audioPath, bgPath, base) {
   const jpgName = `${base}.jpg`
   const mp4Path = path.join(UPLOAD_DIR, mp4Name)
   const jpgPath = path.join(UPLOAD_DIR, jpgName)
-  // Bound the clip to the flip's length (capped at 60s for social + render time).
-  // We pass an explicit -t because -shortest doesn't reliably stop a looped still.
+  // Bound the audio read to the flip's length (capped at 60s for social + render
+  // time on a small box). floor() keeps -t <= the audio so ffmpeg never reads into
+  // a malformed tail.
   let dur = 60
   try {
     const { stdout } = await execFileP(
@@ -2385,35 +2386,36 @@ async function renderWaveform(audioPath, bgPath, base) {
       { timeout: 15_000 },
     )
     const d = parseFloat(String(stdout).trim())
-    // floor so -t stays <= the audio length: if -t overruns the audio, the audio
-    // EOFs while the looped still runs forever and ffmpeg deadlocks.
     if (Number.isFinite(d) && d >= 1) dur = Math.min(Math.floor(d), 60)
   } catch {
     /* fall back to the 60s cap */
   }
+  // Two things matter for this filtergraph on a 2-core/low-RAM box:
+  //  1. rate=30 ON showfreqs. Without it showfreqs keeps its own clock and a
+  //     downstream fps filter mis-times it into MILLIONS of frames -> OOM. This
+  //     was the whole bug behind exports freezing/failing in production.
+  //  2. loop the still with the loop FILTER (holds ONE decoded frame) instead of
+  //     a `-loop 1` input (which buffers frames ahead of the audio-paced bars and
+  //     blows up memory). overlay shortest=1 + -shortest end cleanly at the bars.
   const filter =
-    '[0:a]aresample=11025,showfreqs=s=430x300:mode=bar:ascale=cbrt:fscale=log:win_func=hann:colors=0xf0eee9,fps=30[h];' +
+    '[0:a]aresample=11025,showfreqs=s=430x300:mode=bar:ascale=cbrt:fscale=log:win_func=hann:colors=0xf0eee9:rate=30[h];' +
     '[h]split[h1][h2];[h2]hflip[h2f];[h2f][h1]hstack[fw];' +
     '[fw]split[v1][v2];[v2]vflip[v2f];[v1][v2f]vstack[bars];' +
-    '[1:v][bars]overlay=110:620[v]'
+    '[1:v]loop=loop=-1:size=1,fps=30[bg];' +
+    '[bg][bars]overlay=110:620:shortest=1[v]'
   await execFileP(
     'ffmpeg',
     [
-      // Bound BOTH inputs to dur: the looped still would otherwise be an infinite
-      // stream, and capping the audio read keeps ffmpeg off any malformed file
-      // tail (which can deadlock it at EOF). dur is floor(len) so we never overrun.
-      // +genpts rebuilds timestamps on the audio, the same guard the transcode uses.
-      '-y', '-fflags', '+genpts', '-t', String(dur), '-i', audioPath,
-      '-loop', '1', '-t', String(dur), '-i', bgPath,
+      // +genpts rebuilds the audio timestamps (same guard the transcode uses).
+      '-y', '-fflags', '+genpts', '-t', String(dur), '-i', audioPath, '-i', bgPath,
       '-filter_complex', filter,
-      '-map', '[v]', '-map', '0:a',
-      '-t', String(dur),
-      '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
+      '-map', '[v]', '-map', '0:a', '-shortest',
+      '-r', '30', '-threads', '2', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
       '-profile:v', 'high', '-movflags', '+faststart',
       '-c:a', 'aac', '-b:a', '128k',
       mp4Path,
     ],
-    { timeout: 180_000 },
+    { timeout: 90_000 },
   )
   let poster = ''
   try {
@@ -2465,6 +2467,16 @@ app.post(
   },
 )
 
+// Serialise renders: this is a 2-core / low-RAM box that also serves the live
+// site, so two H.264 encodes at once can starve it. Each render waits for the
+// previous to finish (success or fail).
+let renderQueue = Promise.resolve()
+function renderWaveformQueued(audioPath, bgPath, base) {
+  const run = renderQueue.catch(() => {}).then(() => renderWaveform(audioPath, bgPath, base))
+  renderQueue = run.catch(() => {})
+  return run
+}
+
 // Server-side waveform render: the client posts the branded still + the flip's
 // audio reference, ffmpeg draws the animated spectrum and muxes the clip. This
 // replaced the in-browser recorder, which left the waveform frozen on several
@@ -2475,7 +2487,7 @@ app.post('/api/waveform/render', rateLimit('wfrender', 12, 10 * 60_000), require
   if (!bgPath || !audioPath) return fail(res, 400, 'Missing render inputs.')
   if (!existsSync(bgPath) || !existsSync(audioPath)) return fail(res, 400, 'Render inputs not found.')
   try {
-    const out = await renderWaveform(audioPath, bgPath, `w_${randomUUID().slice(0, 12)}`)
+    const out = await renderWaveformQueued(audioPath, bgPath, `w_${randomUUID().slice(0, 12)}`)
     try {
       unlinkSync(bgPath) // the branded still was a single-use upload
     } catch {
