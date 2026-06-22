@@ -586,6 +586,9 @@ export function AppProvider({ children }) {
   const uploadImage = useCallback((file) => api.upload('/api/uploads/image', file), [])
   const uploadVideo = useCallback((file) => api.upload('/api/uploads/video', file), [])
   const saveWaveformVideo = useCallback((data) => api.post('/api/me/waveform-video', data), [])
+  // Ask the server to render the branded waveform clip with ffmpeg (reliable on
+  // every device, unlike the old in-browser recorder that froze on mobile).
+  const renderWaveformVideo = useCallback((data) => api.post('/api/waveform/render', data), [])
   const fetchWaveformVideos = useCallback((userId) => api.get(`/api/users/${userId}/waveform-videos`), [])
   const fetchWaveformVideo = useCallback((id) => api.get(`/api/waveform-videos/${id}`), [])
   const deleteWaveformVideo = useCallback((id) => api.del(`/api/me/waveform-video/${id}`), [])
@@ -691,6 +694,7 @@ export function AppProvider({ children }) {
     uploadAudio,
     uploadVideo,
     saveWaveformVideo,
+    renderWaveformVideo,
     fetchWaveformVideos,
     fetchWaveformVideo,
     deleteWaveformVideo,

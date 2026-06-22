@@ -1,15 +1,14 @@
 // /smpl/src/components/WaveformVideo.jsx
 //
-// Auto-generates a shareable 9:16 (1080x1920) waveform video from a producer's
-// flip. The bar waveform is driven by REAL audio amplitude via a Web Audio
-// AnalyserNode (not random), rendered to a canvas, and captured together with
-// the audio track through MediaRecorder into a downloadable clip. Pure SMPL
-// identity: black ground, off-white bars, JetBrains Mono, grain + vignette.
-//
-// Client-side render. Note: MediaRecorder yields WebM on most browsers and MP4
-// on Safari; we pick the best supported container. For guaranteed H.264 MP4 on
-// every platform a server-side ffmpeg pass would be needed (see SHARE-VIDEO note
-// in the PR) but the browser path is preferred and works for IG/TikTok/Snap.
+// Builds a shareable 9:16 (1080x1920) waveform clip from a producer's flip.
+// The in-modal PREVIEW is driven by REAL audio amplitude via a Web Audio
+// AnalyserNode (not random), painted to a canvas. EXPORT renders server-side:
+// the canvas paints a branded still (logo, name, footer, grain — no bars), we
+// upload it, and ffmpeg draws the animated spectrum from the audio and muxes a
+// clean H.264 MP4 (see /api/waveform/render). The old in-browser MediaRecorder
+// capture froze the waveform on several mobile browsers, so the heavy lift moved
+// to the server. Pure SMPL identity: black ground, off-white bars, JetBrains
+// Mono, grain + vignette.
 import { useEffect, useRef, useState } from 'react'
 import Portal from './Portal.jsx'
 import { useI18n } from '../i18n/index.jsx'
@@ -19,22 +18,10 @@ import { mediaUrl } from '../api.js'
 const W = 1080
 const H = 1920
 
-const pickMime = () => {
-  const opts = [
-    'video/mp4;codecs=h264,aac',
-    'video/mp4',
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-  ]
-  if (typeof MediaRecorder === 'undefined') return null
-  return opts.find((m) => MediaRecorder.isTypeSupported(m)) || 'video/webm'
-}
-
 export default function WaveformVideo({ audioUrl, producer = '', tag = '', battleId = '', onClose }) {
   const { lang } = useI18n()
   const nl = lang === 'nl'
-  const { uploadVideo, saveWaveformVideo } = useApp()
+  const { uploadImage, saveWaveformVideo, renderWaveformVideo } = useApp()
 
   const canvasRef = useRef(null)
   const audioRef = useRef(null)
@@ -44,7 +31,6 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
   const rafRef = useRef(0)
   const logoRef = useRef(null)
   const grainRef = useRef(null)
-  const recTrackRef = useRef(null) // canvas capture track while exporting (manual frames)
 
   const [playing, setPlaying] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -132,16 +118,6 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
         analyser.getByteFrequencyData(data)
       }
       renderFrame(g, data)
-      // While exporting, hand each freshly painted frame to the recorder. Auto
-      // capture freezes on some mobile browsers, so we drive frames ourselves.
-      const rt = recTrackRef.current
-      if (rt) {
-        try {
-          rt.requestFrame()
-        } catch {
-          /* noop */
-        }
-      }
     }
     const a = audioRef.current
     if (a && a.duration) setProgress(a.currentTime / a.duration)
@@ -164,7 +140,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
     }
   }
 
-  const renderFrame = (g, data) => {
+  const renderFrame = (g, data, opts = {}) => {
     g.fillStyle = '#000000'
     g.fillRect(0, 0, W, H)
 
@@ -193,13 +169,17 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
     const margin = 110
     const barW = (W - margin * 2 - (count - 1) * gap) / count
     let x = margin
-    for (let i = 0; i < count; i++) {
-      // sample the lower-mid of the spectrum (where flips live), spread evenly
-      const v = data ? data[Math.floor((i / count) * data.length * 0.62)] / 255 : 0
-      const amp = (0.012 + Math.pow(v, 1.35) * 0.95) * (H * 0.2)
-      g.fillStyle = '#f0eee9'
-      g.fillRect(x, cy - amp, Math.max(1, barW), amp * 2)
-      x += barW + gap
+    // opts.bars === false → branded still for the server render (ffmpeg draws the
+    // real animated bars). Otherwise paint the live, analyser-driven preview bars.
+    if (opts.bars !== false) {
+      for (let i = 0; i < count; i++) {
+        // sample the lower-mid of the spectrum (where flips live), spread evenly
+        const v = data ? data[Math.floor((i / count) * data.length * 0.62)] / 255 : 0
+        const amp = (0.012 + Math.pow(v, 1.35) * 0.95) * (H * 0.2)
+        g.fillStyle = '#f0eee9'
+        g.fillRect(x, cy - amp, Math.max(1, barW), amp * 2)
+        x += barW + gap
+      }
     }
     // centre hairline through the bars
     g.fillStyle = 'rgba(82,76,67,0.55)'
@@ -255,100 +235,51 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
     }
   }
 
-  // Record one real-time pass and cache the blob, so the producer can then save,
-  // download or share it without re-recording.
+  // Paint the branded still WITHOUT the live bars (ffmpeg draws the animated
+  // waveform server-side), giving the server a clean ground to overlay onto.
+  const renderBg = () =>
+    new Promise((resolve) => {
+      const canvas = canvasRef.current
+      if (!canvas) return resolve(null)
+      cancelAnimationFrame(rafRef.current)
+      renderFrame(canvas.getContext('2d'), null, { bars: false })
+      canvas.toBlob((b) => {
+        rafRef.current = requestAnimationFrame(loop) // resume the live preview
+        resolve(b)
+      }, 'image/png')
+    })
+
+  // Export = server-side render. Upload the branded still, let ffmpeg draw the
+  // spectrum from the real audio and mux a clean MP4. Reliable on every device —
+  // the old in-browser MediaRecorder left the waveform frozen on mobile.
   const generate = async () => {
     setErr('')
     setSaved(false)
-    const recMime = pickMime()
-    if (!recMime) {
-      setErr(nl ? 'Je browser ondersteunt video-export niet.' : 'Your browser cannot export video.')
-      return
-    }
+    setRecording(true)
     try {
-      await ensureGraph()
-      const canvas = canvasRef.current
-      // Manual-frame capture: the render loop pushes every painted frame into the
-      // recorder via track.requestFrame(). Auto-capture (captureStream(30)) drops
-      // or freezes frames on several mobile browsers, which is exactly why the
-      // exported clip used to come out with a frozen waveform. Fall back to
-      // auto-capture only when requestFrame isn't available.
-      let vStream = canvas.captureStream(0)
-      const vTrack = vStream.getVideoTracks()[0]
-      if (vTrack && typeof vTrack.requestFrame === 'function') {
-        recTrackRef.current = vTrack
-      } else {
-        try {
-          vStream.getTracks().forEach((t) => t.stop())
-        } catch {
-          /* noop */
-        }
-        vStream = canvas.captureStream(30)
-        recTrackRef.current = null
-      }
-      const mixed = new MediaStream([...vStream.getVideoTracks(), ...destRef.current.stream.getAudioTracks()])
-      // A black ground with thin bars compresses heavily — a modest bitrate keeps
-      // the upload small + fast (so the server transcode never times out) and
-      // looks identical. The server re-encode is the final quality pass anyway.
-      const rec = new MediaRecorder(mixed, { mimeType: recMime, videoBitsPerSecond: 2_500_000 })
-      const chunks = []
-      rec.ondataavailable = (e) => e.data.size && chunks.push(e.data)
-      rec.onstop = () => {
-        recTrackRef.current = null
-        setMime(recMime)
-        setBlob(new Blob(chunks, { type: recMime }))
-        setRecording(false)
-        setPlaying(false)
-      }
-      const a = audioRef.current
-      a.currentTime = 0
-      setRecording(true)
-      rec.start()
-      await a.play()
-      setPlaying(true)
-      a.onended = () => {
-        try {
-          rec.stop()
-        } catch {
-          /* noop */
-        }
-        a.onended = null
-      }
-    } catch (e) {
-      recTrackRef.current = null
+      const bg = await renderBg()
+      if (!bg) throw new Error(nl ? 'Kon de achtergrond niet maken.' : 'Could not build the still.')
+      const up = await uploadImage(new File([bg], 'wf-bg.png', { type: 'image/png' }))
+      if (!up?.ok || !up.url) throw new Error(up?.error || (nl ? 'Upload mislukt.' : 'Upload failed.'))
+      const r = await renderWaveformVideo({ bgUrl: up.url, audioUrl })
+      if (!r?.ok || !r.url) throw new Error(r?.error || (nl ? 'Render mislukt.' : 'Render failed.'))
+      const mp4 = await (await fetch(mediaUrl(r.url))).blob()
+      setMime('video/mp4')
+      setBlob(mp4)
+      setPrepared({ url: r.url, poster: r.poster || '', blob: mp4, ext: 'mp4' })
       setRecording(false)
-      setErr(e?.message || 'Export failed.')
+      setPlaying(false)
+    } catch (e) {
+      setRecording(false)
+      setErr(e?.message || (nl ? 'Export mislukt.' : 'Export failed.'))
     }
   }
 
   const safeName = () => (producer || 'flip').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'flip'
-  const rawFile = (b = blob, m = mime) =>
-    new File([b], `smpl-${safeName()}.${m.includes('mp4') ? 'mp4' : 'webm'}`, { type: m })
 
-  // Upload the raw recording once; the server hands back a clean H.264 MP4 (+ a
-  // poster). Cached, so share / download / save reuse the same Instagram-ready
-  // file. Falls back to the local recording if the server can't transcode.
-  const ensurePrepared = async (b = blob, m = mime) => {
-    if (prepared) return prepared
-    setErr('')
-    setPreparing(true)
-    const up = await uploadVideo(rawFile(b, m))
-    let result
-    if (up.ok && up.url) {
-      let mp4 = b
-      try {
-        mp4 = await (await fetch(mediaUrl(up.url))).blob()
-      } catch {
-        /* keep the local recording if the round-trip fails */
-      }
-      result = { url: up.url, poster: up.poster || '', blob: mp4, ext: 'mp4' }
-    } else {
-      result = { url: '', poster: '', blob: b, ext: m.includes('mp4') ? 'mp4' : 'webm', error: up.error }
-    }
-    setPrepared(result)
-    setPreparing(false)
-    return result
-  }
+  // generate() already rendered + cached the share-ready clip server-side; the
+  // share / download / save actions just read it back.
+  const ensurePrepared = async () => prepared || { url: '', poster: '', blob, ext: 'mp4' }
 
   const downloadBlob = (b, fname) => {
     const url = URL.createObjectURL(b)
@@ -440,8 +371,8 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
 
             <p className="mt-4 text-center font-mono text-[10px] leading-relaxed text-muted">
               {nl
-                ? 'De waveform beweegt mee met je echte audio. Export speelt de flip één keer af terwijl hij opneemt.'
-                : 'The waveform reacts to your real audio. Export plays the flip once while it records.'}
+                ? 'De waveform beweegt mee met je echte audio. De clip wordt server-side gerenderd, dus hij werkt op elk toestel.'
+                : 'The waveform reacts to your real audio. The clip is rendered server-side, so it works on every device.'}
             </p>
             {err ? <p className="mt-2 text-center font-mono text-[11px] text-ink">! {err}</p> : null}
           </div>
@@ -463,7 +394,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
                   disabled={recording}
                   className="flex-1 border border-ink bg-ink px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-bg transition-colors hover:bg-bright disabled:opacity-60"
                 >
-                  {recording ? (nl ? 'Opnemen…' : 'Recording…') : nl ? 'Genereer clip' : 'Generate clip'}
+                  {recording ? (nl ? 'Renderen…' : 'Rendering…') : nl ? 'Genereer clip' : 'Generate clip'}
                 </button>
               </div>
             ) : (

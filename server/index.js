@@ -2347,6 +2347,88 @@ async function transcodeClip(rawPath, base) {
   return { url: `/api/uploads/${mp4Name}`, poster }
 }
 
+// Resolve a public /api/uploads/<name> reference (full URL or path) to a local
+// file inside UPLOAD_DIR. Returns null for anything outside that folder, so a
+// caller can never reach an arbitrary path on disk.
+function uploadLocalPath(ref) {
+  if (!ref || typeof ref !== 'string') return null
+  let pathname = ref
+  if (/^https?:\/\//i.test(ref)) {
+    try {
+      pathname = new URL(ref).pathname
+    } catch {
+      return null
+    }
+  }
+  const m = pathname.match(/^\/?api\/uploads\/([A-Za-z0-9._-]+)$/)
+  if (!m || m[1].includes('..')) return null
+  return path.join(UPLOAD_DIR, m[1])
+}
+
+// Render a branded 9:16 waveform clip entirely server-side: ffmpeg draws a real,
+// 4-way-symmetric spectrum from the flip's audio (so it ALWAYS animates, unlike
+// the old in-browser MediaRecorder capture that froze on mobile) and overlays it
+// on the branded still the client rendered (logo, name, footer, grain). The bars
+// sit centred on the waveform line at y=920, matching the canvas design.
+async function renderWaveform(audioPath, bgPath, base) {
+  const mp4Name = `${base}_v.mp4`
+  const jpgName = `${base}.jpg`
+  const mp4Path = path.join(UPLOAD_DIR, mp4Name)
+  const jpgPath = path.join(UPLOAD_DIR, jpgName)
+  // Bound the clip to the flip's length (capped at 60s for social + render time).
+  // We pass an explicit -t because -shortest doesn't reliably stop a looped still.
+  let dur = 60
+  try {
+    const { stdout } = await execFileP(
+      'ffprobe',
+      ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', audioPath],
+      { timeout: 15_000 },
+    )
+    const d = parseFloat(String(stdout).trim())
+    // floor so -t stays <= the audio length: if -t overruns the audio, the audio
+    // EOFs while the looped still runs forever and ffmpeg deadlocks.
+    if (Number.isFinite(d) && d >= 1) dur = Math.min(Math.floor(d), 60)
+  } catch {
+    /* fall back to the 60s cap */
+  }
+  const filter =
+    '[0:a]aresample=11025,showfreqs=s=430x300:mode=bar:ascale=cbrt:fscale=log:win_func=hann:colors=0xf0eee9,fps=30[h];' +
+    '[h]split[h1][h2];[h2]hflip[h2f];[h2f][h1]hstack[fw];' +
+    '[fw]split[v1][v2];[v2]vflip[v2f];[v1][v2f]vstack[bars];' +
+    '[1:v][bars]overlay=110:620[v]'
+  await execFileP(
+    'ffmpeg',
+    [
+      // Bound BOTH inputs to dur: the looped still would otherwise be an infinite
+      // stream, and capping the audio read keeps ffmpeg off any malformed file
+      // tail (which can deadlock it at EOF). dur is floor(len) so we never overrun.
+      // +genpts rebuilds timestamps on the audio, the same guard the transcode uses.
+      '-y', '-fflags', '+genpts', '-t', String(dur), '-i', audioPath,
+      '-loop', '1', '-t', String(dur), '-i', bgPath,
+      '-filter_complex', filter,
+      '-map', '[v]', '-map', '0:a',
+      '-t', String(dur),
+      '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
+      '-profile:v', 'high', '-movflags', '+faststart',
+      '-c:a', 'aac', '-b:a', '128k',
+      mp4Path,
+    ],
+    { timeout: 180_000 },
+  )
+  let poster = ''
+  try {
+    await execFileP(
+      'ffmpeg',
+      ['-y', '-ss', '0.8', '-i', mp4Path, '-frames:v', '1', '-vf', 'scale=540:-1', '-q:v', '4', jpgPath],
+      { timeout: 30_000 },
+    )
+    if (existsSync(jpgPath)) poster = `/api/uploads/${jpgName}`
+  } catch {
+    /* poster is optional */
+  }
+  return { url: `/api/uploads/${mp4Name}`, poster }
+}
+
 // Generated waveform share clips (MediaRecorder output). Stored under /api/uploads.
 app.post(
   '/api/uploads/video',
@@ -2382,6 +2464,28 @@ app.post(
     }
   },
 )
+
+// Server-side waveform render: the client posts the branded still + the flip's
+// audio reference, ffmpeg draws the animated spectrum and muxes the clip. This
+// replaced the in-browser recorder, which left the waveform frozen on several
+// mobile browsers.
+app.post('/api/waveform/render', rateLimit('wfrender', 12, 10 * 60_000), requireAuth, async (req, res) => {
+  const bgPath = uploadLocalPath(req.body?.bgUrl)
+  const audioPath = uploadLocalPath(req.body?.audioUrl)
+  if (!bgPath || !audioPath) return fail(res, 400, 'Missing render inputs.')
+  if (!existsSync(bgPath) || !existsSync(audioPath)) return fail(res, 400, 'Render inputs not found.')
+  try {
+    const out = await renderWaveform(audioPath, bgPath, `w_${randomUUID().slice(0, 12)}`)
+    try {
+      unlinkSync(bgPath) // the branded still was a single-use upload
+    } catch {
+      /* fine */
+    }
+    return ok(res, out)
+  } catch {
+    return fail(res, 500, 'Could not render the clip.')
+  }
+})
 
 // ----- waveform clips on the profile -----------------------------------------
 // Save a generated clip to the producer's own profile (a portfolio of flips).
