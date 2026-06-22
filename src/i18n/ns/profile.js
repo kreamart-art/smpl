@@ -62,6 +62,8 @@ export const profile = {
     'profile.tab.battles': 'Battles',
     'profile.clips.empty': 'No clips yet.',
     'profile.clips.emptySelf': 'Turn one of your battle flips into a shareable clip from the battle page.',
+    'profile.clips.remove': 'Remove clip',
+    'profile.clips.removeConfirm': 'Remove this clip from your profile?',
     // gender (private, personal data only)
     'profile.gender.label': 'Gender',
     'profile.gender.woman': 'Woman',
@@ -226,6 +228,8 @@ export const profile = {
     'profile.tab.battles': 'Battles',
     'profile.clips.empty': 'Nog geen clips.',
     'profile.clips.emptySelf': 'Maak van een van je battle-flips een deelbare clip vanaf de battlepagina.',
+    'profile.clips.remove': 'Clip verwijderen',
+    'profile.clips.removeConfirm': 'Deze clip van je profiel verwijderen?',
     // gender (privé, alleen persoonlijke gegevens)
     'profile.gender.label': 'Gender',
     'profile.gender.woman': 'Vrouw',

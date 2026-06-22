@@ -5,7 +5,7 @@
 // a small play marker; tapping opens the clip's own page. The vertical clip is
 // centre-cropped into the square, like an IG profile grid. Black, mono, no emoji.
 import { Link } from 'react-router-dom'
-import { IconPlay } from './icons.jsx'
+import { IconPlay, IconTrash } from './icons.jsx'
 import { mediaUrl } from '../api.js'
 import { useT } from '../i18n/index.jsx'
 
@@ -34,16 +34,19 @@ export default function WaveformClips({ clips = [], self = false, onDelete }) {
             </span>
           </Link>
           {self ? (
+            // Always visible (no hover) so it's reachable on touch, with a confirm
+            // so a clip is never removed by an accidental tap.
             <button
               type="button"
               onClick={(e) => {
                 e.preventDefault()
-                onDelete?.(v.id)
+                if (window.confirm(t('profile.clips.removeConfirm'))) onDelete?.(v.id)
               }}
-              aria-label={t('common.delete')}
-              className="absolute bottom-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center border border-line-bright bg-black/70 font-mono text-[10px] text-muted opacity-0 transition-opacity hover:text-ink group-hover:opacity-100"
+              aria-label={t('profile.clips.remove')}
+              title={t('profile.clips.remove')}
+              className="absolute bottom-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center border border-line-bright bg-black/70 text-muted backdrop-blur transition-colors hover:text-ink active:text-ink"
             >
-              ✕
+              <IconTrash size={13} />
             </button>
           ) : null}
         </div>
