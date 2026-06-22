@@ -100,7 +100,9 @@ export function PredictBattle() {
   const declared = battle.status === STATUS.WINNER_DECLARED
   const revealed = declared || !battle.blind
   const myPick = myPrediction(battle.id)
-  const canPredict = !!currentUser && currentUser.alias !== 'SMPL'
+  // Predicting is open to everyone with an account. It's a zero-stakes guessing
+  // game that never touches the result, so even @SMPL / curators may call one.
+  const canPredict = !!currentUser
 
   const beatMeta = (s, idx) => ({
     id: `beat-${s.id}`,
@@ -156,19 +158,13 @@ export function PredictBattle() {
         <p className="mt-6 font-mono text-[12px] leading-relaxed text-muted">{t('predict.notOpenSub')}</p>
       )}
 
-      {/* not signed in / @SMPL: a quiet note */}
+      {/* logged out: invite them to sign in and join the league */}
       {voting && !canPredict ? (
         <p className="mt-4 border border-line bg-bg px-4 py-3 font-mono text-[11px] leading-relaxed text-muted">
-          {currentUser ? (
-            t('predict.houseNote')
-          ) : (
-            <>
-              {t('predict.signIn')}{' '}
-              <Link to="/login" className="text-ink underline underline-offset-4 hover:text-accent">
-                {t('common.login')}
-              </Link>
-            </>
-          )}
+          {t('predict.signIn')}{' '}
+          <Link to="/login" className="text-ink underline underline-offset-4 hover:text-accent">
+            {t('common.login')}
+          </Link>
         </p>
       ) : null}
 

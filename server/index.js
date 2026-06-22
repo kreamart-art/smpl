@@ -1270,10 +1270,10 @@ app.post('/api/battles/:id/predict', rateLimit('predict', 40, 60_000), requireAu
   if (!b) return fail(res, 404, 'Battle not found.')
   if (b.status !== STATUS.VOTING_PHASE) return fail(res, 400, 'Predictions are only open during voting.')
   if (b.scheduled && Date.now() > b.voteEnd) return fail(res, 400, 'Predictions have closed.')
-  if (req.user.alias === 'SMPL') return fail(res, 403, 'The SMPL account doesn’t predict.')
-  // Everyone plays the prediction game — listeners, producers and artists alike,
-  // even competitors in this battle (a prediction is a guess, it never touches
-  // the result, which the crowd vote decides). Only @SMPL stays out.
+  // Everyone with an account plays the prediction game — listeners, producers and
+  // artists alike, even competitors in this battle and @SMPL itself. A prediction
+  // is a guess; it never touches the result, which the crowd vote decides. (The
+  // crowd vote still keeps @SMPL out, because that one does decide the winner.)
   const sub = getSubmissionRow(req.body?.submissionId)
   if (!sub || sub.battleId !== b.id) return fail(res, 400, 'Beat not found.')
   if (sub.disqualified) return fail(res, 400, 'That entry was disqualified.')
@@ -2321,7 +2321,11 @@ async function transcodeClip(rawPath, base) {
   await execFileP(
     'ffmpeg',
     [
-      '-y', '-i', rawPath,
+      // +genpts rebuilds presentation timestamps: MediaRecorder clips often ship
+      // with missing/garbled durations, which made ffmpeg keep a single frame and
+      // freeze the waveform. Regenerated timestamps let the CFR pass spread the
+      // real frames across the timeline.
+      '-y', '-fflags', '+genpts', '-i', rawPath,
       '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
       '-profile:v', 'high', '-r', '30', '-fps_mode', 'cfr',
       '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '128k',

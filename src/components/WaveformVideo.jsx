@@ -44,6 +44,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
   const rafRef = useRef(0)
   const logoRef = useRef(null)
   const grainRef = useRef(null)
+  const recTrackRef = useRef(null) // canvas capture track while exporting (manual frames)
 
   const [playing, setPlaying] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -131,6 +132,16 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
         analyser.getByteFrequencyData(data)
       }
       renderFrame(g, data)
+      // While exporting, hand each freshly painted frame to the recorder. Auto
+      // capture freezes on some mobile browsers, so we drive frames ourselves.
+      const rt = recTrackRef.current
+      if (rt) {
+        try {
+          rt.requestFrame()
+        } catch {
+          /* noop */
+        }
+      }
     }
     const a = audioRef.current
     if (a && a.duration) setProgress(a.currentTime / a.duration)
@@ -257,7 +268,24 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
     try {
       await ensureGraph()
       const canvas = canvasRef.current
-      const vStream = canvas.captureStream(30)
+      // Manual-frame capture: the render loop pushes every painted frame into the
+      // recorder via track.requestFrame(). Auto-capture (captureStream(30)) drops
+      // or freezes frames on several mobile browsers, which is exactly why the
+      // exported clip used to come out with a frozen waveform. Fall back to
+      // auto-capture only when requestFrame isn't available.
+      let vStream = canvas.captureStream(0)
+      const vTrack = vStream.getVideoTracks()[0]
+      if (vTrack && typeof vTrack.requestFrame === 'function') {
+        recTrackRef.current = vTrack
+      } else {
+        try {
+          vStream.getTracks().forEach((t) => t.stop())
+        } catch {
+          /* noop */
+        }
+        vStream = canvas.captureStream(30)
+        recTrackRef.current = null
+      }
       const mixed = new MediaStream([...vStream.getVideoTracks(), ...destRef.current.stream.getAudioTracks()])
       // A black ground with thin bars compresses heavily — a modest bitrate keeps
       // the upload small + fast (so the server transcode never times out) and
@@ -266,6 +294,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
       const chunks = []
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data)
       rec.onstop = () => {
+        recTrackRef.current = null
         setMime(recMime)
         setBlob(new Blob(chunks, { type: recMime }))
         setRecording(false)
@@ -286,6 +315,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
         a.onended = null
       }
     } catch (e) {
+      recTrackRef.current = null
       setRecording(false)
       setErr(e?.message || 'Export failed.')
     }
