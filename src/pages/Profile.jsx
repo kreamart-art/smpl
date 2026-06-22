@@ -237,7 +237,7 @@ export function Editor({ user, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, deleteWaveformVideo, fetchCrate } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, fetchCrate } =
     useApp()
   const base = getUserByAlias(alias)
   const navigate = useNavigate()
@@ -597,14 +597,7 @@ export default function Profile() {
         {/* CLIPS */}
         {activeTab === 'clips' ? (
           clips.length ? (
-            <WaveformClips
-              clips={clips}
-              self={isSelf}
-              onDelete={async (id) => {
-                const r = await deleteWaveformVideo(id)
-                if (r.ok) setClips((cs) => cs.filter((x) => x.id !== id))
-              }}
-            />
+            <WaveformClips clips={clips} />
           ) : (
             <p className="mt-8 border border-line bg-panel px-5 py-12 text-center font-mono text-[12px] leading-relaxed text-muted">
               {isSelf ? t('profile.clips.emptySelf') : t('profile.clips.empty')}
