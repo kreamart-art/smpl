@@ -110,6 +110,7 @@ export const battleDetail = {
     'battleDetail.winner.title': 'Winner declared',
     'battleDetail.winner.sub': 'Names revealed · the room has spoken',
     'battleDetail.winner.youTook': 'You took this one',
+    'battleDetail.winner.share': 'Share winner',
     'battleDetail.winner.replay': 'Replay',
 
     // not-found fallback
@@ -223,6 +224,7 @@ export const battleDetail = {
     'battleDetail.winner.title': 'winnaar bekend',
     'battleDetail.winner.sub': 'namen onthuld · de room heeft gesproken',
     'battleDetail.winner.youTook': 'deze is van jou',
+    'battleDetail.winner.share': 'Deel winnaar',
     'battleDetail.winner.replay': 'Opnieuw',
 
     // not-found fallback

@@ -12,6 +12,7 @@ import CommentThread from '../components/CommentThread.jsx'
 import CrateButton from '../components/CrateButton.jsx'
 import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
+import WinnerCard from '../components/WinnerCard.jsx'
 import WinnerStamp from '../components/WinnerStamp.jsx'
 import TopCallers from '../components/TopCallers.jsx'
 import { IconPoster } from '../components/icons.jsx'
@@ -115,6 +116,7 @@ export default function BattleDetail() {
   const [uploadingBeat, setUploadingBeat] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [waveVideo, setWaveVideo] = useState(null)
+  const [winnerCard, setWinnerCard] = useState(null)
 
   const approvedSubs = useMemo(
     () => (battle ? battleSubmissions(battle.id).filter((s) => s.approved) : []),
@@ -658,8 +660,23 @@ export default function BattleDetail() {
 
         {battle.status === STATUS.WINNER_DECLARED && (
           <PhaseBox title={t('battleDetail.winner.title')} sub={t('battleDetail.winner.sub')}>
-            <div className="space-y-3">
-              {rankedSubmissions(battle.id).map((s, i) => {
+            {(() => {
+              const ranked = rankedSubmissions(battle.id)
+              const winSub = battle.winnerSubmissionId ? ranked.find((x) => x.id === battle.winnerSubmissionId) : ranked[0]
+              const winAlias = winSub ? getUser(winSub.producerId)?.alias : null
+              return (
+                <>
+                  {winAlias ? (
+                    <button
+                      type="button"
+                      onClick={() => setWinnerCard({ alias: winAlias, flips: ranked.length })}
+                      className="mb-3 w-full border border-line-bright bg-panel px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                    >
+                      {t('battleDetail.winner.share')}
+                    </button>
+                  ) : null}
+                  <div className="space-y-3">
+                    {ranked.map((s, i) => {
                 const rank = i + 1
                 const meta = beatMeta(s, rank, true)
                 const declared = !!battle.winnerSubmissionId
@@ -710,8 +727,11 @@ export default function BattleDetail() {
                     <CommentThread submissionId={s.id} producerId={s.producerId} />
                   </div>
                 )
-              })}
-            </div>
+                    })}
+                  </div>
+                </>
+              )
+            })()}
           </PhaseBox>
         )}
 
@@ -727,6 +747,9 @@ export default function BattleDetail() {
       </div>
 
       {waveVideo ? <WaveformVideo {...waveVideo} onClose={() => setWaveVideo(null)} /> : null}
+      {winnerCard ? (
+        <WinnerCard {...winnerCard} battleTitle={battle.title} seed={battle.id} onClose={() => setWinnerCard(null)} />
+      ) : null}
     </div>
   )
 }
