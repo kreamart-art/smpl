@@ -85,11 +85,25 @@ export function AppProvider({ children }) {
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const d = await api.get('/api/bootstrap')
-      if (!alive) return
-      if (d.ok) applyBootstrap(d)
-      else setError(d.error || 'Failed to load.')
-      setLoading(false)
+      try {
+        // Race the bootstrap against a timeout so a hung request (flaky mobile
+        // network, captive portal, a stalled connection) can never leave the app
+        // stuck on the black boot screen forever — it surfaces a recoverable
+        // error instead. applyBootstrap is inside the try so a bad payload can't
+        // hang it either.
+        const d = await Promise.race([
+          api.get('/api/bootstrap'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000)),
+        ])
+        if (!alive) return
+        if (d.ok) applyBootstrap(d)
+        else setError(d.error || 'Failed to load.')
+      } catch {
+        if (alive) setError('Could not reach SMPL. Check your connection and reload.')
+      } finally {
+        // ALWAYS leave the boot screen — the app must never hang on black.
+        if (alive) setLoading(false)
+      }
     })()
     return () => {
       alive = false

@@ -49,6 +49,13 @@ function BootScreen({ error }) {
         <img src="/logo.png" alt="SMPL" className="logo-chrome h-6 w-auto" />
         <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Server unreachable</div>
         <p className="max-w-xs font-mono text-[11px] leading-relaxed text-faint">{error}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="border border-line-bright px-5 h-11 font-mono text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-ink hover:text-bg"
+        >
+          Reload
+        </button>
       </div>
     )
   }
