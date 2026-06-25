@@ -324,6 +324,43 @@ function ProfilePreview({ alias }) {
   )
 }
 
+// A shared waveform clip card in a thread.
+function ClipPreview({ id }) {
+  const { fetchWaveformVideo } = useApp()
+  const t = useT()
+  const [clip, setClip] = useState(undefined)
+  useEffect(() => {
+    let alive = true
+    fetchWaveformVideo(id).then((r) => {
+      if (alive) setClip(r?.ok ? r : null)
+    })
+    return () => {
+      alive = false
+    }
+  }, [id, fetchWaveformVideo])
+  if (!clip) return <span className="font-mono text-[11px] text-muted">↗ {t('messages.sharedClip')}</span>
+  const { video, producer } = clip
+  return (
+    <Link
+      to={`/clip/${id}`}
+      className="flex items-center gap-3 border border-line-bright bg-bg px-3 py-2.5 transition-colors hover:border-ink"
+    >
+      {video.poster ? (
+        <img src={mediaUrl(video.poster)} alt="" className="h-12 w-[34px] shrink-0 border border-line object-cover" />
+      ) : null}
+      <div className="min-w-0">
+        <div className="font-sans text-[14px] font-bold uppercase leading-tight tracking-tight text-ink">
+          {t('messages.sharedClip')}
+        </div>
+        <div className="truncate font-mono text-[9px] uppercase tracking-[0.16em] text-faint">
+          {producer ? `@${producer.alias}` : ''}
+          {video.tag ? `${producer ? ' · ' : ''}${video.tag}` : ''}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 // ----- a voice clip player ---------------------------------------------------
 function AudioClip({ src, mine }) {
   const ref = useRef(null)
@@ -644,6 +681,7 @@ function Thread({ alias }) {
                           <div className="space-y-1.5">
                             {m.battleId ? <BattlePreview battleId={m.battleId} /> : null}
                             {m.shareKind === 'profile' ? <ProfilePreview alias={m.shareRef} /> : null}
+                            {m.shareKind === 'clip' ? <ClipPreview id={m.shareRef} /> : null}
                             {m.shareKind === 'event' ? (
                               <span className="font-mono text-[11px] text-muted">↗ {t('messages.sharedEvent')}</span>
                             ) : null}

@@ -10,7 +10,8 @@ import { mediaUrl } from '../api.js'
 import Avatar from '../components/Avatar.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import { Btn } from '../components/ui.jsx'
-import { IconMore, IconTrash } from '../components/icons.jsx'
+import ShareSheet from '../components/ShareSheet.jsx'
+import { IconMore, IconTrash, IconVideo } from '../components/icons.jsx'
 import { useT, useI18n } from '../i18n/index.jsx'
 
 export default function ClipPage() {
@@ -108,6 +109,15 @@ export default function ClipPage() {
             {nl ? 'Waveform-clip' : 'Waveform clip'}
           </span>
         )}
+        <ShareSheet
+          className="shrink-0 bg-panel px-3"
+          dm={{ kind: 'clip', ref: video.id }}
+          extraAction={{
+            icon: <IconVideo size={20} />,
+            label: nl ? 'Deel video' : 'Share video',
+            onClick: shareClip,
+          }}
+        />
         {isOwner ? (
           <div className="relative">
             <button
@@ -165,11 +175,8 @@ export default function ClipPage() {
       />
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <Btn onClick={shareClip} variant="solid" disabled={busy}>
-          {busy ? (nl ? 'Even…' : 'One sec…') : nl ? 'Delen' : 'Share'}
-        </Btn>
         <Btn onClick={downloadClip} variant="ghost" disabled={busy}>
-          {nl ? 'Download' : 'Download'}
+          {busy ? (nl ? 'Even…' : 'One sec…') : nl ? 'Download' : 'Download'}
         </Btn>
         {video.battleId ? (
           <Btn to={`/battles/${video.battleId}`} variant="ghost">

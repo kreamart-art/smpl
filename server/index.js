@@ -2025,6 +2025,11 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
     } else if (shareKind === 'event') {
       sKind = 'event'
       sRef = shareRef.slice(0, 64)
+    } else if (shareKind === 'clip') {
+      if (db.prepare('SELECT id FROM waveform_videos WHERE id = ?').get(shareRef)) {
+        sKind = 'clip'
+        sRef = shareRef
+      }
     }
   }
   if (!text && !bId && !img && !aud && !vid && !sKind) return fail(res, 400, 'Write something first.')
@@ -2046,7 +2051,14 @@ app.post('/api/messages', rateLimit('msg', 40, 60_000), requireAuth, (req, res) 
     'INSERT INTO messages (id, fromId, toId, body, createdAt, readAt, battleId, replyTo, imageUrl, audioUrl, videoUrl, shareKind, shareRef) VALUES (?,?,?,?,?,NULL,?,?,?,?,?,?,?)',
   ).run(id, req.user.id, other.id, text, Date.now(), bId, rId, img, aud, vid, sKind, sRef)
   // notify the recipient on their devices (no-op if they have no subscriptions)
-  const shareWord = sKind === 'profile' ? 'Shared a profile with you' : sKind === 'event' ? 'Shared an event with you' : 'Shared a battle with you'
+  const shareWord =
+    sKind === 'profile'
+      ? 'Shared a profile with you'
+      : sKind === 'event'
+        ? 'Shared an event with you'
+        : sKind === 'clip'
+          ? 'Shared a clip with you'
+          : 'Shared a battle with you'
   sendPush(other.id, {
     title: `@${req.user.alias}`,
     body: text ? text.slice(0, 140) : img ? 'Sent a photo' : vid ? 'Sent a video' : aud ? 'Sent a voice clip' : shareWord,

@@ -18,7 +18,7 @@ import VerifiedBadge from './VerifiedBadge.jsx'
 import { IconShare, IconPoster, IconLink } from './icons.jsx'
 import { inputCls } from './ui.jsx'
 
-export default function ShareSheet({ url, cardTo, dm, title = 'SMPL', text, className = '', ...rest }) {
+export default function ShareSheet({ url, cardTo, dm, title = 'SMPL', text, extraAction, className = '', ...rest }) {
   const { currentUser, users, follows, sendMessage } = useApp()
   const t = useT()
   const [open, setOpen] = useState(false)
@@ -204,6 +204,9 @@ export default function ShareSheet({ url, cardTo, dm, title = 'SMPL', text, clas
                     onClick={copyLink}
                   />
                   {cardTo ? <Tile icon={<IconPoster size={20} />} label={t('share.title')} to={cardTo} /> : null}
+                  {extraAction ? (
+                    <Tile icon={extraAction.icon} label={extraAction.label} onClick={extraAction.onClick} />
+                  ) : null}
                   <Tile icon={<IconShare size={20} />} label={t('share.more')} onClick={nativeShare} />
                 </div>
               </div>

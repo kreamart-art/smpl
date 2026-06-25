@@ -28,6 +28,7 @@ export const messages = {
     'messages.searchPeople': 'Search people…',
     'messages.sentTo': 'Sent to @{alias}',
     'messages.sharedBattle': 'Shared a battle',
+    'messages.sharedClip': 'Waveform clip',
     'messages.noPeople': 'No one to send to yet. Follow some makers.',
   },
   nl: {
@@ -59,6 +60,7 @@ export const messages = {
     'messages.searchPeople': 'Zoek mensen…',
     'messages.sentTo': 'Verstuurd naar @{alias}',
     'messages.sharedBattle': 'Battle gedeeld',
+    'messages.sharedClip': 'Waveform-clip',
     'messages.noPeople': 'Nog niemand om naar te sturen. Volg wat makers.',
   },
 }
