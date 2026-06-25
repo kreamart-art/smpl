@@ -588,6 +588,8 @@ export function AppProvider({ children }) {
         imageUrl: opts.imageUrl,
         audioUrl: opts.audioUrl,
         videoUrl: opts.videoUrl,
+        shareKind: opts.shareKind,
+        shareRef: opts.shareRef,
       }),
     [],
   )
