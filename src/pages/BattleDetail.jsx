@@ -13,6 +13,7 @@ import CrateButton from '../components/CrateButton.jsx'
 import BattleRulesModal from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
 import WinnerCard from '../components/WinnerCard.jsx'
+import BattleRoom from '../components/BattleRoom.jsx'
 import WinnerStamp from '../components/WinnerStamp.jsx'
 import TopCallers from '../components/TopCallers.jsx'
 import { IconPoster } from '../components/icons.jsx'
@@ -413,6 +414,8 @@ export default function BattleDetail() {
           </div>
         </div>
       ) : null}
+
+      <BattleRoom attendees={battle.attendees} />
 
       {/* PHASE PANEL */}
       <div className="mt-6">
