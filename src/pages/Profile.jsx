@@ -6,8 +6,7 @@ import Waveform from '../components/Waveform.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
 import BattleCard from '../components/BattleCard.jsx'
-import ShareButton from '../components/ShareButton.jsx'
-import ShareToDM from '../components/ShareToDM.jsx'
+import ShareSheet from '../components/ShareSheet.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import FollowList from '../components/FollowList.jsx'
 import WaveformClips from '../components/WaveformClips.jsx'
@@ -15,7 +14,7 @@ import CrateGrid from '../components/CrateGrid.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import WinnerBadge from '../components/WinnerBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
-import { IconSettings, IconPoster, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
+import { IconSettings, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
 import { ProfileTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import SuggestInput from '../components/SuggestInput.jsx'
@@ -462,21 +461,13 @@ export default function Profile() {
                 >
                   {t('common.edit')}
                 </button>
-                <Link
-                  to={`/share/profile/${encodeURIComponent(user.alias)}`}
-                  aria-label={t('share.title')}
-                  title={t('share.title')}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
-                >
-                  <IconPoster size={17} />
-                </Link>
-                <ShareButton
-                  iconOnly
+                <ShareSheet
                   className="h-10 w-10 shrink-0"
+                  cardTo={`/share/profile/${encodeURIComponent(user.alias)}`}
+                  dm={{ kind: 'profile', ref: user.alias }}
                   title={t('profile.share.title', { alias: user.alias })}
                   text={t('profile.share.text', { alias: user.alias, role: roleLabel(user.role) })}
                 />
-                <ShareToDM share={{ kind: 'profile', ref: user.alias }} className="h-10 w-10 shrink-0" />
                 <Link
                   data-tour="profile-settings"
                   to="/settings"
@@ -513,21 +504,13 @@ export default function Profile() {
                     {t('messages.message')}
                   </Link>
                 ) : null}
-                <Link
-                  to={`/share/profile/${encodeURIComponent(user.alias)}`}
-                  aria-label={t('share.title')}
-                  title={t('share.title')}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors duration-300 hover:border-ink"
-                >
-                  <IconPoster size={17} />
-                </Link>
-                <ShareButton
-                  iconOnly
+                <ShareSheet
                   className="h-10 w-10 shrink-0"
+                  cardTo={`/share/profile/${encodeURIComponent(user.alias)}`}
+                  dm={{ kind: 'profile', ref: user.alias }}
                   title={t('profile.share.title', { alias: user.alias })}
                   text={t('profile.share.text', { alias: user.alias, role: roleLabel(user.role) })}
                 />
-                <ShareToDM share={{ kind: 'profile', ref: user.alias }} className="h-10 w-10 shrink-0" />
                 <UserSafetyMenu user={user} />
                 {isAdmin && user.role !== 'admin' ? (
                   <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">

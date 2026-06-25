@@ -249,6 +249,17 @@ export function IconShare(props) {
   )
 }
 
+// chain link — the Copy-link action
+export function IconLink(props) {
+  return (
+    <Svg {...props}>
+      <path d="M9 15l6-6" />
+      <path d="M11 6l1-1a4 4 0 0 1 6 6l-2 2" />
+      <path d="M13 18l-1 1a4 4 0 0 1-6-6l2-2" />
+    </Svg>
+  )
+}
+
 export function IconPoster(props) {
   return (
     <Svg {...props}>

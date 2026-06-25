@@ -5,8 +5,7 @@ import AudioPlayer from '../components/AudioPlayer.jsx'
 import BeatPlayer from '../components/BeatPlayer.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
-import ShareButton from '../components/ShareButton.jsx'
-import ShareToDM from '../components/ShareToDM.jsx'
+import ShareSheet from '../components/ShareSheet.jsx'
 import { ReportButton } from '../components/Safety.jsx'
 import CommentThread from '../components/CommentThread.jsx'
 import CrateButton from '../components/CrateButton.jsx'
@@ -16,7 +15,6 @@ import WinnerCard from '../components/WinnerCard.jsx'
 import BattleRoom from '../components/BattleRoom.jsx'
 import WinnerStamp from '../components/WinnerStamp.jsx'
 import TopCallers from '../components/TopCallers.jsx'
-import { IconPoster } from '../components/icons.jsx'
 import { CountdownBlocks } from '../components/Countdown.jsx'
 import { BattleTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
@@ -331,19 +329,11 @@ export default function BattleDetail() {
             >
               {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
             </button>
-            <Link
+            <ShareSheet
               data-tour="battle-share"
-              to={battle.status === STATUS.WINNER_DECLARED ? `/share/win/${battle.id}` : `/share/battle/${battle.id}`}
-              aria-label={t('share.title')}
-              title={t('share.title')}
-              className="flex h-10 w-10 items-center justify-center border border-line-bright text-ink transition-colors hover:border-ink"
-            >
-              <IconPoster size={18} />
-            </Link>
-            <ShareToDM battleId={battle.id} className="h-10 w-10" />
-            <ShareButton
-              iconOnly
               className="h-10 w-10"
+              cardTo={battle.status === STATUS.WINNER_DECLARED ? `/share/win/${battle.id}` : `/share/battle/${battle.id}`}
+              dm={{ battleId: battle.id }}
               title={t('battleDetail.shareTitle', { title: battle.title })}
               text={t('battleDetail.shareText', { title: battle.title })}
             />
