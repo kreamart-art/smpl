@@ -304,7 +304,7 @@ export default function BattleDetail() {
               </span>
             ) : null}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <div className="text-right">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('battleDetail.hereNow')}</div>
               <div className="flex items-center justify-end gap-1.5 font-mono text-lg tnum leading-none">
@@ -312,11 +312,21 @@ export default function BattleDetail() {
                 {battle.attendees.length}
               </div>
             </div>
+            {/* Signup phase: the primary call to action is claiming a slot to compete.
+                "I'm in" (attend the room) stays right beside it as the secondary toggle. */}
+            {battle.status === STATUS.OPEN_FOR_SIGNUP && !isRegistered && battle.maxProducers - battle.signups.length > 0 ? (
+              <button
+                onClick={openRules}
+                className="touch-manipulation border border-accent bg-accent px-4 h-11 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-ink transition-colors hover:bg-accent-hover hover:border-accent-hover"
+              >
+                {t('battleDetail.claimSlot')}
+              </button>
+            ) : null}
             <button
               data-tour="battle-attend"
               onClick={onAttend}
               className={`touch-manipulation border px-4 h-11 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                attending ? 'bg-accent text-accent-ink border-accent' : 'border-line-bright text-ink hover:border-ink'
+                attending ? 'border-accent text-accent' : 'border-line-bright text-ink hover:border-ink'
               }`}
             >
               {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
