@@ -13,6 +13,7 @@ import FollowList from '../components/FollowList.jsx'
 import WaveformClips from '../components/WaveformClips.jsx'
 import CrateGrid from '../components/CrateGrid.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
+import WinnerBadge from '../components/WinnerBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
 import { IconSettings, IconPoster, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
 import { ProfileTour } from '../components/Tour.jsx'
@@ -381,6 +382,7 @@ export default function Profile() {
             <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-sans text-2xl font-bold uppercase leading-[0.9] tracking-tight sm:text-3xl">
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{user.alias}</span>
               {user.verified || user.role === 'admin' ? <VerifiedBadge size={20} title={t('profile.verified')} /> : null}
+              {user.wins ? <WinnerBadge wins={user.wins} size={15} title={t('profile.winnerBadge', { n: user.wins })} /> : null}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
               <span className="text-ink-dim">@{user.alias}</span>
