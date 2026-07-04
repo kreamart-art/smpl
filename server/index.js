@@ -1129,7 +1129,7 @@ app.post('/api/battles/:id/register', requireAuth, (req, res) => {
 })
 
 // ----- submissions -----------------------------------------------------------
-app.post('/api/battles/:id/submissions', requireAuth, (req, res) => {
+app.post('/api/battles/:id/submissions', requireAuth, async (req, res) => {
   const b = rowToBattle(getBattleRow(req.params.id))
   if (!b) return fail(res, 404, 'Battle not found.')
   if (!b.signups.includes(req.user.id)) return fail(res, 403, 'You are not registered for this battle.')
@@ -1137,12 +1137,15 @@ app.post('/api/battles/:id/submissions', requireAuth, (req, res) => {
   const { audioUrl, soundcloudUrl, youtubeUrl } = req.body || {}
   // upload-only: the beat must be a file uploaded to SMPL (keeps playback in-app, no external links)
   if (!audioUrl || !/^\/?(api\/uploads|samples)\//.test(audioUrl)) return fail(res, 400, 'Upload your beat first.')
+  // the beat's real length in seconds, read from the uploaded file — never a
+  // hardcoded guess (a stale 15 made every beat read as 0:15 in the app)
+  const duration = await probeDuration(audioUrl)
   const existing = db
     .prepare('SELECT * FROM submissions WHERE battleId = ? AND producerId = ?')
     .get(b.id, req.user.id)
   if (existing) {
-    db.prepare('UPDATE submissions SET audioUrl=?, soundcloudUrl=?, youtubeUrl=? WHERE id=?').run(
-      audioUrl || '', soundcloudUrl || '', youtubeUrl || '', existing.id,
+    db.prepare('UPDATE submissions SET audioUrl=?, soundcloudUrl=?, youtubeUrl=?, duration=? WHERE id=?').run(
+      audioUrl || '', soundcloudUrl || '', youtubeUrl || '', duration, existing.id,
     )
     return ok(res, { updated: true })
   }
@@ -1151,7 +1154,7 @@ app.post('/api/battles/:id/submissions', requireAuth, (req, res) => {
      VALUES (?,?,?,?,?,?,?,?,1)`,
   ).run(
     `s_${randomUUID().slice(0, 8)}`, b.id, req.user.id,
-    audioUrl || '', soundcloudUrl || '', youtubeUrl || '', 15, Date.now(),
+    audioUrl || '', soundcloudUrl || '', youtubeUrl || '', duration, Date.now(),
   )
   // tell the curator a new beat landed
   if (b.curatorId && b.curatorId !== req.user.id) {
@@ -2375,6 +2378,25 @@ function uploadLocalPath(ref) {
   const m = pathname.match(/^\/?api\/uploads\/([A-Za-z0-9._-]+)$/)
   if (!m || m[1].includes('..')) return null
   return path.join(UPLOAD_DIR, m[1])
+}
+
+// Real length (whole seconds) of an uploaded beat, read from the file itself so a
+// submission's stored duration is never a guess. Returns 0 when it can't be read
+// (missing ffprobe / unreadable file) — callers treat 0 as "unknown".
+async function probeDuration(audioUrl) {
+  const p = uploadLocalPath(audioUrl)
+  if (!p) return 0
+  try {
+    const { stdout } = await execFileP(
+      'ffprobe',
+      ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', p],
+      { timeout: 15_000 },
+    )
+    const d = parseFloat(String(stdout).trim())
+    return Number.isFinite(d) && d >= 1 ? Math.round(d) : 0
+  } catch {
+    return 0
+  }
 }
 
 // Render a branded 9:16 waveform clip entirely server-side: ffmpeg draws a real,
