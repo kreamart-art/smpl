@@ -4,10 +4,10 @@ import { useI18n } from '../i18n/index.jsx'
 import { IconVolume, IconMuted, IconPlay } from './icons.jsx'
 
 // The promo reel + its poster live in /public (compressed for web).
-const SRC = '/announcement.mp4'
-const POSTER = '/announcement-poster.jpg'
+const SRC = '/announcement-bb2.mp4'
+const POSTER = '/announcement-bb2-poster.jpg'
 // Bump this key when a new announcement replaces it, so the popup shows again.
-const DISMISS_KEY = 'smpl_announce_bb1'
+const DISMISS_KEY = 'smpl_announce_bb2'
 
 // Reel-style player: autoplays muted and loops, tap the video to play/pause,
 // a mute toggle in the corner.
@@ -106,7 +106,7 @@ export function AnnouncementPopup() {
       className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-sm"
       style={{ padding: 'max(env(safe-area-inset-top),16px) 14px max(env(safe-area-inset-bottom),16px)' }}
     >
-      <div className="relative mx-auto aspect-[1080/1918] max-h-[82dvh] w-full max-w-[400px] border border-white/15">
+      <div className="relative mx-auto aspect-[1080/1920] max-h-[82dvh] w-full max-w-[400px] border border-white/15">
         <AnnouncementVideo className="h-full w-full" />
         {left > 0 ? (
           <div className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center border border-white/20 bg-black/70 font-mono text-[13px] text-white/70">
@@ -142,17 +142,17 @@ export function AnnouncementSection() {
               {nl ? 'Aankondiging' : 'Announcement'}
             </div>
             <h2 className="font-sans text-[clamp(1.9rem,4.4vw,3.2rem)] font-bold uppercase leading-none tracking-tight">
-              Beat Battle #1
+              Beat Battle #2
             </h2>
           </div>
         </div>
         <div className="mt-10 flex flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-16">
           <div className="w-full max-w-[320px] shrink-0">
-            <AnnouncementVideo className="aspect-[1080/1918] w-full border border-line-bright" />
+            <AnnouncementVideo className="aspect-[1080/1920] w-full border border-line-bright" />
           </div>
           <div className="max-w-md text-center lg:text-left">
             <p className="font-sans text-[clamp(1.2rem,2.4vw,1.6rem)] font-bold uppercase leading-tight tracking-tight">
-              {nl ? '8 producers. 1 sample. 60 seconden. 1 winnaar.' : '8 producers. 1 sample. 60 seconds. 1 winner.'}
+              {nl ? '6 producers. 1 sample. 60 seconden. 1 winnaar.' : '6 producers. 1 sample. 60 seconds. 1 winner.'}
             </p>
             <p className="mt-4 font-mono text-[12px] leading-relaxed text-muted">
               {nl
