@@ -9,6 +9,7 @@ import { promisify } from 'node:util'
 
 const execFileP = promisify(execFile)
 import { db, seedIfEmpty, migrate, pubUser, meUser, rowToBattle, rowToSubmission, normalizeHandle } from './db.js'
+import { keyOk as jarvisKeyOk, stats as jarvisStats } from './jarvis.js'
 import {
   hashPassword,
   verifyPassword,
@@ -616,6 +617,15 @@ const isBlocked = (a, b) =>
 
 // ----- health ----------------------------------------------------------------
 app.get('/api/health', (_req, res) => ok(res, { seeded }))
+
+// JARVIS, the owner's desktop app: counts only (server/jarvis.js). Off without JARVIS_STATS_KEY.
+app.get('/api/jarvis/stats', rateLimit('jarvis-stats', 30, 60_000), (req, res) => {
+  const k = jarvisKeyOk(req.headers.authorization)
+  if (k === null) return fail(res, 404, 'Not found.')
+  if (!k) return fail(res, 401, 'Unauthorized.')
+  res.set('Cache-Control', 'no-store')
+  res.json(jarvisStats(db))
+})
 
 // ----- auth ------------------------------------------------------------------
 const langOf = (req) => (String(req.body?.lang || '').toLowerCase() === 'nl' ? 'nl' : 'en')
