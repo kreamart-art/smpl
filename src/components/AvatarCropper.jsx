@@ -6,9 +6,10 @@ import Portal from './Portal.jsx'
 const FRAME = 260 // on-screen crop frame (px)
 const OUT = 256 // exported avatar size (px)
 
-// Lightweight square avatar cropper: drag to pan, slider to zoom, exports a
-// 256px JPEG data URL. No external dependency — just a canvas.
-export default function AvatarCropper({ file, onSave, onCancel }) {
+// Lightweight square cropper: drag to pan, slider to zoom, exports a JPEG
+// (256px data URL for avatars; covers ask for a larger Blob). Re-encoding on a
+// canvas also drops the photo's EXIF/GPS. No external dependency.
+export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBlob = false, title }) {
   const t = useT()
   const canvasRef = useRef(null)
   const imgRef = useRef(null)
@@ -87,10 +88,11 @@ export default function AvatarCropper({ file, onSave, onCancel }) {
 
   const save = () => {
     const out = document.createElement('canvas')
-    out.width = OUT
-    out.height = OUT
-    draw(out.getContext('2d'), OUT)
-    onSave(out.toDataURL('image/jpeg', 0.85))
+    out.width = size
+    out.height = size
+    draw(out.getContext('2d'), size)
+    if (asBlob) out.toBlob((b) => b && onSave(b), 'image/jpeg', 0.88)
+    else onSave(out.toDataURL('image/jpeg', 0.85))
   }
 
   return (
@@ -102,7 +104,7 @@ export default function AvatarCropper({ file, onSave, onCancel }) {
     >
       <div className="my-auto w-full max-w-[340px] border border-line-bright bg-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{t('crop.title')}</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{title || t('crop.title')}</span>
           <button onClick={onCancel} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
             {t('common.close')} ✕
           </button>

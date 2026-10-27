@@ -2,7 +2,8 @@ import { useState } from 'react'
 import Portal from './Portal.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
-import { Btn, Field, inputCls, textareaCls } from './ui.jsx'
+import { Btn, Field, Label, inputCls, textareaCls } from './ui.jsx'
+import CoverPicker from './CoverPicker.jsx'
 
 const pad = (n) => String(n).padStart(2, '0')
 const toLocal = (ms) => {
@@ -22,6 +23,9 @@ export default function EditBattleModal({ battle, onClose, onSaved, onDeleted })
     sampleSong: battle.sampleSong || '',
     description: battle.description || '',
     genre: battle.genre || '',
+    bpm: battle.bpm || '',
+    musicalKey: battle.musicalKey || '',
+    cover: battle.cover || '',
     maxProducers: battle.maxProducers || 8,
     sampleRevealed: !!battle.sampleRevealed,
     blind: !!battle.blind,
@@ -44,6 +48,9 @@ export default function EditBattleModal({ battle, onClose, onSaved, onDeleted })
       sampleSong: form.sampleSong,
       description: form.description,
       genre: form.genre,
+      bpm: form.bpm,
+      musicalKey: form.musicalKey,
+      cover: form.cover,
       maxProducers: form.maxProducers,
       sampleRevealed: form.sampleRevealed,
       blind: form.blind,
@@ -121,6 +128,24 @@ export default function EditBattleModal({ battle, onClose, onSaved, onDeleted })
               <Field label={t('host.genre')}>
                 <input className={inputCls} value={form.genre} onChange={(e) => upd('genre', e.target.value)} />
               </Field>
+              <Field label={t('battle.bpm')}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={40}
+                  max={300}
+                  className={inputCls}
+                  value={form.bpm}
+                  onChange={(e) => upd('bpm', e.target.value)}
+                />
+              </Field>
+              <Field label={t('battle.key')}>
+                <input className={inputCls} maxLength={16} value={form.musicalKey} onChange={(e) => upd('musicalKey', e.target.value)} />
+              </Field>
+            </div>
+            <div>
+              <Label>{t('battle.cover')}</Label>
+              <CoverPicker className="mt-2" value={form.cover} title={form.title} onChange={(url) => upd('cover', url)} />
             </div>
             <Field label={t('dashboard.create.description')}>
               <textarea rows={3} className={textareaCls} value={form.description} onChange={(e) => upd('description', e.target.value)} />

@@ -42,3 +42,13 @@ export function kindCopy(kind) {
 export function roleLabel(role) {
   return { producer: 'Producer', artist: 'Artist', listener: 'Listener', curator: 'Curator', admin: 'Admin' }[role] || role
 }
+
+// Mirrors the server's register rule: the battle's competitor role, a dual-role
+// maker, or staff who opted into competing. Never the battle's own curator.
+export function canEnter(user, battle) {
+  if (!user || !battle || battle.curatorId === user.id) return false
+  const need = battle.kind === 'VERSES' ? 'artist' : 'producer'
+  const competitor = user.role === 'producer' || user.role === 'artist'
+  const staff = user.role === 'curator' || user.role === 'admin'
+  return user.role === need || (!!user.dualRole && competitor) || (staff && !!user.curatorCompetes)
+}

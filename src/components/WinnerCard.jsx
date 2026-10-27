@@ -24,7 +24,7 @@ function seeded(str) {
   }
 }
 
-export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, seed = '', onClose }) {
+export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, seed = '', onClose, kind }) {
   const { lang } = useI18n()
   const nl = lang === 'nl'
   const canvasRef = useRef(null)
@@ -133,7 +133,7 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
     g.fillRect(W / 2 - 34, 206, 68, 3)
 
     // what this is
-    trk('BEAT BATTLE WINNER', W / 2, 270, 26, accent, 9)
+    trk(kind === 'VERSES' ? 'OPEN VERSE CHAMPION' : 'BEAT BATTLE WINNER', W / 2, 270, 26, accent, 9)
     hline(250, W - 250, 312, '#2a2620')
 
     // the winner — the hero
@@ -144,7 +144,7 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
 
     // battle + the field size (flips only, no vote count)
     trk(String(battleTitle).toUpperCase(), W / 2, 840, 23, muted, 4)
-    trk(`WON OUT OF ${flips} FLIPS`, W / 2, 886, 29, cream, 2)
+    trk(`WON OUT OF ${flips} ${kind === 'VERSES' ? 'VERSES' : 'FLIPS'}`, W / 2, 886, 29, cream, 2)
 
     // footer
     hline(190, W - 190, 938, '#2a2620')

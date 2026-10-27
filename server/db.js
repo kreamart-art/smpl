@@ -366,4 +366,8 @@ export function migrate() {
   // 2026-10-27: who uploaded which file. Endpoints that delete or claim a file
   // (renders, entries, saved clips) check it, so nobody can touch another's media.
   db.exec('CREATE TABLE IF NOT EXISTS uploads (name TEXT PRIMARY KEY, userId TEXT, kind TEXT, createdAt INTEGER)')
+  // 2026-10-27: battle artwork + the source's tempo and key (curator-entered).
+  addColumn('battles', 'cover', 'TEXT')
+  addColumn('battles', 'bpm', 'INTEGER')
+  addColumn('battles', 'musicalKey', 'TEXT')
 }

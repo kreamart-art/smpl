@@ -1,109 +1,119 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
-import BattleCard from '../components/BattleCard.jsx'
-import Reveal from '../components/Reveal.jsx'
-import { STATUS_GROUP, STATUS_INDEX } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
+import { STATUS } from '../data/status.js'
+import BattleHero from '../components/BattleHero.jsx'
+import { BattleRow, rankBattles, kindKey } from '../components/BattleRow.jsx'
+import { SectionHead, Kicker, DisplayTitle, EmptyState } from '../components/crate.jsx'
+import Vinyl from '../components/Vinyl.jsx'
+import { IconChevronRight } from '../components/icons.jsx'
 
-const FILTERS = [
-  { key: 'all', labelKey: 'battles.filter.all' },
-  { key: 'active', labelKey: 'battles.filter.active' },
-  { key: 'upcoming', labelKey: 'battles.filter.upcoming' },
-  { key: 'past', labelKey: 'battles.filter.past' },
-]
+const LIVE = new Set([STATUS.VOTING_PHASE, STATUS.SUBMISSION_PHASE])
+const KINDS = ['all', 'BEATS', 'VERSES']
 
-// Active battles first, then upcoming, then past.
-const GROUP_RANK = { active: 0, upcoming: 1, past: 2 }
-
+// The Arena: every battle, the one that matters now up front, then what's live,
+// what's coming and the archive. Games live here too (Play).
 export default function Battles() {
   const t = useT()
   const { battles } = useApp()
-  const [filter, setFilter] = useState('all')
   const [kind, setKind] = useState('all')
 
-  const counts = useMemo(() => {
-    const c = { all: battles.length, active: 0, upcoming: 0, past: 0 }
-    for (const b of battles) c[STATUS_GROUP[b.status]]++
-    return c
-  }, [battles])
-
-  const sorted = useMemo(() => {
-    const list = battles.filter(
-      (b) =>
-        (filter === 'all' || STATUS_GROUP[b.status] === filter) &&
-        (kind === 'all' || (b.kind || 'BEATS') === kind),
-    )
-    return [...list].sort((a, b) => {
-      const ga = GROUP_RANK[STATUS_GROUP[a.status]]
-      const gb = GROUP_RANK[STATUS_GROUP[b.status]]
-      if (ga !== gb) return ga - gb
-      // within a group, later phase first
-      return STATUS_INDEX[b.status] - STATUS_INDEX[a.status]
-    })
-  }, [battles, filter, kind])
+  const list = useMemo(
+    () => battles.filter((b) => kind === 'all' || (b.kind || 'BEATS') === kind),
+    [battles, kind],
+  )
+  const ranked = useMemo(() => rankBattles(list), [list])
+  const hero = ranked[0] || null
+  const live = ranked.filter((b) => LIVE.has(b.status) && b.id !== hero?.id)
+  const upcoming = ranked.filter((b) => !LIVE.has(b.status) && b.id !== hero?.id)
+  const past = useMemo(
+    () => list.filter((b) => b.status === STATUS.WINNER_DECLARED).sort((a, b) => (b.voteEnd || 0) - (a.voteEnd || 0)),
+    [list],
+  )
+  const toCall = battles.filter((b) => b.status === STATUS.VOTING_PHASE).length
 
   return (
-    <div className="mx-auto max-w-[1500px] px-4 py-14 sm:px-6 sm:py-20">
-      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-line pb-6">
-        <div className="flex items-baseline gap-4 sm:gap-6">
-          <span className="font-mono text-[13px] text-faint tnum">A1</span>
-          <div>
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
-              {t('battles.eyebrow')}
-            </div>
-            <h1 className="font-sans text-[clamp(2.4rem,6vw,4.5rem)] font-bold uppercase leading-none tracking-tighter">
-              {t('battles.title')}
-            </h1>
-          </div>
-        </div>
-        <div className="flex w-full items-stretch border border-line sm:w-auto sm:items-center">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`flex-1 whitespace-nowrap px-2 py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.1em] transition-colors duration-300 sm:flex-none sm:px-4 sm:text-[11px] sm:tracking-[0.18em] ${
-                filter === f.key ? 'bg-ink text-bg' : 'text-muted hover:text-ink'
-              }`}
-            >
-              {t(f.labelKey)}
-              <span className="ml-1.5 opacity-50 tnum">{counts[f.key]}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
+      <Kicker>{t('arena.kicker')}</Kicker>
+      <DisplayTitle size="lg" className="mt-2 text-ink">
+        {t('arena.title')}
+      </DisplayTitle>
 
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.22em] text-faint">{t('battles.type')}</span>
-        {[
-          { k: 'all', labelKey: 'battles.type.all' },
-          { k: 'BEATS', labelKey: 'battles.type.beats' },
-          { k: 'VERSES', labelKey: 'battles.type.verses' },
-        ].map((tf) => (
+      <div role="tablist" aria-label={t('arena.title')} className="mt-5 flex flex-wrap gap-2">
+        {KINDS.map((k) => (
           <button
-            key={tf.k}
-            onClick={() => setKind(tf.k)}
-            className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors ${
-              kind === tf.k
-                ? 'border-ink bg-ink text-bg'
-                : 'border-line text-muted hover:border-line-bright hover:text-ink'
+            key={k}
+            role="tab"
+            aria-selected={kind === k}
+            onClick={() => setKind(k)}
+            className={`h-9 border px-3.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
+              kind === k ? 'border-paper bg-paper text-paper-ink' : 'border-line-bright text-muted hover:text-ink'
             }`}
           >
-            {t(tf.labelKey)}
+            {k === 'all' ? t('arena.filter.all') : t(kindKey(k))}
           </button>
         ))}
       </div>
 
-      {sorted.length ? (
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((b, i) => (
-            <Reveal key={b.id} delay={i * 60}>
-              <BattleCard battle={b} />
-            </Reveal>
-          ))}
+      <div className="mt-6">
+        {hero ? <BattleHero battle={hero} kicker={t('arena.sceneNow')} /> : <EmptyState title={t('home.noBattles')} />}
+      </div>
+
+      <Link
+        to="/play"
+        className="group mt-8 flex items-center gap-4 border border-line-bright bg-panel px-4 py-3.5 transition-colors hover:bg-panel-2"
+      >
+        <Vinyl size={48} spin />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-sans text-lg font-semibold text-ink">{t('arena.play')}</span>
+            {toCall ? (
+              <span className="bg-accent px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-accent-ink">
+                {toCall === 1 ? t('arena.callNowOne') : t('arena.callNow', { n: toCall })}
+              </span>
+            ) : null}
+          </div>
+          <div className="truncate font-sans text-[13px] text-muted">{t('arena.playSub')}</div>
         </div>
-      ) : (
-        <p className="mt-12 font-mono text-sm text-muted">{t('battles.empty')}</p>
-      )}
+        <IconChevronRight size={16} className="shrink-0 text-muted transition-colors group-hover:text-ink" />
+      </Link>
+
+      <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-2">
+        {live.length ? (
+          <section>
+            <SectionHead title={t('arena.live')} />
+            <div className="mt-1">
+              {live.map((b) => (
+                <BattleRow key={b.id} battle={b} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {upcoming.length ? (
+          <section>
+            <SectionHead title={t('arena.upcoming')} />
+            <div className="mt-1">
+              {upcoming.map((b) => (
+                <BattleRow key={b.id} battle={b} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      <section className="mt-10">
+        <SectionHead title={t('arena.archive')} />
+        {past.length ? (
+          <div className="mt-1 grid grid-cols-1 gap-x-10 lg:grid-cols-2">
+            {past.map((b) => (
+              <BattleRow key={b.id} battle={b} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState className="mt-4" title={kind === 'all' ? t('arena.archiveEmpty') : t('arena.empty')} />
+        )}
+      </section>
     </div>
   )
 }

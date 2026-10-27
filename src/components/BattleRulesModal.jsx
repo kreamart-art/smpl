@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Portal from './Portal.jsx'
 import { useT } from '../i18n/index.jsx'
 
-const RULES = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6']
+export const RULES = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6']
 
 // Shown before a producer/artist claims a battle slot — they must tick the
 // rules to enter (the server also enforces it). Breaking them → disqualification.

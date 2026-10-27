@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import AudioPlayer from '../components/AudioPlayer.jsx'
 import BeatPlayer from '../components/BeatPlayer.jsx'
@@ -9,7 +9,7 @@ import ShareSheet from '../components/ShareSheet.jsx'
 import { ReportButton } from '../components/Safety.jsx'
 import CommentThread from '../components/CommentThread.jsx'
 import CrateButton from '../components/CrateButton.jsx'
-import BattleRulesModal from '../components/BattleRulesModal.jsx'
+import BattleRulesModal, { RULES } from '../components/BattleRulesModal.jsx'
 import WaveformVideo from '../components/WaveformVideo.jsx'
 import WinnerCard from '../components/WinnerCard.jsx'
 import BattleRoom from '../components/BattleRoom.jsx'
@@ -21,10 +21,12 @@ import { Btn, Label, Field, inputCls } from '../components/ui.jsx'
 import { STATUS, STATUS_ORDER, STATUS_INDEX, countdownTarget } from '../data/status.js'
 import { shuffleSeeded, fmtDate } from '../utils/wave.js'
 import { mediaUrl } from '../api.js'
-import { kindCopy } from '../data/kind.js'
-import KindBadge from '../components/KindBadge.jsx'
+import { kindCopy, canEnter } from '../data/kind.js'
 import { useT, useI18n } from '../i18n/index.jsx'
 import { playableAudio } from '../utils/audio.js'
+import { Kicker, DisplayTitle, MetaTag, Stamp, catalogNo } from '../components/crate.jsx'
+import { When, kindKey } from '../components/BattleRow.jsx'
+import { IconBack } from '../components/icons.jsx'
 
 // Countdown caption per status → battleDetail.cd.* key (mirrors countdownTarget).
 const CD_KEY = {
@@ -84,7 +86,6 @@ function Feedback({ msg }) {
 export default function BattleDetail() {
   const t = useT()
   const { id } = useParams()
-  const navigate = useNavigate()
   const app = useApp()
   const {
     getBattle,
@@ -102,6 +103,7 @@ export default function BattleDetail() {
     isCurator,
     isHouse,
     disqualifySubmission,
+    isCrated,
   } = app
 
   const battle = getBattle(id)
@@ -113,6 +115,8 @@ export default function BattleDetail() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [waveVideo, setWaveVideo] = useState(null)
   const [winnerCard, setWinnerCard] = useState(null)
+  const [tab, setTab] = useState('entries')
+  const [sort, setSort] = useState(null)
 
   const approvedSubs = useMemo(
     () => (battle ? battleSubmissions(battle.id).filter((s) => s.approved) : []),
@@ -156,13 +160,17 @@ export default function BattleDetail() {
   const myVote = currentUser ? userVoteInBattle(battle.id, currentUser.id) : null
   // Competitors download the source to work on it: producers get the sample
   // (BEATS), artists get the beat (VERSES), curators get either.
+  const isStaffUser = currentUser?.role === 'curator' || currentUser?.role === 'admin'
   const canDownloadSource =
     !!currentUser &&
     battle.sampleRevealed &&
     playableAudio(battle.sampleUrl) &&
-    (currentUser.role === 'curator' ||
-      (battle.kind === 'BEATS' && currentUser.role === 'producer') ||
-      (battle.kind === 'VERSES' && currentUser.role === 'artist'))
+    (isRegistered || isStaffUser || canEnter(currentUser, battle))
+  // the claim CTA only for people the server will actually let in (or anyone
+  // logged out, who gets the login prompt)
+  const mayEnter = !currentUser || canEnter(currentUser, battle)
+  const slotsLeft = battle.maxProducers - battle.signups.length
+  const showClaim = battle.status === STATUS.OPEN_FOR_SIGNUP && !isRegistered && slotsLeft > 0 && mayEnter
   const sourceExt = (battle.sampleUrl?.match(/\.(\w+)$/) || [])[1] || 'mp3'
 
   const sampleMeta = {
@@ -184,8 +192,27 @@ export default function BattleDetail() {
     src: playableAudio(s.audioUrl) ? s.audioUrl : undefined,
     href: `/battles/${battle.id}`,
   })
-  // the voting list plays as one queue, in the same shuffled order people see
-  const votingQueue = shuffled.map((s, i) => beatMeta(s, i + 1, !battle.blind))
+  const activeSort = sort || (battle.status === STATUS.VOTING_PHASE ? 'shuffled' : 'top')
+  const votingList = activeSort === 'crate' ? shuffled.filter((s) => isCrated(s.id)) : shuffled
+  const entryNo = (s) => shuffled.findIndex((x) => x.id === s.id) + 1
+  // the voting list plays as one queue, in the same order people see
+  const votingQueue = votingList.map((s) => beatMeta(s, entryNo(s), !battle.blind))
+  const SortBar = ({ options }) => (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      {options.map((k) => (
+        <button
+          key={k}
+          type="button"
+          onClick={() => setSort(k)}
+          className={`h-8 border px-3 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+            activeSort === k ? 'border-ink bg-ink text-bg' : 'border-line-bright text-muted hover:text-ink'
+          }`}
+        >
+          {t(`entries.sort.${k}`)}
+        </button>
+      ))}
+    </div>
+  )
 
   const requireLogin = (action) => {
     setMsg({ ok: false, text: t('battleDetail.fb.loginTo', { action: t(`battleDetail.fb.action.${action}`) }) })
@@ -279,91 +306,112 @@ export default function BattleDetail() {
       </div>
     ) : null
 
+  const TABS = ['entries', 'details', 'rules']
+  const fmtWhen = (ms) => (ms ? fmtDate(ms) : '')
+
   return (
-    <div className="mx-auto max-w-[880px] px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-[920px] px-4 pb-10 pt-4 sm:px-6 sm:pt-6">
       <BattleTour />
-      <Link to="/battles" className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
-        {t('battleDetail.allBattles')}
+      <Link
+        to="/battles"
+        className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-muted hover:text-ink"
+      >
+        <IconBack size={14} />
+        {t('nav.arena')}
       </Link>
 
-      {/* HEADER */}
-      <div className="relative mt-6 border border-line bg-panel">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <StatusBadge status={battle.status} size="lg" />
-            <KindBadge kind={battle.kind} size="md" />
-            {battle.blind ? (
-              <span className="border border-line-bright px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
-                ◈ {t('battleDetail.blindBadge')}
-              </span>
-            ) : null}
-            {isCommunity ? (
-              <span className="border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                {t('host.community')}
-              </span>
-            ) : null}
+      {/* HEADER: sleeve, title, host, tags and the one action for this phase */}
+      <header className="relative mt-4 overflow-hidden border border-line-bright bg-panel">
+        {battle.cover ? (
+          <>
+            <img
+              src={mediaUrl(battle.cover)}
+              alt=""
+              className="photocopy absolute inset-0 h-full w-full object-cover opacity-50"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/75 to-bg/20" aria-hidden="true" />
+          </>
+        ) : (
+          <div className="sleeve-grid absolute inset-0" aria-hidden="true" />
+        )}
+        <div className="relative px-5 pb-6 pt-5 sm:px-8 sm:pb-8">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Kicker className="text-ink-dim">{t(kindKey(battle.kind))}</Kicker>
+              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.1em] text-faint">{catalogNo(battle.id)}</div>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              {battle.status === STATUS.VOTING_PHASE ? (
+                <Stamp tone="accent" rotate={4}>
+                  {t('home.live')}
+                </Stamp>
+              ) : null}
+              <ShareSheet
+                data-tour="battle-share"
+                className="h-10 w-10 bg-bg/60"
+                cardTo={battle.status === STATUS.WINNER_DECLARED ? `/share/win/${battle.id}` : `/share/battle/${battle.id}`}
+                dm={{ battleId: battle.id }}
+                title={t('battleDetail.shareTitle', { title: battle.title })}
+                text={t('battleDetail.shareText', { title: battle.title })}
+              />
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <div className="text-right">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('battleDetail.hereNow')}</div>
-              <div className="flex items-center justify-end gap-1.5 font-mono text-lg tnum leading-none">
-                <span className="block h-1.5 w-1.5 bg-accent pulse-dot" />
-                {battle.attendees.length}
+
+          <DisplayTitle size="lg" className="mt-12 text-ink sm:mt-16">
+            {battle.title}
+          </DisplayTitle>
+          <Link
+            to={`/profile/${encodeURIComponent(curator?.alias || 'SMPL')}`}
+            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[12px] text-ink-dim transition-colors hover:text-ink"
+          >
+            {t('battleDetail.curatedBy', { alias: curator?.alias || 'SMPL' })}
+            {curator?.verified ? <VerifiedBadge size={12} /> : null}
+          </Link>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {battle.genre ? <MetaTag>{battle.genre}</MetaTag> : null}
+            {battle.bpm ? <MetaTag>{battle.bpm} BPM</MetaTag> : null}
+            {battle.musicalKey ? <MetaTag>{battle.musicalKey}</MetaTag> : null}
+            {battle.blind ? <MetaTag>{t('battleDetail.blindBadge')}</MetaTag> : null}
+            {isCommunity ? <MetaTag>{t('host.community')}</MetaTag> : null}
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-3 border-t border-line pt-4">
+            <div data-tour="battle-countdown" className="font-mono text-[12px]">
+              <StatusBadge status={battle.status} size="sm" />
+              <div className="mt-2">
+                {battle.status !== STATUS.WINNER_DECLARED ? (
+                  <>
+                    <When battle={battle} />
+                    <span className="text-muted"> · </span>
+                  </>
+                ) : null}
+                <span className="text-muted">{t('home.inRoom', { n: battle.attendees.length })}</span>
               </div>
             </div>
-            {/* Signup phase: the primary call to action is claiming a slot to compete.
-                "I'm in" (attend the room) stays right beside it as the secondary toggle. */}
-            {battle.status === STATUS.OPEN_FOR_SIGNUP && !isRegistered && battle.maxProducers - battle.signups.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {showClaim ? (
+                <button
+                  onClick={openRules}
+                  className="h-11 touch-manipulation border border-accent bg-accent px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-accent-ink transition-colors hover:border-accent-hover hover:bg-accent-hover"
+                >
+                  {t('battleDetail.claimSlot')}
+                </button>
+              ) : null}
               <button
-                onClick={openRules}
-                className="touch-manipulation border border-accent bg-accent px-4 h-11 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-ink transition-colors hover:bg-accent-hover hover:border-accent-hover"
+                data-tour="battle-attend"
+                onClick={onAttend}
+                className={`h-11 touch-manipulation border px-4 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
+                  attending ? 'border-ink bg-ink text-bg' : 'border-line-bright bg-bg/60 text-ink hover:border-ink'
+                }`}
               >
-                {t('battleDetail.claimSlot')}
+                {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
               </button>
-            ) : null}
-            <button
-              data-tour="battle-attend"
-              onClick={onAttend}
-              className={`touch-manipulation border px-4 h-11 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                attending ? 'border-accent text-accent' : 'border-line-bright text-ink hover:border-ink'
-              }`}
-            >
-              {attending ? t('battleDetail.attending') : t('battleDetail.attend')}
-            </button>
-            <ShareSheet
-              data-tour="battle-share"
-              className="h-10 w-10"
-              cardTo={battle.status === STATUS.WINNER_DECLARED ? `/share/win/${battle.id}` : `/share/battle/${battle.id}`}
-              dm={{ battleId: battle.id }}
-              title={t('battleDetail.shareTitle', { title: battle.title })}
-              text={t('battleDetail.shareText', { title: battle.title })}
-            />
+            </div>
           </div>
         </div>
+      </header>
 
-        <div className="px-6 py-9 sm:px-8 sm:py-12">
-          <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.24em] text-faint">
-            <span>SMPL·{battle.id.toUpperCase()}</span>
-            <span className="h-px w-8 bg-line-bright" />
-            <span className="inline-flex items-center gap-1 whitespace-nowrap text-muted">
-              {t('battleDetail.curatedBy', { alias: curator?.alias || 'SMPL' })}
-              {curator?.verified ? <VerifiedBadge size={11} /> : null}
-            </span>
-          </div>
-          <h1 className="font-sans text-[clamp(2.6rem,8vw,6rem)] font-bold uppercase leading-[0.82] tracking-tighter">
-            {battle.title}
-          </h1>
-          <p className="mt-6 max-w-2xl font-mono text-[13px] leading-relaxed text-muted">
-            {battle.description}
-          </p>
-        </div>
-
-        <div className="px-6 pb-6 sm:px-8">
-          <PhasePipeline status={battle.status} />
-        </div>
-      </div>
-
-      {/* SAMPLE — always visible */}
+      {/* SAMPLE: always visible, the thing everyone flips */}
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between gap-3">
           <Label>{t(`battleDetail.sampleCaption.${battle.kind}`)}</Label>
@@ -377,7 +425,7 @@ export default function BattleDetail() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"
               >
-                ↓ {t(`battleDetail.downloadSource.${battle.kind}`)}
+                {t(`battleDetail.downloadSource.${battle.kind}`)}
               </a>
               {mailConfigured ? <EmailSourceButton battleId={battle.id} /> : null}
             </div>
@@ -386,48 +434,32 @@ export default function BattleDetail() {
         <AudioPlayer meta={sampleMeta} sealed={!battle.sampleRevealed} />
       </div>
 
-      {/* META GRID */}
-      <div className="mt-4 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
-        {[
-          [t('battleDetail.meta.curator'), curator?.alias || '—'],
-          [t('battleDetail.meta.slots'), `${battle.signups.length} / ${battle.maxProducers}`],
-          [
-            battle.kind === 'VERSES' ? t('battleDetail.meta.versesIn') : t('battleDetail.meta.beatsIn'),
-            String(approvedSubs.length),
-          ],
-          manual
-            ? [t('battles.card.cd.manualLabel'), t('battles.card.cd.manualValue')]
-            : [t(CD_KEY[battle.status]), ts ? fmtDate(ts) : t('battleDetail.meta.closed')],
-        ].map(([k, v]) => (
-          <div key={k} className="bg-bg px-4 py-3">
-            <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{k}</div>
-            <div className="mt-1 font-mono text-sm text-ink truncate">{v}</div>
-          </div>
+      {/* TABS */}
+      <div role="tablist" aria-label={battle.title} className="mt-8 flex gap-1 border-b border-line">
+        {TABS.map((k) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => setTab(k)}
+            className={`-mb-px border-b-2 px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
+              tab === k ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+            }`}
+          >
+            {t(`battleDetail.tab.${k}`)}
+            {k === 'entries' && approvedSubs.length ? <span className="ml-1.5 text-faint tnum">{approvedSubs.length}</span> : null}
+          </button>
         ))}
       </div>
 
-      {msg ? <div className="mt-4"><Feedback msg={msg} /></div> : null}
-
-      {/* COUNTDOWN */}
-      {ts ? (
-        <div data-tour="battle-countdown" className="mt-6 flex flex-wrap items-end justify-between gap-4 border border-line bg-panel p-5">
-          <CountdownBlocks to={ts} label={t(CD_KEY[battle.status])} />
-          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            {t(`status.${battle.status}`)}
-          </div>
-        </div>
-      ) : manual ? (
-        <div
-          data-tour="battle-countdown"
-          className="mt-6 border border-line bg-panel px-5 py-4 font-mono text-[11px] leading-relaxed text-ink-dim"
-        >
-          {t('battleDetail.cd.manual')}
-        </div>
-      ) : null}
-
-      <BattleRoom attendees={battle.attendees} />
-
-      {/* PHASE PANEL */}
+      {tab === 'entries' ? (
+        <div>
+          {/* the entry form shows its own feedback next to its button */}
+          {msg && !(battle.status === STATUS.SUBMISSION_PHASE && isRegistered) ? (
+            <div className="mt-6">
+              <Feedback msg={msg} />
+            </div>
+          ) : null}
       <div className="mt-6">
         {battle.status === STATUS.ANNOUNCED && (
           <PhaseBox title={t('battleDetail.announced.title')} sub={t('battleDetail.announced.sub')}>
@@ -455,12 +487,12 @@ export default function BattleDetail() {
               <div className="border border-ink px-4 py-3 font-mono text-[12px] text-ink">
                 {t('battleDetail.signup.registered')}
               </div>
-            ) : (
+            ) : mayEnter ? (
               <Btn onClick={openRules} variant="accent" size="lg">
                 {t(`battleDetail.signup.claim.${battle.kind}`)}
               </Btn>
-            )}
-            {currentUser && currentUser.role !== c.competitor && !isRegistered ? (
+            ) : null}
+            {currentUser && !mayEnter && !isRegistered ? (
               <p className="mt-3 font-mono text-[10px] text-muted">
                 {t(`battleDetail.signup.listenersNote.${battle.kind}`)}
               </p>
@@ -584,8 +616,12 @@ export default function BattleDetail() {
             ) : null}
 
             <div className="space-y-3">
-              {shuffled.map((s, i) => {
-                const index = i + 1
+              <SortBar options={['shuffled', 'crate']} />
+              {activeSort === 'shuffled' ? (
+                <p className="-mt-1 mb-3 font-sans text-[13px] text-muted">{t('entries.shuffledHint')}</p>
+              ) : null}
+              {votingList.map((s, i) => {
+                const index = entryNo(s)
                 const meta = votingQueue[i]
                 const isOwn = s.mine
                 const votedThis = myVote && myVote.submissionId === s.id
@@ -668,6 +704,8 @@ export default function BattleDetail() {
               })}
               {!shuffled.length ? (
                 <p className="font-mono text-[12px] text-muted">{t('battleDetail.voting.empty')}</p>
+              ) : !votingList.length ? (
+                <p className="font-sans text-[14px] text-muted">{t('entries.crateEmpty')}</p>
               ) : null}
             </div>
           </PhaseBox>
@@ -686,7 +724,14 @@ export default function BattleDetail() {
               // a curator-broken tie can crown an entry that isn't first by votes
               const order = winSub ? [winSub, ...ranked.filter((x) => x.id !== winSub.id)] : ranked
               const noVotes = ranked.every((x) => !x.votes)
-              const winQueue = order.map((x, i) => beatMeta(x, i + 1, true))
+              const shownOrder =
+                activeSort === 'latest'
+                  ? [...order].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                  : activeSort === 'crate'
+                    ? order.filter((x) => isCrated(x.id))
+                    : order
+              const rankOf = (x) => order.findIndex((y) => y.id === x.id) + 1
+              const winQueue = shownOrder.map((x) => beatMeta(x, rankOf(x), true))
               const topTie = ranked.length > 1 && ranked[0].votes === ranked[1].votes
               const pendingKey = noVotes
                 ? 'battleDetail.winner.noVotes'
@@ -709,9 +754,13 @@ export default function BattleDetail() {
                       {t('battleDetail.winner.share')}
                     </button>
                   ) : null}
+                  <SortBar options={['top', 'latest', 'crate']} />
+                  {!shownOrder.length && order.length ? (
+                    <p className="font-sans text-[14px] text-muted">{t('entries.crateEmpty')}</p>
+                  ) : null}
                   <div className="space-y-3">
-                    {order.map((s, i) => {
-                const rank = i + 1
+                    {shownOrder.map((s, i) => {
+                const rank = rankOf(s)
                 const meta = winQueue[i]
                 // only a declared winner is ever marked as one
                 const isWinner = declared && s.id === battle.winnerSubmissionId
@@ -776,13 +825,105 @@ export default function BattleDetail() {
         ) : null}
       </div>
 
+        </div>
+      ) : null}
+
+      {tab === 'details' ? (
+        <div className="mt-6 space-y-6">
+          {battle.description ? (
+            <p className="max-w-prose whitespace-pre-line font-sans text-[16px] leading-relaxed text-ink-dim">
+              {battle.description}
+            </p>
+          ) : null}
+          <div className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+            {[
+              [t('battleDetail.meta.curator'), curator?.alias || 'SMPL'],
+              [t('battleDetail.meta.slots'), `${battle.signups.length} / ${battle.maxProducers}`],
+              [
+                battle.kind === 'VERSES' ? t('battleDetail.meta.versesIn') : t('battleDetail.meta.beatsIn'),
+                String(approvedSubs.length),
+              ],
+              manual
+                ? [t('battles.card.cd.manualLabel'), t('battles.card.cd.manualValue')]
+                : [t(CD_KEY[battle.status]), ts ? fmtDate(ts) : t('battleDetail.meta.closed')],
+            ].map(([k, v]) => (
+              <div key={k} className="bg-bg px-4 py-3">
+                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{k}</div>
+                <div className="mt-1 truncate font-mono text-sm text-ink">{v}</div>
+              </div>
+            ))}
+          </div>
+          <PhasePipeline status={battle.status} />
+          {ts ? (
+            <div className="flex flex-wrap items-end justify-between gap-4 border border-line bg-panel p-5">
+              <CountdownBlocks to={ts} label={t(CD_KEY[battle.status])} />
+              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{t(`status.${battle.status}`)}</div>
+            </div>
+          ) : manual ? (
+            <div className="border border-line bg-panel px-5 py-4 font-sans text-[14px] leading-relaxed text-ink-dim">
+              {t('battleDetail.cd.manual')}
+            </div>
+          ) : null}
+          <BattleRoom attendees={battle.attendees} />
+        </div>
+      ) : null}
+
+      {tab === 'rules' ? (
+        <div className="mt-6 space-y-8">
+          <section>
+            <h2 className="t-kicker text-ink">{t('rules.winner.title')}</h2>
+            <p className="mt-2 max-w-prose font-sans text-[15px] leading-relaxed text-ink-dim">{t('rules.winner.body')}</p>
+            <p className="mt-2 max-w-prose font-sans text-[15px] leading-relaxed text-ink-dim">
+              {t(battle.tieBreak === 'curator' ? 'rules.tie.curator' : 'rules.tie.earliest')}
+            </p>
+            <p className="mt-2 max-w-prose font-sans text-[15px] leading-relaxed text-ink-dim">
+              {t(battle.blind ? 'rules.blind' : 'rules.open')}
+            </p>
+          </section>
+          <section>
+            <h2 className="t-kicker text-ink">{t('rules.house')}</h2>
+            <ol className="mt-3 space-y-2.5">
+              {RULES.map((r, i) => (
+                <li key={r} className="flex gap-3 font-sans text-[15px] leading-relaxed text-ink-dim">
+                  <span className="shrink-0 font-mono text-[12px] text-faint tnum">{i + 1}</span>
+                  <span>{t(`battle.rules.${r}`)}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-4 border border-line bg-panel px-4 py-3 font-sans text-[14px] leading-relaxed text-ink">
+              {t('battle.rules.dq')}
+            </p>
+          </section>
+          <section>
+            <h2 className="t-kicker text-ink">{t('rules.timeline')}</h2>
+            {battle.scheduled ? (
+              <dl className="mt-3 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+                {[
+                  ['rules.t.signup', battle.signupStart],
+                  ['rules.t.submit', battle.signupEnd],
+                  ['rules.t.vote', battle.submitEnd],
+                  ['rules.t.close', battle.voteEnd],
+                ].map(([k, ms]) => (
+                  <div key={k} className="bg-bg px-4 py-3">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">{t(k)}</dt>
+                    <dd className="mt-1 font-mono text-[13px] text-ink">{fmtWhen(ms)}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="mt-2 max-w-prose font-sans text-[15px] leading-relaxed text-ink-dim">{t('rules.manual')}</p>
+            )}
+          </section>
+        </div>
+      ) : null}
+
       <div className="mt-10 flex justify-center border-t border-line pt-6">
         <ReportButton targetType="battle" targetId={battle.id} label={battle.title} />
       </div>
 
       {waveVideo ? <WaveformVideo {...waveVideo} onClose={() => setWaveVideo(null)} /> : null}
       {winnerCard ? (
-        <WinnerCard {...winnerCard} battleTitle={battle.title} seed={battle.id} onClose={() => setWinnerCard(null)} />
+        <WinnerCard {...winnerCard} kind={battle.kind} battleTitle={battle.title} seed={battle.id} onClose={() => setWinnerCard(null)} />
       ) : null}
     </div>
   )

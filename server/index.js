@@ -546,6 +546,16 @@ const requireAdmin = (req, res, next) =>
 // each other without re-login. Restricted so ordinary users can't farm accounts.
 const isHouse = (u) => !!u && (u.role === 'admin' || u.alias === 'SMPL')
 
+// Who may compete in a battle: its competitor role (producer for beats, artist
+// for verses), a dual-role maker, or a curator/admin who opted into competing.
+// Never the battle's own curator. The client mirrors this in data/kind.js.
+function canEnterBattle(user, battle) {
+  if (!user || !battle || battle.curatorId === user.id) return false
+  const need = battle.kind === 'VERSES' ? 'artist' : 'producer'
+  const competitor = user.role === 'producer' || user.role === 'artist'
+  return user.role === need || (!!user.dualRole && competitor) || (!!user.curatorCompetes && isStaff(user))
+}
+
 // Strict ownership: only the battle's own curator manages it — not other curators,
 // not admins (the founder switches to the @SMPL account to manage its battles).
 const canManageBattle = (user, battle) =>
@@ -954,7 +964,7 @@ app.delete('/api/battles/:id', requireAuth, (req, res) => {
 })
 
 // Edit a battle you curate (title, source, slots, options + the schedule/dates).
-app.patch('/api/battles/:id', requireAuth, (req, res) => {
+app.patch('/api/battles/:id', requireAuth, async (req, res) => {
   const row = getBattleRow(req.params.id)
   if (!row) return fail(res, 404, 'Battle not found.')
   if (row.curatorId !== req.user.id) return fail(res, 403, 'That isn’t your battle.')
@@ -971,6 +981,13 @@ app.patch('/api/battles/:id', requireAuth, (req, res) => {
   if (typeof d.sampleUrl === 'string') set('sampleUrl', safeSourceUrl(d.sampleUrl))
   if (typeof d.description === 'string') set('description', d.description.trim())
   if (typeof d.genre === 'string') set('genre', d.genre.trim())
+  if (d.cover !== undefined) {
+    const c = battleCover(d.cover, req.user)
+    if (c !== undefined) set('cover', c)
+  }
+  if (d.bpm !== undefined) set('bpm', cleanBpm(d.bpm))
+  if (d.musicalKey !== undefined) set('musicalKey', cleanKey(d.musicalKey))
+  if (typeof d.sampleUrl === 'string') set('sampleDuration', await probeDuration(d.sampleUrl))
   if (d.maxProducers !== undefined) set('maxProducers', Math.max(2, Math.min(64, Number(d.maxProducers) || 8)))
   if (d.sampleRevealed !== undefined) set('sampleRevealed', d.sampleRevealed ? 1 : 0)
   if (d.blind !== undefined) set('blind', d.blind ? 1 : 0)
@@ -1003,7 +1020,7 @@ app.patch('/api/battles/:id', requireAuth, (req, res) => {
   return ok(res, { battle: rowToBattle(getBattleRow(row.id)) })
 })
 
-app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req, res) => {
+app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, async (req, res) => {
   const d = req.body || {}
   const kind = d.kind === 'VERSES' ? 'VERSES' : 'BEATS'
   // Only SMPL staff (curators + admin) organise battles. Producers + artists who
@@ -1038,17 +1055,21 @@ app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req
   const voteStart = submitEnd
   const status = scheduled ? scheduledStatus(t, signupStart, signupEnd, submitEnd) : STATUS.ANNOUNCED
   const id = `b_${randomUUID().slice(0, 8)}`
+  const sampleUrl = safeSourceUrl(d.sampleUrl)
+  // the source's real length, read from the file (0 = unknown, never a guess)
+  const sampleDuration = sampleUrl ? await probeDuration(sampleUrl) : 0
   db.prepare(
-    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled,genre,tieBreak)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO battles (id,kind,title,sampleUrl,sampleArtist,sampleSong,sampleDuration,sampleRevealed,description,curatorId,maxProducers,signupStart,signupEnd,submitStart,submitEnd,voteStart,voteEnd,status,attendees,signups,winnerSubmissionId,blind,scheduled,genre,tieBreak,cover,bpm,musicalKey)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id, kind,
-    String(d.title || '').trim() || 'UNTITLED BATTLE', safeSourceUrl(d.sampleUrl),
+    String(d.title || '').trim() || 'UNTITLED BATTLE', sampleUrl,
     String(d.sampleArtist || '').trim() || 'Unknown', String(d.sampleSong || '').trim() || 'Untitled sample',
-    10, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
+    sampleDuration, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
     Number(d.maxProducers) || 8, signupStart, signupEnd, submitStart, submitEnd, voteStart, voteEnd,
     status, '[]', '[]', null, d.blind ? 1 : 0, scheduled, String(d.genre || '').trim(),
     d.tieBreak === 'curator' ? 'curator' : 'earliest',
+    battleCover(d.cover, req.user) || '', cleanBpm(d.bpm), cleanKey(d.musicalKey),
   )
   // tell the host's followers a new battle just dropped
   const followers = db.prepare('SELECT followerId FROM follows WHERE followeeId=?').all(req.user.id)
@@ -1136,12 +1157,7 @@ app.post('/api/battles/:id/register', requireAuth, (req, res) => {
   if (b.curatorId === req.user.id)
     return fail(res, 403, 'You curate this battle, so you can’t compete in it.')
   const need = b.kind === 'VERSES' ? 'artist' : 'producer'
-  // a dual-role competitor (producer + artist) may enter either battle type;
-  // a curator/admin who opted into competing may enter any battle that isn't theirs
-  const isCompetitor = req.user.role === 'producer' || req.user.role === 'artist'
-  const competingStaff = !!req.user.curatorCompetes && isStaff(req.user)
-  const canEnter = req.user.role === need || (req.user.dualRole && isCompetitor) || competingStaff
-  if (!canEnter)
+  if (!canEnterBattle(req.user, b))
     return fail(
       res,
       403,
@@ -1337,11 +1353,8 @@ app.post('/api/battles/:id/email-source', rateLimit('emailsrc', 12, 30 * 60_000)
   if (!b) return fail(res, 404, 'Battle not found.')
   if (!b.sampleRevealed || !b.sampleUrl || !/^\/?(api\/uploads|samples)\//.test(b.sampleUrl))
     return fail(res, 400, 'No downloadable source for this battle yet.')
-  const role = req.user.role
-  const allowed =
-    role === 'curator' ||
-    (b.kind === 'BEATS' && role === 'producer') ||
-    (b.kind === 'VERSES' && role === 'artist')
+  const battle = rowToBattle(b)
+  const allowed = isStaff(req.user) || battle.signups.includes(req.user.id) || canEnterBattle(req.user, battle)
   if (!allowed) return fail(res, 403, 'This download is for the battle’s makers.')
   if (!mailConfigured) return fail(res, 503, 'Email isn’t set up yet.')
   const link = `${APP_URL}${b.sampleUrl.startsWith('/') ? '' : '/'}${b.sampleUrl}`
@@ -2279,6 +2292,19 @@ function usedByOther(ref, userId) {
       .some((r) => sameFile(r.audioUrl, name))
   )
 }
+// Battle artwork must be the caller's own uploaded image; '' clears it.
+// undefined = leave the field alone (not a usable value).
+function battleCover(v, user) {
+  if (v === '' || v === null) return ''
+  if (typeof v !== 'string' || !/^\/api\/uploads\/i_[\w-]+\.(jpg|png|webp|gif)$/.test(v)) return undefined
+  return uploadOwner(v) === user.id ? v : undefined
+}
+const cleanBpm = (v) => {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) && n >= 40 && n <= 300 ? n : null
+}
+const cleanKey = (v) => String(v ?? '').trim().slice(0, 16)
+
 // Audio a member may turn into a clip: their own upload or battle entry. The
 // house accounts clip any entry (they promote battles).
 function canClipAudio(user, ref) {

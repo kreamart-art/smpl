@@ -2,139 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp, usePlayback } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
-import { STATUS, countdownTarget } from '../data/status.js'
+import { STATUS } from '../data/status.js'
 import { playableAudio } from '../utils/audio.js'
-import { CountdownInline } from '../components/Countdown.jsx'
-import { Cover, SectionHead, Kicker, DisplayTitle, MetaTag, PlayButton, Stamp, Tape, EmptyState, catalogNo } from '../components/crate.jsx'
-import StatusBadge from '../components/StatusBadge.jsx'
+import { Cover, SectionHead, PlayButton, EmptyState } from '../components/crate.jsx'
+import BattleHero from '../components/BattleHero.jsx'
+import { BattleRow, rankBattles, kindKey } from '../components/BattleRow.jsx'
 import WaveformClips from '../components/WaveformClips.jsx'
 import SuggestedPeople from '../components/SuggestedPeople.jsx'
 import GameTeaser from '../components/GameTeaser.jsx'
 import { FeedRow } from './Feed.jsx'
-import { IconChevronRight } from '../components/icons.jsx'
 
-// Phase order for "what deserves the front page": live voting first, then
-// open entries, then signups, then announcements.
-const PRIORITY = {
-  [STATUS.VOTING_PHASE]: 0,
-  [STATUS.SUBMISSION_PHASE]: 1,
-  [STATUS.OPEN_FOR_SIGNUP]: 2,
-  [STATUS.ANNOUNCED]: 3,
-}
 const LIVE = new Set([STATUS.VOTING_PHASE, STATUS.SUBMISSION_PHASE])
-
-function rankBattles(battles) {
-  return battles
-    .filter((b) => b.status in PRIORITY)
-    .sort((a, b) => {
-      const p = PRIORITY[a.status] - PRIORITY[b.status]
-      if (p) return p
-      // a real (scheduled) deadline that comes sooner goes first
-      const da = countdownTarget(a).ts ?? Infinity
-      const db = countdownTarget(b).ts ?? Infinity
-      return da - db
-    })
-}
-
-// The honest "when" line for a battle: a real countdown for scheduled ones, the
-// phase for manual ones.
-function When({ battle }) {
-  const t = useT()
-  const { ts, manual } = countdownTarget(battle)
-  if (manual) return <span className="text-muted">{t('battles.card.cd.manualValue')}</span>
-  if (!ts) return <span className="text-muted">{t(`status.${battle.status}`)}</span>
-  return <CountdownInline to={ts} className="text-accent" />
-}
-
-function FeaturedBattle({ battle }) {
-  const t = useT()
-  const { battleSubmissions } = useApp()
-  const kindLabel = t(`kind.long.${battle.kind === 'VERSES' ? 'VERSES' : 'BEATS'}`)
-  const entries = battleSubmissions(battle.id).length
-  const live = battle.status === STATUS.VOTING_PHASE
-  const hasArt = !!battle.cover
-  return (
-    <section className="relative">
-      <Tape className="-top-2 left-5 sm:left-8" rotate={-5} />
-      <Link
-        to={`/battles/${battle.id}`}
-        className={`group relative grid overflow-hidden border border-line-bright bg-panel ${
-          hasArt ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]' : 'sleeve-grid'
-        }`}
-      >
-        {hasArt ? (
-          <Cover src={battle.cover} alt="" title={battle.title} id={battle.id} className="border-0" treatment="copy" />
-        ) : null}
-        <div className={`flex flex-col justify-between gap-6 p-5 sm:p-8 ${hasArt ? '' : 'min-h-[420px] sm:min-h-[460px]'}`}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <Kicker className="text-ink-dim">{t('home.featured')}</Kicker>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.1em] text-faint">{catalogNo(battle.id)}</div>
-            </div>
-            {live ? (
-              <Stamp tone="accent" rotate={4}>
-                {t('home.live')}
-              </Stamp>
-            ) : null}
-          </div>
-          <div>
-            <DisplayTitle as="h2" size={hasArt ? 'lg' : 'xl'} className="text-ink">
-              {battle.title}
-            </DisplayTitle>
-            {battle.description ? (
-              <p className="mt-4 line-clamp-3 max-w-prose font-sans text-[15px] leading-relaxed text-ink-dim">
-                {battle.description}
-              </p>
-            ) : null}
-            <div className="mt-5 flex flex-wrap gap-2">
-              <MetaTag>{kindLabel}</MetaTag>
-              {battle.genre ? <MetaTag>{battle.genre}</MetaTag> : null}
-              {battle.bpm ? <MetaTag>{battle.bpm} BPM</MetaTag> : null}
-              {battle.musicalKey ? <MetaTag>{battle.musicalKey}</MetaTag> : null}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-end justify-between gap-4 border-t border-line pt-4">
-            <div className="font-mono text-[12px] leading-relaxed">
-              <StatusBadge status={battle.status} size="sm" />
-              <div className="mt-2 text-muted">
-                <When battle={battle} />
-                {entries ? <span> · {t('home.entries', { n: entries })}</span> : null}
-              </div>
-            </div>
-            <span className="inline-flex h-11 items-center gap-2 bg-paper px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-paper-ink transition-colors group-hover:bg-bright">
-              {t('home.enter')}
-              <IconChevronRight size={14} />
-            </span>
-          </div>
-        </div>
-      </Link>
-    </section>
-  )
-}
-
-function BattleRow({ battle }) {
-  const t = useT()
-  const kindLabel = t(`kind.long.${battle.kind === 'VERSES' ? 'VERSES' : 'BEATS'}`)
-  return (
-    <Link
-      to={`/battles/${battle.id}`}
-      className="group flex items-center gap-4 border-b border-line py-3 transition-colors last:border-b-0 hover:bg-panel"
-    >
-      <Cover src={battle.cover} title={battle.title} id={battle.id} kind={battle.kind} label={kindLabel} titleSize="xs" className="w-16 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate font-sans text-[16px] font-medium text-ink">{battle.title}</div>
-        <div className="mt-0.5 truncate font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-          {kindLabel}
-          {battle.genre ? ` · ${battle.genre}` : ''}
-        </div>
-        <div className="mt-1 font-mono text-[11px]">
-          <When battle={battle} />
-        </div>
-      </div>
-      <IconChevronRight size={16} className="shrink-0 text-muted transition-colors group-hover:text-ink" />
-    </Link>
-  )
-}
 
 // A finished battle's winning entry, playable right here: the "listen" step.
 function ResultCard({ battle }) {
@@ -158,7 +36,7 @@ function ResultCard({ battle }) {
     <div className="w-[46vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
       <div className="relative">
         <Link to={`/battles/${battle.id}`} aria-label={battle.title}>
-          <Cover src={battle.cover} title={battle.title} id={battle.id} kind={battle.kind} label={t(`kind.long.${battle.kind === 'VERSES' ? 'VERSES' : 'BEATS'}`)} />
+          <Cover src={battle.cover} title={battle.title} id={battle.id} kind={battle.kind} label={t(kindKey(battle.kind))} />
         </Link>
         {meta.src ? (
           <PlayButton
@@ -244,7 +122,9 @@ export default function Home() {
       </div>
 
       {show('featured') ? (
-        <div className="mt-6">{featured ? <FeaturedBattle battle={featured} /> : <EmptyState title={t('home.noBattles')} />}</div>
+        <div className="mt-6">
+          {featured ? <BattleHero battle={featured} kicker={t('home.featured')} /> : <EmptyState title={t('home.noBattles')} />}
+        </div>
       ) : null}
 
       {show('results') ? (

@@ -9,7 +9,8 @@ import SuggestInput from '../components/SuggestInput.jsx'
 import SuggestedPeople from '../components/SuggestedPeople.jsx'
 import WaveformClips from '../components/WaveformClips.jsx'
 import Vinyl from '../components/Vinyl.jsx'
-import { Cover, SectionHead, Kicker, DisplayTitle, EmptyState } from '../components/crate.jsx'
+import { SectionHead, Kicker, DisplayTitle, EmptyState } from '../components/crate.jsx'
+import { BattleRow } from '../components/BattleRow.jsx'
 import { IconChevronRight } from '../components/icons.jsx'
 import { GENRES } from '../data/genres.js'
 import { mediaUrl } from '../api.js'
@@ -137,29 +138,6 @@ function VerifiedStrip({ users }) {
         ))}
       </div>
     </section>
-  )
-}
-
-function BattleResult({ battle }) {
-  const t = useT()
-  const kindLabel = t(`kind.long.${battle.kind === 'VERSES' ? 'VERSES' : 'BEATS'}`)
-  return (
-    <Link
-      to={`/battles/${battle.id}`}
-      className="group flex items-center gap-4 border-b border-line py-3 transition-colors last:border-b-0 hover:bg-panel"
-    >
-      <Cover src={battle.cover} title={battle.title} id={battle.id} kind={battle.kind} label={kindLabel} titleSize="xs" className="w-14 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate font-sans text-[16px] font-medium text-ink">{battle.title}</div>
-        <div className="mt-0.5 truncate font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-          {kindLabel}
-          {battle.genre ? ` · ${battle.genre}` : ''}
-          {' · '}
-          {t(`status.${battle.status}`)}
-        </div>
-      </div>
-      <IconChevronRight size={16} className="shrink-0 text-muted transition-colors group-hover:text-ink" />
-    </Link>
   )
 }
 
@@ -420,7 +398,7 @@ export default function Discover() {
           {battleHits.length ? (
             <div className="mt-1">
               {battleHits.slice(0, 30).map((b) => (
-                <BattleResult key={b.id} battle={b} />
+                <BattleRow key={b.id} battle={b} />
               ))}
             </div>
           ) : !nothing ? (

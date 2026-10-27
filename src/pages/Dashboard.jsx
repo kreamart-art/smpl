@@ -10,6 +10,7 @@ import BackupsPanel from '../components/BackupsPanel.jsx'
 import SampleLibrary from '../components/SampleLibrary.jsx'
 import SampleReviewPanel from '../components/SampleReviewPanel.jsx'
 import EditBattleModal from '../components/EditBattleModal.jsx'
+import CoverPicker from '../components/CoverPicker.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import { STATUS, nextStatus } from '../data/status.js'
 import { fmtDate } from '../utils/wave.js'
@@ -24,6 +25,9 @@ const empty = {
   sampleName: '',
   maxProducers: 8,
   genre: '',
+  bpm: '',
+  musicalKey: '',
+  cover: '',
   description: '',
   sampleRevealed: true,
   blind: false,
@@ -466,7 +470,14 @@ export default function Dashboard() {
                           <SampleLibrary
                             onClose={() => setLibOpen(false)}
                             onPick={(s) => {
-                              setForm((f) => ({ ...f, sampleUrl: s.file, sampleName: s.name, genre: f.genre || s.genre }))
+                              setForm((f) => ({
+                                ...f,
+                                sampleUrl: s.file,
+                                sampleName: s.name,
+                                genre: f.genre || s.genre,
+                                bpm: f.bpm || s.bpm || '',
+                                musicalKey: f.musicalKey || s.key || '',
+                              }))
                               setLibOpen(false)
                               setMsg({ ok: true, text: t('dashboard.msg.libraryPicked', { name: s.name }) })
                             }}
@@ -517,6 +528,36 @@ export default function Dashboard() {
                       onChange={(e) => setForm({ ...form, genre: e.target.value })}
                     />
                   </Field>
+                  <Field label={t('battle.bpm')} hint={t('battle.bpmHint')}>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={40}
+                      max={300}
+                      className={inputCls}
+                      placeholder="84"
+                      value={form.bpm}
+                      onChange={(e) => setForm({ ...form, bpm: e.target.value })}
+                    />
+                  </Field>
+                  <Field label={t('battle.key')} hint={t('battle.keyHint')}>
+                    <input
+                      className={inputCls}
+                      maxLength={16}
+                      placeholder="F# minor"
+                      value={form.musicalKey}
+                      onChange={(e) => setForm({ ...form, musicalKey: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <div className="mt-5">
+                  <Label>{t('battle.cover')}</Label>
+                  <CoverPicker
+                    className="mt-2"
+                    value={form.cover}
+                    title={form.title}
+                    onChange={(url) => setForm((f) => ({ ...f, cover: url }))}
+                  />
                 </div>
                 <Field label={t('dashboard.create.description')}>
                   <textarea
