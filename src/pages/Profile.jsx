@@ -289,7 +289,7 @@ export function Editor({ user, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, fetchCrate, fetchMusic } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, setEditorRole, fetchWaveformVideos, fetchCrate, fetchMusic } =
     useApp()
   const base = getUserByAlias(alias)
   const navigate = useNavigate()
@@ -556,6 +556,17 @@ export default function Profile() {
                       className="h-10 border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors duration-300 hover:border-ink"
                     >
                       {user.role === 'curator' ? t('admin.removeCurator') : t('admin.makeCurator')}
+                    </button>
+                    <button
+                      onClick={() =>
+                        setEditorRole(user.id, user.editorRole === 'author' ? 'editor' : user.editorRole === 'editor' ? '' : 'author')
+                      }
+                      title={t('admin.journal.' + (user.editorRole || 'none'))}
+                      className={`h-10 border px-4 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
+                        user.editorRole ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+                      }`}
+                    >
+                      {t('admin.journal.' + (user.editorRole || 'none'))}
                     </button>
                     <button
                       onClick={() => toggleVerified(user.id)}

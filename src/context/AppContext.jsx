@@ -619,6 +619,22 @@ export function AppProvider({ children }) {
   const updateRelease = useCallback((id, data) => api.patch(`/api/releases/${encodeURIComponent(id)}`, data), [])
   const deleteRelease = useCallback((id) => api.del(`/api/releases/${encodeURIComponent(id)}`), [])
   const publishEntry = useCallback((submissionId, data) => api.post(`/api/submissions/${submissionId}/publish`, data), [])
+  // the Journal
+  const fetchJournal = useCallback(
+    (category, limit = 20) => api.get(`/api/journal?limit=${limit}${category ? `&category=${category}` : ''}`),
+    [],
+  )
+  const fetchStory = useCallback((slug) => api.get(`/api/journal/${encodeURIComponent(slug)}`), [])
+  const fetchMyArticles = useCallback(() => api.get('/api/me/articles'), [])
+  const fetchArticle = useCallback((id) => api.get(`/api/articles/${encodeURIComponent(id)}`), [])
+  const createArticle = useCallback((data) => api.post('/api/articles', data), [])
+  const updateArticle = useCallback((id, data) => api.patch(`/api/articles/${encodeURIComponent(id)}`, data), [])
+  const articleAction = useCallback((id, action, data) => api.post(`/api/articles/${encodeURIComponent(id)}/${action}`, data || {}), [])
+  const deleteArticle = useCallback((id) => api.del(`/api/articles/${encodeURIComponent(id)}`), [])
+  const setEditorRole = useCallback(
+    (userId, role) => mutate(() => api.post(`/api/admin/users/${userId}/editor`, { role })),
+    [mutate],
+  )
   const fetchWaveformVideo = useCallback((id) => api.get(`/api/waveform-videos/${id}`), [])
   const deleteWaveformVideo = useCallback((id) => api.del(`/api/me/waveform-video/${id}`), [])
   // crate — save beats/verses to your profile (mutate so cratedIds refreshes)
@@ -737,6 +753,15 @@ export function AppProvider({ children }) {
     updateRelease,
     deleteRelease,
     publishEntry,
+    fetchJournal,
+    fetchStory,
+    fetchMyArticles,
+    fetchArticle,
+    createArticle,
+    updateArticle,
+    articleAction,
+    deleteArticle,
+    setEditorRole,
     fetchWaveformVideo,
     deleteWaveformVideo,
     cratedIds,

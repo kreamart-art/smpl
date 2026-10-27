@@ -126,6 +126,7 @@ export function pubUser(r) {
     banner: r.banner || '', // profile banner photo (producer/artist)
     daw: r.daw || '', // DAW / tools shown on the profile
     creativeRoles: P(r.creativeRoles), // display tags, never permissions
+    editorRole: r.editorRole || '', // writes for the Journal (byline context)
     joinedAt: r.joinedAt,
     foundingMember: !!r.joinedAt && r.joinedAt <= FOUNDING_CUTOFF, // permanent DAY ONE badge
     contactEmail: r.contactEmail || '', // optional, public — distinct from the private login email
@@ -155,6 +156,7 @@ export function meUser(r) {
     curatorCompetes: !!r.curatorCompetes,
     sampleMakerStatus: r.sampleMakerStatus || null,
     sampleMakerModel: r.sampleMakerModel || null,
+    editorRole: r.editorRole || '', // Journal rights: '' | author | editor
   }
 }
 

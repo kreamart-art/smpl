@@ -5,7 +5,7 @@ import { useT } from '../i18n/index.jsx'
 import { STATUS } from '../data/status.js'
 import Portal from './Portal.jsx'
 import { Tape } from './crate.jsx'
-import { IconClose, IconChevronRight, IconUpload, IconTrophy, IconUser, IconWave, IconPlus, IconDisc } from './icons.jsx'
+import { IconClose, IconChevronRight, IconUpload, IconTrophy, IconUser, IconWave, IconPlus, IconDisc, IconJournal } from './icons.jsx'
 
 function Row({ to, icon, title, sub, onClose }) {
   return (
@@ -126,6 +126,11 @@ export default function CreateSheet({ open, onClose }) {
                 title={t('create.challenge')}
                 sub={t('create.challengeSub')}
               />
+            ) : null}
+
+            {currentUser &&
+            (currentUser.editorRole === 'author' || currentUser.editorRole === 'editor' || role === 'admin' || currentUser.alias === 'SMPL') ? (
+              <Row to="/journal/write" onClose={onClose} icon={<IconJournal size={20} />} title={t('journal.write')} sub={t('journal.writeSub')} />
             ) : null}
 
             {currentUser && !maker && !staff ? (

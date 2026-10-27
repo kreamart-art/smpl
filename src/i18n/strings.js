@@ -15,8 +15,9 @@ import { share } from './ns/share.js'
 import { tour } from './ns/tour.js'
 import { game } from './ns/game.js'
 import { crate } from './ns/crate.js'
+import { journal } from './ns/journal.js'
 
-const parts = [common, chrome, landing, battles, battleDetail, auth, profile, dashboard, social, extra, messages, share, tour, game, crate]
+const parts = [common, chrome, landing, battles, battleDetail, auth, profile, dashboard, social, extra, messages, share, tour, game, crate, journal]
 
 export const strings = {
   en: Object.assign({}, ...parts.map((p) => p.en)),

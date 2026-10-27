@@ -12,6 +12,7 @@ import SuggestedPeople from '../components/SuggestedPeople.jsx'
 import GameTeaser from '../components/GameTeaser.jsx'
 import { FeedRow } from './Feed.jsx'
 import { ReleaseCard, TrackCard } from '../components/music.jsx'
+import { StoryLead, StoryRow } from '../components/journal.jsx'
 
 const LIVE = new Set([STATUS.VOTING_PHASE, STATUS.SUBMISSION_PHASE])
 
@@ -62,15 +63,16 @@ function ResultCard({ battle }) {
   )
 }
 
-const TABS = ['forYou', 'battles', 'music']
+const BASE_TABS = ['forYou', 'battles', 'music']
 
 export default function Home() {
   const t = useT()
-  const { battles, getUser, currentUser, fetchFeed, fetchLatestClips, fetchLatestMusic } = useApp()
+  const { battles, getUser, currentUser, fetchFeed, fetchLatestClips, fetchLatestMusic, fetchJournal } = useApp()
   const [tab, setTab] = useState('forYou')
   const [clips, setClips] = useState(null)
   const [feed, setFeed] = useState(null)
   const [drops, setDrops] = useState(null)
+  const [stories, setStories] = useState([])
 
   useEffect(() => {
     let alive = true
@@ -78,6 +80,7 @@ export default function Home() {
       fetchLatestClips(9).then((r) => alive && setClips(r.ok ? r.videos || [] : []))
       fetchFeed().then((r) => alive && setFeed(r.ok ? r.feed || [] : []))
       fetchLatestMusic(8).then((r) => alive && setDrops(r.ok ? r : { releases: [], tracks: [] }))
+      fetchJournal(null, 6).then((r) => alive && setStories(r.ok ? r.articles : []))
     }
     load()
     window.addEventListener('smpl:refresh', load)
@@ -85,7 +88,7 @@ export default function Home() {
       alive = false
       window.removeEventListener('smpl:refresh', load)
     }
-  }, [fetchFeed, fetchLatestClips, fetchLatestMusic])
+  }, [fetchFeed, fetchLatestClips, fetchLatestMusic, fetchJournal])
 
   const ranked = useMemo(() => rankBattles(battles), [battles])
   const featured = ranked[0] || null
@@ -108,8 +111,8 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-5 sm:px-6 sm:pt-8">
-      <div role="tablist" aria-label={t('nav.home')} className="flex items-stretch gap-1 border-b border-line">
-        {TABS.map((k) => (
+      <div role="tablist" aria-label={t('nav.home')} className="no-scrollbar flex items-stretch gap-1 overflow-x-auto border-b border-line">
+        {(stories.length ? [...BASE_TABS, 'journal'] : BASE_TABS).map((k) => (
           <button
             key={k}
             role="tab"
@@ -119,15 +122,31 @@ export default function Home() {
               tab === k ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
             }`}
           >
-            {t(`home.tab.${k}`)}
+            {k === 'journal' ? t('journal.title') : t(`home.tab.${k}`)}
           </button>
         ))}
       </div>
 
-      {show('featured') ? (
+      {show('featured') && tab !== 'journal' ? (
         <div className="mt-6">
           {featured ? <BattleHero battle={featured} kicker={t('home.featured')} /> : <EmptyState title={t('home.noBattles')} />}
         </div>
+      ) : null}
+
+      {(tab === 'forYou' || tab === 'journal') && stories.length ? (
+        <section className="mt-12">
+          <SectionHead title={t('journal.fromJournal')} to="/journal" more={t('home.seeAll')} />
+          {tab === 'journal' ? (
+            <div className="mt-4">
+              <StoryLead story={stories[0]} />
+            </div>
+          ) : null}
+          <div className="mt-1">
+            {(tab === 'journal' ? stories.slice(1) : stories.slice(0, 3)).map((s) => (
+              <StoryRow key={s.id} story={s} />
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {show('drops') && drops && (drops.releases.length || drops.tracks.length) ? (

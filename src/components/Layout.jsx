@@ -24,6 +24,7 @@ const PAGE_TITLES = {
   '/home': 'Home: SMPL',
   '/battles': 'Arena: SMPL',
   '/discover': 'Discover: SMPL',
+  '/journal': 'Journal: SMPL',
   '/feed': 'Feed: SMPL',
   '/people': 'People: SMPL',
   '/game': 'Guess the Sample: SMPL',

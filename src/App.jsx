@@ -16,6 +16,10 @@ import TrackPage from './pages/TrackPage.jsx'
 import ReleasePage from './pages/ReleasePage.jsx'
 import UploadTrack from './pages/UploadTrack.jsx'
 import PublishRelease from './pages/PublishRelease.jsx'
+import Journal from './pages/Journal.jsx'
+import Article from './pages/Article.jsx'
+import JournalDesk from './pages/JournalDesk.jsx'
+import ArticleEditor from './pages/ArticleEditor.jsx'
 import Settings from './pages/Settings.jsx'
 import EditProfile from './pages/EditProfile.jsx'
 import LinksManager from './pages/LinksManager.jsx'
@@ -117,6 +121,11 @@ export default function App() {
         <Route path="/create/track/:id" element={<UploadTrack />} />
         <Route path="/create/release" element={<PublishRelease />} />
         <Route path="/create/release/:id" element={<PublishRelease />} />
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/journal/desk" element={<JournalDesk />} />
+        <Route path="/journal/write" element={<ArticleEditor />} />
+        <Route path="/journal/write/:id" element={<ArticleEditor />} />
+        <Route path="/journal/:slug" element={<Article />} />
         <Route path="/battles" element={<Battles />} />
         <Route path="/battles/:id" element={<BattleDetail />} />
         <Route path="/game" element={<Game />} />

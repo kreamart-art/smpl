@@ -29,6 +29,7 @@ import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
 import { mountGame } from './game.js'
 import { cleanLinks, safeSourceUrl } from './sanitize.js'
 import { mountMusic, CREATIVE_ROLES } from './music.js'
+import { mountJournal } from './journal.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -1911,6 +1912,7 @@ app.post('/api/me/delete', requireAuth, (req, res) => {
     db.prepare('DELETE FROM waveform_videos WHERE userId = ?').run(uid)
     db.prepare('DELETE FROM crate_items WHERE userId = ?').run(uid)
     music.deleteForUser(uid)
+    journal.deleteForUser(uid)
     db.prepare('DELETE FROM users WHERE id = ?').run(uid)
     db.exec('COMMIT')
   } catch {
@@ -2903,6 +2905,7 @@ app.get('/sitemap.xml', (req, res) => {
     for (const u of db.prepare('SELECT alias FROM users').all())
       add(`/profile/${encodeURIComponent(u.alias)}`, '0.5', 'weekly')
     for (const path of music.publicUrls()) add(path, '0.6', 'weekly')
+    for (const path of journal.publicUrls()) add(path, '0.7', 'monthly')
   } catch {
     /* a missing table shouldn't break the sitemap */
   }
@@ -2922,6 +2925,11 @@ const music = mountMusic(app, {
   db, ok, fail, rateLimit, requireAuth, isStaff, uploadOwner, getUserRow, isBlocked, probeDuration, cleanBpm, cleanKey, STATUS,
 })
 
+// ----- the Journal: editorial articles (see server/journal.js) ----------------
+const journal = mountJournal(app, {
+  db, ok, fail, rateLimit, requireAuth, requireAdmin, isHouse, uploadOwner, getUserRow, getUserByAliasRow,
+})
+
 // ----- production: serve the built SPA from the same origin ------------------
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 if (existsSync(distDir)) {
@@ -2938,6 +2946,7 @@ submissionReminders()
 setInterval(() => {
   autoAdvance()
   submissionReminders()
+  journal.tick()
 }, 60_000)
 
 // Automated daily DB snapshots — on in production, opt-in elsewhere.

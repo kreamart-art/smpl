@@ -704,6 +704,14 @@ body {
   background-size: 22px 22px;
 }
 
+/* swipeable tab rows: scroll sideways without a visible bar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* keyboard focus: a sharp ink outline everywhere (no radius, offset off the edge) */
 :focus-visible {
   outline: 2px solid var(--color-ink);

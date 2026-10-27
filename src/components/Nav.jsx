@@ -28,6 +28,7 @@ export default function Nav() {
     ...(currentUser ? [['/home', t('nav.home')]] : []),
     ['/battles', t('nav.arena')],
     ['/discover', t('nav.discover')],
+    ['/journal', t('journal.title')],
     ['/play', t('play.nav')],
   ]
   const liveCount = battles.filter(
