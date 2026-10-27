@@ -770,7 +770,14 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {!atEnd ? (
+                          {b.status === STATUS.VOTING_PHASE ? (
+                            <button
+                              onClick={() => closeAndDeclare(b)}
+                              className="h-9 border border-ink bg-ink px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-bg transition-colors hover:bg-bright"
+                            >
+                              {t('dashboard.manage.closeVoting')}
+                            </button>
+                          ) : !atEnd ? (
                             <button
                               onClick={() => advanceStatus(b.id)}
                               className="h-9 border border-line-bright px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-ink hover:text-bg"

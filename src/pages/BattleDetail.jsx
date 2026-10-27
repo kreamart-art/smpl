@@ -146,7 +146,7 @@ export default function BattleDetail() {
     )
   }
 
-  const { ts } = countdownTarget(battle)
+  const { ts, manual } = countdownTarget(battle)
   const curator = getUser(battle.curatorId)
   const isOwner = !!currentUser && battle.curatorId === currentUser.id
   const isCommunity = !!curator && curator.role !== 'curator'
@@ -413,6 +413,13 @@ export default function BattleDetail() {
             {t(`status.${battle.status}`)}
           </div>
         </div>
+      ) : manual ? (
+        <div
+          data-tour="battle-countdown"
+          className="mt-6 border border-line bg-panel px-5 py-4 font-mono text-[11px] leading-relaxed text-ink-dim"
+        >
+          {t('battleDetail.cd.manual')}
+        </div>
       ) : null}
 
       <BattleRoom attendees={battle.attendees} />
@@ -662,13 +669,31 @@ export default function BattleDetail() {
         )}
 
         {battle.status === STATUS.WINNER_DECLARED && (
-          <PhaseBox title={t('battleDetail.winner.title')} sub={t('battleDetail.winner.sub')}>
+          <PhaseBox
+            title={t(battle.winnerSubmissionId ? 'battleDetail.winner.title' : 'battleDetail.winner.closedTitle')}
+            sub={t('battleDetail.winner.sub')}
+          >
             {(() => {
               const ranked = rankedSubmissions(battle.id)
-              const winSub = battle.winnerSubmissionId ? ranked.find((x) => x.id === battle.winnerSubmissionId) : ranked[0]
+              const declared = !!battle.winnerSubmissionId
+              const winSub = declared ? ranked.find((x) => x.id === battle.winnerSubmissionId) : null
               const winAlias = winSub ? getUser(winSub.producerId)?.alias : null
+              // a curator-broken tie can crown an entry that isn't first by votes
+              const order = winSub ? [winSub, ...ranked.filter((x) => x.id !== winSub.id)] : ranked
+              const noVotes = ranked.every((x) => !x.votes)
+              const topTie = ranked.length > 1 && ranked[0].votes === ranked[1].votes
+              const pendingKey = noVotes
+                ? 'battleDetail.winner.noVotes'
+                : topTie
+                  ? 'battleDetail.winner.pendingTie'
+                  : 'battleDetail.winner.pending'
               return (
                 <>
+                  {!declared ? (
+                    <div className="mb-3 border border-line bg-panel px-4 py-3 font-mono text-[11px] leading-relaxed text-ink-dim">
+                      {t(pendingKey)}
+                    </div>
+                  ) : null}
                   {winAlias ? (
                     <button
                       type="button"
@@ -679,14 +704,12 @@ export default function BattleDetail() {
                     </button>
                   ) : null}
                   <div className="space-y-3">
-                    {ranked.map((s, i) => {
+                    {order.map((s, i) => {
                 const rank = i + 1
                 const meta = beatMeta(s, rank, true)
-                const declared = !!battle.winnerSubmissionId
-                const isWinner = declared ? s.id === battle.winnerSubmissionId : rank === 1
-                // The celebration only fires for a TRULY declared winner who is
-                // you — never the provisional rank-1 fallback used for styling.
-                const iWon = declared && isWinner && !!s.mine
+                // only a declared winner is ever marked as one
+                const isWinner = declared && s.id === battle.winnerSubmissionId
+                const iWon = isWinner && !!s.mine
                 return (
                   <div key={s.id}>
                     <BeatPlayer

@@ -27,6 +27,7 @@ import { runBackup, listBackups, scheduleBackups } from './backup.js'
 import { pushConfigured, vapidPublicKey, saveSubscription, removeSubscription, sendPush } from './push.js'
 import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
 import { mountGame } from './game.js'
+import { cleanLinks, safeSourceUrl } from './sanitize.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -390,9 +391,10 @@ function buildBootstrap(uid, userRow) {
     battles.filter((b) => b.status === STATUS.WINNER_DECLARED).map((b) => b.id),
   )
   const voteRows = db.prepare('SELECT * FROM votes').all()
+  // tallies only: who voted for whom stays private, even after the result
   const votes = voteRows
     .filter((v) => revealed.has(v.battleId))
-    .map((v) => ({ id: v.id, battleId: v.battleId, submissionId: v.submissionId, userId: v.userId }))
+    .map((v) => ({ id: v.id, battleId: v.battleId, submissionId: v.submissionId }))
 
   const myVotes = {}
   if (uid) for (const v of voteRows) if (v.userId === uid) myVotes[v.battleId] = v.submissionId
@@ -446,21 +448,26 @@ function activityItems() {
   for (const b of battles) {
     const meta = { battleId: b.id, title: b.title, kind: b.kind }
     if (b.status === STATUS.WINNER_DECLARED) {
-      const ranked = [...(byBattle[b.id] || [])].sort(
-        (a, c) => (counts[c.id] || 0) - (counts[a.id] || 0),
-      )
-      const winner = ranked.find((s) => s.id === b.winnerSubmissionId) || ranked[0]
-      if (winner)
+      const ranked = [...(byBattle[b.id] || [])]
+        .filter((s) => !s.disqualified)
+        .sort((a, c) => (counts[c.id] || 0) - (counts[a.id] || 0))
+      // only a declared winner is news: no votes, or a tie the curator still
+      // has to break, must never read as "@x won"
+      const winner = b.winnerSubmissionId ? ranked.find((s) => s.id === b.winnerSubmissionId) : null
+      if (winner) {
         items.push({
           id: `win_${b.id}`, type: 'winner', ts: b.voteEnd, ...meta,
           userId: winner.producerId, votes: counts[winner.id] || 0,
         })
-      ranked.forEach((s, i) =>
-        items.push({
-          id: `place_${s.id}`, type: 'placement', ts: b.voteEnd, ...meta,
-          userId: s.producerId, position: i + 1, votes: counts[s.id] || 0,
-        }),
-      )
+        // a curator-broken tie can crown an entry that isn't first by sort order
+        const order = [winner, ...ranked.filter((s) => s.id !== winner.id)]
+        order.forEach((s, i) =>
+          items.push({
+            id: `place_${s.id}`, type: 'placement', ts: b.voteEnd, ...meta,
+            userId: s.producerId, position: i + 1, votes: counts[s.id] || 0,
+          }),
+        )
+      }
     } else if (b.status === STATUS.VOTING_PHASE) {
       items.push({ id: `vote_${b.id}`, type: 'voting', ts: b.voteStart, ...meta })
     } else if (b.status === STATUS.SUBMISSION_PHASE) {
@@ -571,8 +578,8 @@ setInterval(() => {
 
 // Tidy up orphaned waveform-clip files: a clip is uploaded + transcoded the
 // moment it's generated (so share/download get a clean MP4), even if the user
-// never saves it to a profile. Periodically drop the v_* video/poster files that
-// aren't referenced by any saved clip AND are older than a grace window (so a
+// never saves it to a profile. Periodically drop the v_*/w_* video/poster files
+// that no saved clip or DM points at AND are older than a grace window (so a
 // fresh, about-to-be-saved clip is never touched). Audio (a_*) + images (i_*)
 // are left alone — those belong to submissions, samples and DMs.
 const CLIP_ORPHAN_GRACE = 24 * 60 * 60_000
@@ -583,6 +590,13 @@ function cleanupOrphanClips() {
     for (const r of db.prepare('SELECT url, poster FROM waveform_videos').all()) {
       if (r.url) referenced.add(path.basename(r.url))
       if (r.poster) referenced.add(path.basename(r.poster))
+    }
+    // DM videos share the v_ prefix: keep the file and the poster made beside it
+    // (v_x_v.mp4 -> v_x.jpg)
+    for (const r of db.prepare('SELECT videoUrl FROM messages WHERE videoUrl IS NOT NULL').all()) {
+      const name = path.basename(r.videoUrl)
+      referenced.add(name)
+      referenced.add(name.replace(/_v\.mp4$/, '.jpg'))
     }
   } catch {
     return
@@ -596,11 +610,12 @@ function cleanupOrphanClips() {
   const now = Date.now()
   let removed = 0
   for (const f of files) {
-    if (!f.startsWith('v_') || referenced.has(f)) continue
+    if (!(f.startsWith('v_') || f.startsWith('w_')) || referenced.has(f)) continue
     const full = path.join(UPLOAD_DIR, f)
     try {
       if (now - statSync(full).mtimeMs < CLIP_ORPHAN_GRACE) continue
       unlinkSync(full)
+      db.prepare('DELETE FROM uploads WHERE name = ?').run(f)
       removed++
     } catch {
       /* skip */
@@ -681,7 +696,7 @@ app.post('/api/auth/signup', rateLimit('signup', 20, 15 * 60_000), (req, res) =>
     dob: String(dob || '').trim(),
     bio: String(bio || '').trim(),
     location: String(location || '').trim(),
-    links: JSON.stringify(Array.isArray(links) ? links : []),
+    links: JSON.stringify(cleanLinks(links)),
     genres: JSON.stringify(genreList),
     pastHistory: JSON.stringify([]),
     avatar: typeof avatar === 'string' && avatar.length < 1_500_000 ? avatar : '',
@@ -953,7 +968,7 @@ app.patch('/api/battles/:id', requireAuth, (req, res) => {
   if (typeof d.title === 'string') set('title', d.title.trim() || 'UNTITLED BATTLE')
   if (typeof d.sampleArtist === 'string') set('sampleArtist', d.sampleArtist.trim() || 'Unknown')
   if (typeof d.sampleSong === 'string') set('sampleSong', d.sampleSong.trim() || 'Untitled sample')
-  if (typeof d.sampleUrl === 'string') set('sampleUrl', d.sampleUrl)
+  if (typeof d.sampleUrl === 'string') set('sampleUrl', safeSourceUrl(d.sampleUrl))
   if (typeof d.description === 'string') set('description', d.description.trim())
   if (typeof d.genre === 'string') set('genre', d.genre.trim())
   if (d.maxProducers !== undefined) set('maxProducers', Math.max(2, Math.min(64, Number(d.maxProducers) || 8)))
@@ -1028,7 +1043,7 @@ app.post('/api/battles', rateLimit('create', 15, 60 * 60_000), requireAuth, (req
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id, kind,
-    String(d.title || '').trim() || 'UNTITLED BATTLE', d.sampleUrl || '',
+    String(d.title || '').trim() || 'UNTITLED BATTLE', safeSourceUrl(d.sampleUrl),
     String(d.sampleArtist || '').trim() || 'Unknown', String(d.sampleSong || '').trim() || 'Untitled sample',
     10, d.sampleRevealed ? 1 : 0, String(d.description || '').trim(), req.user.id,
     Number(d.maxProducers) || 8, signupStart, signupEnd, submitStart, submitEnd, voteStart, voteEnd,
@@ -1054,6 +1069,11 @@ app.patch('/api/battles/:id/status', requireAuth, (req, res) => {
   if (!b) return fail(res, 404, 'Battle not found.')
   if (!canManageBattle(req.user, b)) return fail(res, 403, 'You do not host this battle.')
   const status = req.body?.status || nextStatus(b.status)
+  if (!(status in STATUS_INDEX)) return fail(res, 400, 'Unknown phase.')
+  // The result only ever comes from the crowd vote (/winner), and a crowned
+  // battle stays crowned.
+  if (b.status === STATUS.WINNER_DECLARED) return fail(res, 400, 'This battle already has its result.')
+  if (status === STATUS.WINNER_DECLARED) return fail(res, 400, 'Close voting to crown the winner.')
   db.prepare('UPDATE battles SET status = ? WHERE id = ?').run(status, b.id)
   if (status !== b.status) pushBattlePhase(b, status)
   return ok(res, { battle: rowToBattle(getBattleRow(b.id)) })
@@ -1147,6 +1167,11 @@ app.post('/api/battles/:id/submissions', requireAuth, async (req, res) => {
   const { audioUrl, soundcloudUrl, youtubeUrl } = req.body || {}
   // upload-only: the beat must be a file uploaded to SMPL (keeps playback in-app, no external links)
   if (!audioUrl || !/^\/?(api\/uploads|samples)\//.test(audioUrl)) return fail(res, 400, 'Upload your beat first.')
+  if (/^\/?api\/uploads\//.test(audioUrl)) {
+    const owner = uploadOwner(audioUrl)
+    if (owner ? owner !== req.user.id : usedByOther(audioUrl, req.user.id))
+      return fail(res, 403, 'Upload your own beat.')
+  }
   // the beat's real length in seconds, read from the uploaded file — never a
   // hardcoded guess (a stale 15 made every beat read as 0:15 in the app)
   const duration = await probeDuration(audioUrl)
@@ -1617,7 +1642,7 @@ app.patch('/api/me', requireAuth, (req, res) => {
   if (typeof b.avatar === 'string') set('avatar', b.avatar)
   if (typeof b.banner === 'string') set('banner', b.banner)
   if (typeof b.daw === 'string') set('daw', b.daw.trim().slice(0, 80))
-  if (Array.isArray(b.links)) set('links', JSON.stringify(b.links))
+  if (Array.isArray(b.links)) set('links', JSON.stringify(cleanLinks(b.links)))
   if (b.genres !== undefined) {
     const raw = Array.isArray(b.genres) ? b.genres : String(b.genres || '').split(',')
     const list = raw.map((g) => String(g).trim()).filter(Boolean).slice(0, 12) // anti-abuse ceiling
@@ -2223,6 +2248,52 @@ app.delete('/api/threads/:alias', requireAuth, (req, res) => {
 // single-origin production server both reach the files without extra config.
 app.use('/api/uploads', express.static(UPLOAD_DIR, { maxAge: '1y', immutable: true }))
 
+// Who uploaded which file (the uploads table). Files from before the ledger have
+// no row; each caller decides how to treat those.
+function recordUpload(name, userId, kind) {
+  try {
+    db.prepare('INSERT OR REPLACE INTO uploads (name, userId, kind, createdAt) VALUES (?,?,?,?)').run(
+      name, userId, kind, Date.now(),
+    )
+  } catch {
+    /* the ledger guards access; it is never a reason to fail an upload */
+  }
+}
+function uploadOwner(ref) {
+  const p = uploadLocalPath(ref)
+  if (!p) return null
+  return db.prepare('SELECT userId FROM uploads WHERE name = ?').get(path.basename(p))?.userId ?? null
+}
+const sameFile = (url, name) => !!url && path.basename(String(url)) === name
+// A file from before the ledger can still be claimed by the member who used it
+// first: refuse it once another member's entry or message points at it.
+function usedByOther(ref, userId) {
+  const p = uploadLocalPath(ref)
+  if (!p) return false
+  const name = path.basename(p)
+  return (
+    db.prepare('SELECT audioUrl FROM submissions WHERE producerId != ?').all(userId).some((r) => sameFile(r.audioUrl, name)) ||
+    db
+      .prepare('SELECT audioUrl FROM messages WHERE fromId != ? AND audioUrl IS NOT NULL')
+      .all(userId)
+      .some((r) => sameFile(r.audioUrl, name))
+  )
+}
+// Audio a member may turn into a clip: their own upload or battle entry. The
+// house accounts clip any entry (they promote battles).
+function canClipAudio(user, ref) {
+  if (isHouse(user)) return true
+  const owner = uploadOwner(ref)
+  if (owner) return owner === user.id
+  const p = uploadLocalPath(ref)
+  if (!p) return false
+  const name = path.basename(p)
+  return db
+    .prepare('SELECT audioUrl FROM submissions WHERE producerId = ?')
+    .all(user.id)
+    .some((r) => sameFile(r.audioUrl, name))
+}
+
 const AUDIO_EXT = {
   'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav',
   'audio/wave': 'wav', 'audio/vnd.wave': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a',
@@ -2288,6 +2359,7 @@ app.post(
     } catch {
       return fail(res, 500, 'Could not store the file.')
     }
+    recordUpload(name, req.user.id, 'audio')
     return ok(res, { url: `/api/uploads/${name}` })
   },
 )
@@ -2315,6 +2387,7 @@ app.post(
     } catch {
       return fail(res, 500, 'Could not store the image.')
     }
+    recordUpload(name, req.user.id, 'image')
     return ok(res, { url: `/api/uploads/${name}` })
   },
 )
@@ -2504,8 +2577,10 @@ app.post(
       } catch {
         /* keep going */
       }
+      for (const ref of [out.url, out.poster]) if (ref) recordUpload(path.basename(ref), req.user.id, 'video')
       return ok(res, out)
     } catch {
+      recordUpload(name, req.user.id, 'video')
       return ok(res, { url: `/api/uploads/${name}`, poster: '' })
     }
   },
@@ -2530,13 +2605,18 @@ app.post('/api/waveform/render', rateLimit('wfrender', 12, 10 * 60_000), require
   const audioPath = uploadLocalPath(req.body?.audioUrl)
   if (!bgPath || !audioPath) return fail(res, 400, 'Missing render inputs.')
   if (!existsSync(bgPath) || !existsSync(audioPath)) return fail(res, 400, 'Render inputs not found.')
+  // The still is deleted after the render, so it must be the caller's own upload.
+  if (uploadOwner(req.body.bgUrl) !== req.user.id) return fail(res, 403, 'Upload your own still first.')
+  if (!canClipAudio(req.user, req.body.audioUrl)) return fail(res, 403, 'You can only clip your own entry.')
   try {
     const out = await renderWaveformQueued(audioPath, bgPath, `w_${randomUUID().slice(0, 12)}`)
     try {
       unlinkSync(bgPath) // the branded still was a single-use upload
+      db.prepare('DELETE FROM uploads WHERE name = ?').run(path.basename(bgPath))
     } catch {
       /* fine */
     }
+    for (const ref of [out.url, out.poster]) if (ref) recordUpload(path.basename(ref), req.user.id, 'clip')
     return ok(res, out)
   } catch {
     return fail(res, 500, 'Could not render the clip.')
@@ -2548,7 +2628,11 @@ app.post('/api/waveform/render', rateLimit('wfrender', 12, 10 * 60_000), require
 app.post('/api/me/waveform-video', requireAuth, (req, res) => {
   const { url, poster, battleId, tag } = req.body || {}
   if (!url || !/^\/?(api\/uploads)\//.test(url)) return fail(res, 400, 'Upload the clip first.')
-  const safePoster = typeof poster === 'string' && /^\/?(api\/uploads)\//.test(poster) ? poster : ''
+  if (uploadOwner(url) !== req.user.id) return fail(res, 403, 'That clip is not yours.')
+  const safePoster =
+    typeof poster === 'string' && /^\/?(api\/uploads)\//.test(poster) && uploadOwner(poster) === req.user.id
+      ? poster
+      : ''
   const id = `wv_${randomUUID().slice(0, 10)}`
   const createdAt = Date.now()
   db.prepare('INSERT INTO waveform_videos (id,userId,battleId,url,poster,tag,createdAt) VALUES (?,?,?,?,?,?,?)').run(
@@ -2559,18 +2643,29 @@ app.post('/api/me/waveform-video', requireAuth, (req, res) => {
   })
 })
 
+// A clip tied to a blind battle that is still running would put the maker's
+// name on an anonymous entry, so until the winner is declared only its owner
+// (and the house) can see it.
+function clipVisible(video, viewer) {
+  if (!video.battleId) return true
+  if (viewer && (viewer.id === video.userId || isHouse(viewer))) return true
+  const b = getBattleRow(video.battleId)
+  return !b || !b.blind || b.status === STATUS.WINNER_DECLARED
+}
+
 // A producer's saved waveform clips (public profile content).
 app.get('/api/users/:id/waveform-videos', (req, res) => {
   const videos = db
     .prepare('SELECT * FROM waveform_videos WHERE userId = ? ORDER BY createdAt DESC')
     .all(req.params.id)
+    .filter((v) => clipVisible(v, req.user))
   return ok(res, { videos })
 })
 
 // A single clip, with its producer, for the clip page.
 app.get('/api/waveform-videos/:id', (req, res) => {
   const video = db.prepare('SELECT * FROM waveform_videos WHERE id = ?').get(req.params.id)
-  if (!video) return fail(res, 404, 'Clip not found.')
+  if (!video || !clipVisible(video, req.user)) return fail(res, 404, 'Clip not found.')
   const u = getUserRow(video.userId)
   return ok(res, {
     video,

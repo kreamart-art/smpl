@@ -22,6 +22,7 @@ import SuggestedPeople from '../components/SuggestedPeople.jsx'
 import CallerCard from '../components/CallerCard.jsx'
 import { suggestCities } from '../data/cities.js'
 import { fmtDate, fmtMonthYear } from '../utils/wave.js'
+import { safeHref } from '../utils/safeHref.js'
 import { roleLabel } from '../data/kind.js'
 import { useT } from '../i18n/index.jsx'
 
@@ -432,7 +433,9 @@ export default function Profile() {
               {user.links?.map((l) => (
                 <a
                   key={l.label}
-                  href={l.url}
+                  href={safeHref(l.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 border border-line px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:border-line-bright"
                 >
                   <span>{l.label}</span>

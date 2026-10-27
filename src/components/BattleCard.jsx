@@ -22,13 +22,13 @@ export default function BattleCard({ battle }) {
   const { battleSubmissions, getUser } = useApp()
   const host = getUser(battle.curatorId)
   const isCommunity = !!host && host.role !== 'curator'
-  const { ts } = countdownTarget(battle)
+  const { ts, manual } = countdownTarget(battle)
   const subs = battleSubmissions(battle.id).length
   const attendees = battle.attendees.length
   const live = battle.status === STATUS.VOTING_PHASE
   const c = kindCopy(battle.kind)
   const isVerses = battle.kind === 'VERSES'
-  const cdLabel = t(CD_KEY[battle.status] || 'battles.card.cd.closed')
+  const cdLabel = manual ? t('battles.card.cd.manualLabel') : t(CD_KEY[battle.status] || 'battles.card.cd.closed')
   const sourceLabel = t(isVerses ? 'battles.card.beat' : 'battles.card.sample')
   const competitorTitle = t(isVerses ? 'battles.card.artists' : 'battles.card.producers')
 
@@ -89,7 +89,7 @@ export default function BattleCard({ battle }) {
         <div className="border-r border-line px-5 py-4">
           <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">{cdLabel}</div>
           <div className="mt-1.5 font-mono text-[15px] text-ink">
-            <CountdownInline to={ts} />
+            {manual ? <span className="text-ink-dim">{t('battles.card.cd.manualValue')}</span> : <CountdownInline to={ts} />}
           </div>
         </div>
         <div className="px-5 py-4">

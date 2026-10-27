@@ -8,6 +8,7 @@ import {
   seedFollows,
 } from '../src/data/mock.js'
 import { hashPassword } from './auth.js'
+import { cleanLinks } from './sanitize.js'
 
 const dbPath = process.env.SMPL_DB_PATH || fileURLToPath(new URL('./data.db', import.meta.url))
 export const db = new DatabaseSync(dbPath)
@@ -356,4 +357,13 @@ export function migrate() {
     ).run(smpl.id, Date.now(), smpl.id)
     db.prepare('DELETE FROM follows WHERE followerId = ?').run(smpl.id)
   }
+  // 2026-10-27: profile links may only be http(s)/mailto. A stored javascript:
+  // link ran on tap, with the session token in reach. Rows only change once.
+  for (const u of db.prepare("SELECT id, links FROM users WHERE links IS NOT NULL AND links != '[]'").all()) {
+    const clean = JSON.stringify(cleanLinks(P(u.links)))
+    if (clean !== u.links) db.prepare('UPDATE users SET links = ? WHERE id = ?').run(clean, u.id)
+  }
+  // 2026-10-27: who uploaded which file. Endpoints that delete or claim a file
+  // (renders, entries, saved clips) check it, so nobody can touch another's media.
+  db.exec('CREATE TABLE IF NOT EXISTS uploads (name TEXT PRIMARY KEY, userId TEXT, kind TEXT, createdAt INTEGER)')
 }

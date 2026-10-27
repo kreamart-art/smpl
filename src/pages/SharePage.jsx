@@ -114,7 +114,7 @@ export default function SharePage() {
         }
       } else if (b && kind === 'win' && b.status === STATUS.WINNER_DECLARED) {
         const ranked = app.rankedSubmissions(b.id)
-        const winSub = b.winnerSubmissionId ? ranked.find((s) => s.id === b.winnerSubmissionId) : ranked[0]
+        const winSub = b.winnerSubmissionId ? ranked.find((s) => s.id === b.winnerSubmissionId) : null
         const alias = winSub ? app.getUser(winSub.producerId)?.alias : null
         if (alias) data = { alias, title: b.title, votes: winSub.votes || 0, seed: winSub.id, cta: t('share.cta.listen') }
       }

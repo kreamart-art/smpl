@@ -52,8 +52,13 @@ export function nextStatus(status) {
   return STATUS_ORDER[i + 1]
 }
 
-// Which deadline matters for the countdown, given the phase.
+// Which deadline matters for the countdown, given the phase. A manual battle's
+// stored dates are placeholders that drive nothing (the curator moves it on),
+// so it gets no countdown at all.
 export function countdownTarget(battle) {
+  if (!battle.scheduled && battle.status !== STATUS.WINNER_DECLARED) {
+    return { ts: null, label: 'MANUAL', manual: true }
+  }
   switch (battle.status) {
     case STATUS.ANNOUNCED:
       return { ts: battle.signupStart, label: 'SIGNUP OPENS' }

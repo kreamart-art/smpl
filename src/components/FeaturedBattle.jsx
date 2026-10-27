@@ -5,12 +5,14 @@ import Waveform from './Waveform.jsx'
 import { CountdownInline } from './Countdown.jsx'
 import { STATUS, STATUS_LABEL, countdownTarget } from '../data/status.js'
 import { kindCopy } from '../data/kind.js'
+import { useT } from '../i18n/index.jsx'
 import KindBadge from './KindBadge.jsx'
 
 // The hero "now playing" release on the landing page — one battle, large.
 export default function FeaturedBattle({ battle }) {
   const { battleSubmissions } = useApp()
-  const { ts, label } = countdownTarget(battle)
+  const t = useT()
+  const { ts, label, manual } = countdownTarget(battle)
   const subs = battleSubmissions(battle.id).length
   const live = battle.status === STATUS.VOTING_PHASE
   const cat = `SMPL·${battle.id.toUpperCase()}`
@@ -52,9 +54,11 @@ export default function FeaturedBattle({ battle }) {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="flex gap-8">
               <div>
-                <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">{label}</div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-faint">
+                  {manual ? t('battles.card.cd.manualLabel') : label}
+                </div>
                 <div className="mt-1.5 font-mono text-lg text-ink">
-                  <CountdownInline to={ts} />
+                  {manual ? <span className="text-ink-dim">{t('battles.card.cd.manualValue')}</span> : <CountdownInline to={ts} />}
                 </div>
               </div>
               <div>

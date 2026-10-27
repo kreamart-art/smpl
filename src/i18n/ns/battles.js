@@ -33,6 +33,8 @@ export const battles = {
     'battles.card.cd.submissionsClose': 'SUBMISSIONS CLOSE',
     'battles.card.cd.votingCloses': 'VOTING CLOSES',
     'battles.card.cd.closed': 'CLOSED',
+    'battles.card.cd.manualLabel': 'NEXT PHASE',
+    'battles.card.cd.manualValue': "Curator's call",
 
     // "one sample · N beats" style line
     'battles.card.oneSampleBeats': 'ONE SAMPLE · {n} BEATS',
@@ -70,6 +72,8 @@ export const battles = {
     'battles.card.cd.submissionsClose': 'INZENDEN SLUIT',
     'battles.card.cd.votingCloses': 'STEMMEN SLUIT',
     'battles.card.cd.closed': 'GESLOTEN',
+    'battles.card.cd.manualLabel': 'VOLGENDE FASE',
+    'battles.card.cd.manualValue': 'Door de curator',
 
     // "one sample · N beats" style line
     'battles.card.oneSampleBeats': 'ÉÉN SAMPLE · {n} BEATS',

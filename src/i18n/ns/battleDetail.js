@@ -113,6 +113,11 @@ export const battleDetail = {
     'battleDetail.winner.youTook': 'You took this one',
     'battleDetail.winner.share': 'Share winner',
     'battleDetail.winner.replay': 'Replay',
+    'battleDetail.winner.noVotes': 'Voting closed without a single vote, so this battle has no winner.',
+    'battleDetail.winner.pendingTie': 'Tie at the top. The curator picks the winner from the tied entries.',
+    'battleDetail.winner.pending': 'Voting is closed. The result is not confirmed yet.',
+    'battleDetail.winner.closedTitle': 'Voting closed',
+    'battleDetail.cd.manual': 'No fixed deadline. The curator moves this battle to its next phase.',
 
     // not-found fallback
     'battleDetail.notFound': 'BATTLE NOT FOUND · {id}',
@@ -228,6 +233,11 @@ export const battleDetail = {
     'battleDetail.winner.youTook': 'deze is van jou',
     'battleDetail.winner.share': 'Deel winnaar',
     'battleDetail.winner.replay': 'Opnieuw',
+    'battleDetail.winner.noVotes': 'Het stemmen is gesloten zonder één stem, dus deze battle heeft geen winnaar.',
+    'battleDetail.winner.pendingTie': 'Gelijkspel bovenaan. De curator kiest de winnaar uit de gelijke inzendingen.',
+    'battleDetail.winner.pending': 'Het stemmen is gesloten. De uitslag is nog niet bevestigd.',
+    'battleDetail.winner.closedTitle': 'stemmen gesloten',
+    'battleDetail.cd.manual': 'Geen vaste deadline. De curator zet deze battle door naar de volgende fase.',
 
     // not-found fallback
     'battleDetail.notFound': 'BATTLE NIET GEVONDEN · {id}',
