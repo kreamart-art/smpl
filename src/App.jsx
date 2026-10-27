@@ -16,6 +16,7 @@ import TrackPage from './pages/TrackPage.jsx'
 import ReleasePage from './pages/ReleasePage.jsx'
 import UploadTrack from './pages/UploadTrack.jsx'
 import PublishRelease from './pages/PublishRelease.jsx'
+import UploadVideo from './pages/UploadVideo.jsx'
 import Journal from './pages/Journal.jsx'
 import Article from './pages/Article.jsx'
 import JournalDesk from './pages/JournalDesk.jsx'
@@ -121,6 +122,7 @@ export default function App() {
         <Route path="/create/track/:id" element={<UploadTrack />} />
         <Route path="/create/release" element={<PublishRelease />} />
         <Route path="/create/release/:id" element={<PublishRelease />} />
+        <Route path="/create/video" element={<UploadVideo />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/journal/desk" element={<JournalDesk />} />
         <Route path="/journal/write" element={<ArticleEditor />} />

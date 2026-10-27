@@ -2675,7 +2675,8 @@ app.post('/api/waveform/render', rateLimit('wfrender', 12, 10 * 60_000), require
 // ----- waveform clips on the profile -----------------------------------------
 // Save a generated clip to the producer's own profile (a portfolio of flips).
 app.post('/api/me/waveform-video', requireAuth, (req, res) => {
-  const { url, poster, battleId, tag } = req.body || {}
+  const { url, poster, battleId, tag, kind, title, description } = req.body || {}
+  const videoKind = ['studio', 'music', 'live'].includes(kind) ? kind : 'waveform'
   if (!url || !/^\/?(api\/uploads)\//.test(url)) return fail(res, 400, 'Upload the clip first.')
   if (uploadOwner(url) !== req.user.id) return fail(res, 403, 'That clip is not yours.')
   const safePoster =
@@ -2684,11 +2685,19 @@ app.post('/api/me/waveform-video', requireAuth, (req, res) => {
       : ''
   const id = `wv_${randomUUID().slice(0, 10)}`
   const createdAt = Date.now()
-  db.prepare('INSERT INTO waveform_videos (id,userId,battleId,url,poster,tag,createdAt) VALUES (?,?,?,?,?,?,?)').run(
+  const safeTitle = String(title || '').trim().slice(0, 120)
+  const safeDesc = String(description || '').trim().slice(0, 1000)
+  db.prepare(
+    'INSERT INTO waveform_videos (id,userId,battleId,url,poster,tag,createdAt,kind,title,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+  ).run(
     id, req.user.id, String(battleId || ''), url, safePoster, String(tag || '').slice(0, 120), createdAt,
+    videoKind, safeTitle, safeDesc,
   )
   return ok(res, {
-    video: { id, userId: req.user.id, battleId: battleId || '', url, poster: safePoster, tag: tag || '', createdAt },
+    video: {
+      id, userId: req.user.id, battleId: battleId || '', url, poster: safePoster, tag: tag || '', createdAt,
+      kind: videoKind, title: safeTitle, description: safeDesc,
+    },
   })
 })
 

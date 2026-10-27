@@ -651,11 +651,23 @@ export default function Profile() {
 
         {/* VIDEOS (waveform clips) */}
         {activeTab === 'videos' ? (
-          clips.length ? (
-            <WaveformClips clips={clips} />
-          ) : (
-            <EmptyState className="mt-8" title={isSelf ? t('profile.clips.emptySelf') : t('profile.clips.empty')} />
-          )
+          <>
+            {isSelf && canMakeMusic ? (
+              <div className="mt-8">
+                <Link
+                  to="/create/video"
+                  className="inline-flex h-10 items-center bg-paper px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-paper-ink hover:bg-bright"
+                >
+                  {t('create.uploadVideo')}
+                </Link>
+              </div>
+            ) : null}
+            {clips.length ? (
+              <WaveformClips clips={clips} />
+            ) : (
+              <EmptyState className="mt-8" title={isSelf ? t('profile.clips.emptySelf') : t('profile.clips.empty')} />
+            )}
+          </>
         ) : null}
 
         {/* CRATE */}

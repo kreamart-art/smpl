@@ -5,7 +5,7 @@ import { useT } from '../i18n/index.jsx'
 import { STATUS } from '../data/status.js'
 import Portal from './Portal.jsx'
 import { Tape } from './crate.jsx'
-import { IconClose, IconChevronRight, IconUpload, IconTrophy, IconUser, IconWave, IconPlus, IconDisc, IconJournal } from './icons.jsx'
+import { IconClose, IconChevronRight, IconUpload, IconTrophy, IconUser, IconWave, IconPlus, IconDisc, IconJournal, IconVideo } from './icons.jsx'
 
 function Row({ to, icon, title, sub, onClose }) {
   return (
@@ -100,6 +100,7 @@ export default function CreateSheet({ open, onClose }) {
                   title={t('create.publishRelease')}
                   sub={t('create.publishReleaseSub')}
                 />
+                <Row to="/create/video" onClose={onClose} icon={<IconVideo size={20} />} title={t('create.uploadVideo')} sub={t('create.uploadVideoSub')} />
               </>
             ) : null}
             {maker

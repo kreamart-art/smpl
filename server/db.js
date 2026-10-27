@@ -376,4 +376,9 @@ export function migrate() {
   // 2026-10-27: creative roles shown on a profile (producer, rapper, dj, ...).
   // Display only: permissions and battle gates keep using role.
   addColumn('users', 'creativeRoles', 'TEXT')
+  // 2026-10-27: clips grow into videos: a studio session, music video or live
+  // set with a title and a few words. Existing rows are waveform clips.
+  addColumn('waveform_videos', 'kind', 'TEXT')
+  addColumn('waveform_videos', 'title', 'TEXT')
+  addColumn('waveform_videos', 'description', 'TEXT')
 }

@@ -101,12 +101,12 @@ export default function ClipPage() {
               {producer.verified ? <VerifiedBadge size={13} /> : null}
             </span>
             <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-              {nl ? 'Waveform-clip' : 'Waveform clip'}
+              {t(`video.kind.${video.kind && video.kind !== 'waveform' ? video.kind : 'waveform'}`)}
             </span>
           </Link>
         ) : (
           <span className="flex flex-1 items-center border border-line bg-panel px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            {nl ? 'Waveform-clip' : 'Waveform clip'}
+            {t(`video.kind.${video.kind && video.kind !== 'waveform' ? video.kind : 'waveform'}`)}
           </span>
         )}
         <ShareSheet
@@ -160,19 +160,28 @@ export default function ClipPage() {
         ) : null}
       </div>
 
-      {video.tag ? (
+      {video.kind && video.kind !== 'waveform' ? (
+        <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{t(`video.kind.${video.kind}`)}</div>
+      ) : null}
+      {video.title ? <h1 className="t-display mt-1 text-[clamp(1.8rem,7vw,3rem)] text-ink">{video.title}</h1> : null}
+      {video.tag && !video.title ? (
         <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{video.tag}</div>
       ) : null}
 
+      {/* plays on a tap, never on its own with sound */}
       <video
         src={mediaUrl(video.url)}
         poster={video.poster ? mediaUrl(video.poster) : undefined}
         controls
-        autoPlay
-        loop
         playsInline
-        className="mt-4 block aspect-[9/16] w-full border border-line bg-black"
+        preload="metadata"
+        className={`mt-4 block w-full border border-line bg-black ${
+          !video.kind || video.kind === 'waveform' ? 'aspect-[9/16]' : 'max-h-[75vh] object-contain'
+        }`}
       />
+      {video.description ? (
+        <p className="mt-4 whitespace-pre-line font-sans text-[15px] leading-relaxed text-ink-dim">{video.description}</p>
+      ) : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Btn onClick={downloadClip} variant="ghost" disabled={busy}>
