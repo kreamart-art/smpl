@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* the current layout's copy (vite.legacy.config.js) builds its own CSS */
+@source not "../legacy";
 
 @theme {
   --color-bg: #000000;

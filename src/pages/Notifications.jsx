@@ -95,9 +95,12 @@ export default function Notifications() {
   const t = useT()
   const { currentUser, fetchNotifications, markNotificationsSeen, getUser } = useApp()
   const [items, setItems] = useState(null)
+  // Keyed on the id, not the object: marking seen re-fetches the bootstrap,
+  // which hands back a new currentUser object (that looped, nonstop requests).
+  const uid = currentUser?.id
 
   useEffect(() => {
-    if (!currentUser) return
+    if (!uid) return
     let alive = true
     fetchNotifications().then((r) => {
       if (alive && r.ok) setItems((r.notifications || []).filter((i) => !(i.type === 'placement' && i.position === 1)))
@@ -106,18 +109,18 @@ export default function Notifications() {
     return () => {
       alive = false
     }
-  }, [currentUser, fetchNotifications, markNotificationsSeen])
+  }, [uid, fetchNotifications, markNotificationsSeen])
 
   // pull-to-refresh (app shell) re-fetches notifications
   useEffect(() => {
-    if (!currentUser) return undefined
+    if (!uid) return undefined
     const reload = () =>
       fetchNotifications().then(
         (r) => r.ok && setItems((r.notifications || []).filter((i) => !(i.type === 'placement' && i.position === 1))),
       )
     window.addEventListener('smpl:refresh', reload)
     return () => window.removeEventListener('smpl:refresh', reload)
-  }, [currentUser, fetchNotifications])
+  }, [uid, fetchNotifications])
 
   return (
     <div className="mx-auto max-w-[680px] px-4 py-8 sm:px-6 sm:py-12">

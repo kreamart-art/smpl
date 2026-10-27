@@ -31,6 +31,7 @@ import { cleanLinks, safeSourceUrl } from './sanitize.js'
 import { mountMusic, CREATIVE_ROLES } from './music.js'
 import { mountJournal } from './journal.js'
 import { createSeo } from './seo.js'
+import { createLayouts, LEGACY_MISSING } from './layout.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -943,7 +944,15 @@ app.post('/api/auth/finalize', rateLimit('finalize', 10, 30 * 60_000), (req, res
 })
 
 // ----- bootstrap -------------------------------------------------------------
-app.get('/api/bootstrap', (req, res) => ok(res, buildBootstrap(req.uid, req.user)))
+// While the new layout is in preview two builds are served (see layout.js), and
+// `layout` tells the client which one this session should run.
+const distDir = fileURLToPath(new URL('../dist', import.meta.url))
+const legacyDir = fileURLToPath(new URL('../dist-legacy', import.meta.url))
+const layouts = createLayouts({ db, distDir, legacyDir })
+app.get('/api/bootstrap', (req, res) => {
+  const layout = layouts.sync(req, res)
+  return ok(res, { ...buildBootstrap(req.uid, req.user), ...(layout && { layout }) })
+})
 
 // ----- battles (read) --------------------------------------------------------
 app.get('/api/battles', (_req, res) => ok(res, { battles: allBattles() }))
@@ -2914,8 +2923,11 @@ app.get('/sitemap.xml', (req, res) => {
       add(`/battles/${encodeURIComponent(b.id)}`, '0.8', 'daily')
     for (const u of db.prepare('SELECT alias FROM users').all())
       add(`/profile/${encodeURIComponent(u.alias)}`, '0.5', 'weekly')
-    for (const path of music.publicUrls()) add(path, '0.6', 'weekly')
-    for (const path of journal.publicUrls()) add(path, '0.7', 'monthly')
+    // pages only the new layout has wait until it is everyone's (layout.js)
+    if (!layouts.dual) {
+      for (const path of music.publicUrls()) add(path, '0.6', 'weekly')
+      for (const path of journal.publicUrls()) add(path, '0.7', 'monthly')
+    }
   } catch {
     /* a missing table shouldn't break the sitemap */
   }
@@ -2941,15 +2953,21 @@ const journal = mountJournal(app, {
 })
 
 // ----- production: serve the built SPA from the same origin ------------------
-const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 if (existsSync(distDir)) {
-  app.use(express.static(distDir))
+  // each request gets the files of its own layout (see layout.js)
+  app.use(layouts.serveStatic)
   // per-page title / description / image / canonical (+ 404 for unknown ids)
-  const seo = createSeo({ db, indexPath: `${distDir}/index.html`, baseUrl: APP_URL })
+  const seo = {
+    new: createSeo({ db, indexPath: `${distDir}/index.html`, baseUrl: APP_URL }),
+    legacy: layouts.dual
+      ? createSeo({ db, indexPath: `${legacyDir}/index.html`, baseUrl: APP_URL, missing: LEGACY_MISSING })
+      : null,
+  }
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next()
-    if (seo) return seo(req, res)
-    res.sendFile(`${distDir}/index.html`)
+    const layout = layouts.pick(req)
+    if (seo[layout]) return seo[layout](req, res)
+    res.sendFile(`${layout === 'new' ? distDir : legacyDir}/index.html`)
   })
 }
 

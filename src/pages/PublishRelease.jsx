@@ -30,13 +30,16 @@ export default function PublishRelease() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const editing = !!id
+  // the id, not the object: the bootstrap poll hands back a new currentUser
+  // every 25 s, and keyed on that the form reloaded over your edits
+  const uid = currentUser?.id
 
   useEffect(() => {
-    if (!currentUser) return
-    fetchMusic(currentUser.id).then((r) => setMine(r.ok ? r.tracks : []))
+    if (!uid) return
+    fetchMusic(uid).then((r) => setMine(r.ok ? r.tracks : []))
     if (!id) return
     fetchRelease(id).then((r) => {
-      if (!r.ok || r.release.userId !== currentUser.id) return setErr(t('music.notFound'))
+      if (!r.ok || r.release.userId !== uid) return setErr(t('music.notFound'))
       const rel = r.release
       setForm({
         type: rel.type,
@@ -48,7 +51,7 @@ export default function PublishRelease() {
       })
       setPicked(r.tracks.map((tr) => tr.id))
     })
-  }, [currentUser, id, fetchMusic, fetchRelease, t])
+  }, [uid, id, fetchMusic, fetchRelease, t])
 
   const byId = useMemo(() => new Map((mine || []).map((tr) => [tr.id, tr])), [mine])
   const available = (mine || []).filter((tr) => !picked.includes(tr.id))

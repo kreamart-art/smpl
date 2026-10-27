@@ -15,6 +15,8 @@ import { DatabaseSync } from 'node:sqlite'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const HAS_DIST = existsSync(path.join(ROOT, 'dist', 'index.html'))
+// both layouts built: the server runs the preview switch (server/layout.js)
+const DUAL = HAS_DIST && existsSync(path.join(ROOT, 'dist-legacy', 'index.html'))
 const SITE = 'https://usesmpl.com'
 const TMP = mkdtempSync(path.join(tmpdir(), 'smpl-smoke-'))
 const DB = path.join(TMP, 'data.db')
@@ -137,6 +139,8 @@ function prepareFixtures() {
   insV.run('wv_open', 'u_koder', '', '/api/uploads/w_saved_v.mp4', 'open', old, '', 'waveform', 'Open clip', '')
   insV.run('wv_blind', 'u_koder', 'b_blind', '/api/uploads/w_blind_v.mp4', 'blind', old, '', 'waveform', 'Blind clip', '')
   db.prepare('INSERT INTO messages (id,fromId,toId,body,createdAt,videoUrl) VALUES (?,?,?,?,?,?)').run('m_dm1', 'u_mono', 'u_koder', '', old, '/api/uploads/v_dm1_v.mp4')
+  // KODER previews the new layout; MONO keeps the current one
+  db.prepare('UPDATE users SET newLayout = 1 WHERE id = ?').run('u_koder')
   db.close()
 }
 
@@ -162,9 +166,17 @@ async function call(method, p, token, body, type) {
   }
   return { status: r.status, data }
 }
-const page = async (p) => {
-  const r = await fetch(B + p, { signal: AbortSignal.timeout(30_000) })
+const page = async (p, cookie = '') => {
+  const r = await fetch(B + p, { headers: cookie ? { cookie } : {}, signal: AbortSignal.timeout(30_000) })
   return { status: r.status, html: await r.text() }
+}
+// a raw bootstrap, to read the layout answer and its Set-Cookie header
+const bootstrapAs = async (token, cookie = '') => {
+  const headers = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (cookie) headers.cookie = cookie
+  const r = await fetch(`${B}/api/bootstrap`, { headers, signal: AbortSignal.timeout(30_000) })
+  return { layout: (await r.json()).layout, setCookie: r.headers.get('set-cookie') || '' }
 }
 const login = async (email) => (await call('POST', '/api/auth/login', null, { email, password: 'smpl' })).data?.token
 const upload = async (token, kind) =>
@@ -173,6 +185,7 @@ const has = (dir, name) => existsSync(path.join(dir, name))
 const meta = (html, re) => (html.match(re) || [])[1] || ''
 const robots = (html) => meta(html, /<meta name="robots" content="([^"]*)"/)
 const canonical = (html) => meta(html, /<link rel="canonical" href="([^"]*)"/)
+const layoutOf = (html) => meta(html, /<meta name="smpl-layout" content="([^"]*)"/)
 
 // ---------- the checks ----------
 async function run() {
@@ -335,12 +348,50 @@ async function run() {
   check('scheduling works', (await call('POST', `/api/articles/${spId}/publish`, house, { at: Date.now() + 3600_000 })).data?.article?.status === 'scheduled')
   check('a scheduled story is not public yet', (await call('GET', '/api/journal')).data?.articles?.length === 1)
 
+  heading('Two layouts while the new one is in preview')
+  let previewCookie = ''
+  if (!DUAL) {
+    skip('all layout checks', 'run `npm run build` first (it builds both layouts)')
+  } else {
+    const visitor = await page('/')
+    check('visitors get the current layout', visitor.status === 200 && layoutOf(visitor.html) === 'legacy', layoutOf(visitor.html))
+    const anon = await bootstrapAs(null)
+    check('a visitor is told the current layout, without a cookie', anon.layout === 'legacy' && !anon.setCookie, `${anon.layout} ${anon.setCookie}`)
+    const monoB = await bootstrapAs(mono)
+    check('an account without the flag stays on the current layout', monoB.layout === 'legacy' && !monoB.setCookie, `${monoB.layout} ${monoB.setCookie}`)
+    check('the house account starts in the preview', (await bootstrapAs(house)).layout === 'new')
+    const koderB = await bootstrapAs(koder)
+    previewCookie = koderB.setCookie.split(';')[0]
+    check('a flagged account is told the new layout', koderB.layout === 'new')
+    check('...with a signed, http-only cookie for it', /^smpl_layout=u_koder\.[\w-]{20,}$/.test(previewCookie) && /HttpOnly/i.test(koderB.setCookie) && /SameSite=Lax/i.test(koderB.setCookie), koderB.setCookie)
+    const again = await bootstrapAs(koder, previewCookie)
+    check('a matching cookie is not sent again', again.layout === 'new' && !again.setCookie, again.setCookie)
+    check('with the cookie the page is the new layout', layoutOf((await page('/', previewCookie)).html) === 'new')
+    check('a forged signature gets the current layout', layoutOf((await page('/', 'smpl_layout=u_koder.forged')).html) === 'legacy')
+    check("a valid signature can't be moved to another account", layoutOf((await page('/', previewCookie.replace('u_koder.', 'u_mono.'))).html) === 'legacy')
+    const startUrl = async (cookie) => (await (await fetch(`${B}/manifest.webmanifest`, { headers: cookie ? { cookie } : {} })).json()).start_url
+    check('each layout gets its own app manifest', (await startUrl()) === '/battles' && (await startUrl(previewCookie)) === '/home')
+    check('shared files reach both layouts', (await fetch(`${B}/sw.js`)).status === 200 && (await fetch(`${B}/og.png`, { headers: { cookie: previewCookie } })).status === 200)
+    const switched = await bootstrapAs(mono, previewCookie)
+    check('switching to an account without the flag clears the cookie', switched.layout === 'legacy' && /^smpl_layout=;/.test(switched.setCookie) && /Max-Age=0/i.test(switched.setCookie), switched.setCookie)
+    check('logging out clears it too', /^smpl_layout=;/.test((await bootstrapAs(null, previewCookie)).setCookie))
+    const legacyBattle = await page('/battles/b1')
+    check('the current layout keeps its page meta', layoutOf(legacyBattle.html) === 'legacy' && /<title>[^<]*Beat battle on SMPL<\/title>/.test(legacyBattle.html))
+    check('pages the current layout lacks are 404 for visitors', (await page(`/release/${relId}`)).status === 404 && (await page('/journal')).status === 404 && (await page('/home')).status === 404)
+    check('...and open in the new layout', (await page(`/release/${relId}`, previewCookie)).status === 200 && (await page('/home', previewCookie)).status === 200)
+  }
+
   heading('Sitemap and robots')
   const sm = await (await fetch(`${B}/sitemap.xml`)).text()
-  check('sitemap lists the public release', sm.includes(`/release/${relId}`))
-  check('sitemap lists the published story', sm.includes(`/journal/${slug}`))
-  check('sitemap leaves out scheduled stories', !sm.includes('/journal/brand-x-presents'))
-  check('sitemap leaves out unlisted and deleted tracks', !sm.includes(`/track/${tD}`))
+  if (DUAL) {
+    check('sitemap leaves out pages only the new layout has', !sm.includes('/release/') && !sm.includes('/track/') && !sm.includes('/journal/'))
+  } else {
+    check('sitemap lists the public release', sm.includes(`/release/${relId}`))
+    check('sitemap lists the published story', sm.includes(`/journal/${slug}`))
+    check('sitemap leaves out scheduled stories', !sm.includes('/journal/brand-x-presents'))
+    check('sitemap leaves out unlisted and deleted tracks', !sm.includes(`/track/${tD}`))
+  }
+  check('sitemap lists battles and profiles', sm.includes('/battles/b1') && sm.includes('/profile/KODER'))
   if (HAS_DIST) {
     const rb = await (await fetch(`${B}/robots.txt`)).text()
     check('robots.txt keeps private tools out', rb.includes('Disallow: /settings') && rb.includes('Disallow: /journal/write'))
@@ -350,31 +401,33 @@ async function run() {
   if (!HAS_DIST) {
     skip('all page-meta checks', 'run `npm run build` first')
   } else {
-    const battle = await page('/battles/b1')
+    // the new layout's pages (with the preview cookie while both are served)
+    const pg = (p) => page(p, previewCookie)
+    const battle = await pg('/battles/b1')
     check('a battle page has its own title', battle.status === 200 && /<title>[^<]*Beat battle on SMPL<\/title>/.test(battle.html))
     check('a battle page has its canonical', canonical(battle.html) === `${SITE}/battles/b1`, canonical(battle.html))
     check('a battle page carries Event data', battle.html.includes('"@type":"Event"'))
-    const missing = await page('/battles/does-not-exist')
+    const missing = await pg('/battles/does-not-exist')
     check('an unknown battle is a real 404 with noindex', missing.status === 404 && robots(missing.html).startsWith('noindex'))
-    const prof = await page('/profile/KODER')
+    const prof = await pg('/profile/KODER')
     check('a profile page names the artist', prof.status === 200 && prof.html.includes('<title>@KODER: SMPL</title>') && prof.html.includes('"@type":"ProfilePage"'))
-    const relPage = await page(`/release/${relId}`)
+    const relPage = await pg(`/release/${relId}`)
     check('a release page is indexable with album data', relPage.status === 200 && robots(relPage.html).startsWith('index') && relPage.html.includes('"@type":"MusicAlbum"'))
-    check('a deleted track is 404', (await page(`/track/${tD}`)).status === 404)
-    const story = await page(`/journal/${slug}`)
+    check('a deleted track is 404', (await pg(`/track/${tD}`)).status === 404)
+    const story = await pg(`/journal/${slug}`)
     check('a story page carries NewsArticle data', story.status === 200 && story.html.includes('"@type":"NewsArticle"'))
-    const writer = await page('/journal/write')
+    const writer = await pg('/journal/write')
     check('the writing tool is a page, kept out of the index', writer.status === 200 && robots(writer.html).startsWith('noindex'))
-    check('settings are kept out of the index', robots((await page('/settings')).html).startsWith('noindex'))
-    check('signup stays indexable', robots((await page('/signup')).html).startsWith('index'))
-    check('a clip from a running blind battle is 404', (await page('/clip/wv_blind')).status === 404)
-    check('an open clip has a page', (await page('/clip/wv_open')).status === 200)
+    check('settings are kept out of the index', robots((await pg('/settings')).html).startsWith('noindex'))
+    check('signup stays indexable', robots((await pg('/signup')).html).startsWith('index'))
+    check('a clip from a running blind battle is 404', (await pg('/clip/wv_blind')).status === 404)
+    check('an open clip has a page', (await pg('/clip/wv_open')).status === 200)
     const kX = await upload(koder, 'audio')
     const evil = await call('POST', '/api/tracks', koder, { title: '"><script>alert(1)</script>', audioUrl: kX, visibility: 'public' })
-    const evilPage = await page(`/track/${evil.data?.track?.id}`)
+    const evilPage = await pg(`/track/${evil.data?.track?.id}`)
     check('titles are escaped in the page head', evilPage.status === 200 && !evilPage.html.includes('<script>alert(1)') && evilPage.html.includes('&quot;&gt;&lt;script&gt;'))
     await call('PATCH', `/api/tracks/${evil.data?.track?.id}`, koder, { visibility: 'unlisted' })
-    check('an unlisted track page carries noindex', robots((await page(`/track/${evil.data?.track?.id}`)).html).startsWith('noindex'))
+    check('an unlisted track page carries noindex', robots((await pg(`/track/${evil.data?.track?.id}`)).html).startsWith('noindex'))
   }
   check('the journal story can be taken offline', (await call('POST', `/api/articles/${aid}/unpublish`, house)).data?.article?.status === 'draft' && (await call('GET', `/api/journal/${slug}`)).status === 404)
 }

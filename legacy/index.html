@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="smpl-layout" content="legacy" />
+    <!-- Default = website: pinch-zoom allowed (WCAG AA). The installed app
+         re-adds user-scalable=no below (we kill the zoom annoyances another way:
+         16px inputs + touch-action:manipulation). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      // In the installed app only, lock zoom (it's a native-feeling shell).
+      try {
+        var sp = new URLSearchParams(location.search)
+        var forced = sp.get('app') || localStorage.getItem('smpl_app')
+        var app =
+          forced === '1' ||
+          (forced !== '0' &&
+            ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+              window.navigator.standalone === true))
+        if (app) {
+          document
+            .querySelector('meta[name=viewport]')
+            .setAttribute(
+              'content',
+              'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
+            )
+        }
+      } catch (e) {}
+    </script>
+    <meta name="description" content="Beat &amp; verse battles built on one shared sample. A curator drops the sample, producers and rappers flip it, and the crowd votes the winner. Compete and build your reputation." />
+    <title>SMPL · Beat &amp; Verse Battles · Same sample. Different soul.</title>
+    <link rel="canonical" href="https://usesmpl.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="keywords" content="beat battles, verse battles, rap battles, sample flip, beatmaking, music producers, rappers, hip hop, instrumental battle, music competition, vote beats" />
+    <meta name="author" content="SMPL" />
+    <meta name="application-name" content="SMPL" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SMPL" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#000000" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SMPL" />
+    <meta property="og:title" content="SMPL · Same sample. Different soul." />
+    <meta property="og:description" content="Beat &amp; verse battles for producers &amp; artists. One sample, many takes: the crowd crowns the winner." />
+    <meta property="og:url" content="https://usesmpl.com" />
+    <meta property="og:image" content="https://usesmpl.com/og.png" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta property="og:image:alt" content="SMPL · Same sample. Different soul." />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="nl_NL" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SMPL · Same sample. Different soul." />
+    <meta name="twitter:description" content="Beat &amp; verse battles. One sample, many takes: the crowd crowns the winner." />
+    <meta name="twitter:image" content="https://usesmpl.com/og.png" />
+    <meta name="twitter:image:alt" content="SMPL · Same sample. Different soul." />
+    <meta name="twitter:site" content="@smplbattles" />
+    <meta name="twitter:creator" content="@smplbattles" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://usesmpl.com/#org",
+            "name": "SMPL",
+            "url": "https://usesmpl.com/",
+            "logo": "https://usesmpl.com/icon-512.png",
+            "description": "Beat & verse battles built on one shared sample.",
+            "sameAs": [
+              "https://instagram.com/smplbattles",
+              "https://youtube.com/@smplbattles",
+              "https://tiktok.com/@smplbattles"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://usesmpl.com/#website",
+            "url": "https://usesmpl.com/",
+            "name": "SMPL",
+            "publisher": { "@id": "https://usesmpl.com/#org" },
+            "inLanguage": ["en", "nl"]
+          },
+          {
+            "@type": "WebApplication",
+            "name": "SMPL",
+            "url": "https://usesmpl.com/",
+            "applicationCategory": "MusicApplication",
+            "operatingSystem": "Web, iOS, Android",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+            "description": "Beat & verse battles: one sample, many takes, and the crowd crowns the winner."
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // apply the saved theme before paint to avoid a flash of the wrong theme
+      try {
+        var t = localStorage.getItem('smpl_theme')
+        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light')
+      } catch (e) {}
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

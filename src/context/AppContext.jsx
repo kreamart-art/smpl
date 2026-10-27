@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { STATUS } from '../data/status.js'
 import { api, setToken, getToken, mediaUrl } from '../api.js'
+import { followLayout } from '../lib/layout.js'
 
 // Locally-stored set of authenticated sessions, so house accounts (admin +
 // @SMPL) can switch back and forth without re-login. Each entry carries its own
@@ -60,6 +61,8 @@ export function AppProvider({ children }) {
   const [error, setError] = useState(null)
 
   const applyBootstrap = useCallback((d) => {
+    // every login, logout and account switch comes through here
+    if (followLayout(d.layout)) return
     setUsers(d.users || [])
     setBattles(d.battles || [])
     setSubmissions(d.submissions || [])

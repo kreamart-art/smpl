@@ -231,9 +231,12 @@ export function seedIfEmpty() {
   return true
 }
 
+// true when the column was added just now (a first boot after the change)
 function addColumn(table, col, decl) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
-  if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`)
+  if (cols.includes(col)) return false
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`)
+  return true
 }
 
 // Idempotent migrations applied on every boot (safe to re-run on an existing db).
@@ -381,4 +384,9 @@ export function migrate() {
   addColumn('waveform_videos', 'kind', 'TEXT')
   addColumn('waveform_videos', 'title', 'TEXT')
   addColumn('waveform_videos', 'description', 'TEXT')
+  // 2026-10-27: the new layout is in preview. Only flagged accounts get it
+  // (server/layout.js); the founder's KREAM and the @SMPL house account start
+  // with it, everyone else keeps the current layout.
+  if (addColumn('users', 'newLayout', 'INTEGER NOT NULL DEFAULT 0'))
+    db.prepare("UPDATE users SET newLayout = 1 WHERE alias IN ('KREAM', 'SMPL')").run()
 }

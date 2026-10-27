@@ -21,7 +21,8 @@ const ld = (obj) => JSON.stringify(obj).replace(/</g, '\\u003c')
 // pages that are only ever personal or tools: keep them out of the index
 const PRIVATE = /^\/(settings|dashboard|messages|notifications|login|forgot|reset|verify|auth|edit-profile|create|journal\/(write|desk)|share|sample-maker)(\/|$)/
 
-export function createSeo({ db, indexPath, baseUrl }) {
+// `missing`: paths this build has no page for (they answer 404)
+export function createSeo({ db, indexPath, baseUrl, missing }) {
   let template
   try {
     template = readFileSync(indexPath, 'utf8')
@@ -193,6 +194,10 @@ export function createSeo({ db, indexPath, baseUrl }) {
     }
     path = path.replace(/\/+$/, '') || '/'
     const url = `${base}${encodeURI(path)}`
+    if (missing && missing.test(path)) {
+      res.status(404)
+      return res.send(render({ title: 'Not found: SMPL', description: 'This page is not on SMPL.', url, noindex: true }))
+    }
     for (const [re, resolve] of routes) {
       const m = path.match(re)
       if (!m) continue

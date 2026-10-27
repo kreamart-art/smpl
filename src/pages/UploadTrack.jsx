@@ -25,11 +25,14 @@ export default function UploadTrack() {
   const [err, setErr] = useState('')
   const [loaded, setLoaded] = useState(!id)
   const editing = !!id
+  // the id, not the object: the bootstrap poll hands back a new currentUser
+  // every 25 s, and keyed on that the form reloaded over your edits
+  const uid = currentUser?.id
 
   useEffect(() => {
     if (!id) return
     fetchTrack(id).then((r) => {
-      if (r.ok && r.track.userId === currentUser?.id) {
+      if (r.ok && r.track.userId === uid) {
         const tr = r.track
         setForm({
           title: tr.title,
@@ -44,7 +47,7 @@ export default function UploadTrack() {
       } else setErr(t('music.notFound'))
       setLoaded(true)
     })
-  }, [id, fetchTrack, currentUser, t])
+  }, [id, fetchTrack, uid, t])
 
   if (!currentUser) {
     return (

@@ -1,0 +1,623 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #000000;
+  --color-panel: #090908;
+  --color-panel-2: #121110;
+  --color-line: #322e28;
+  --color-line-bright: #524c43;
+  --color-faint: #83837f; /* AA: ~5.5:1 on black (was #6f685c, 3.8:1 — failed) */
+  --color-muted: #8c8c88; /* AA: ~6.2:1 on black — secondary text */
+  --color-ink-dim: #b7b1a6;
+  --color-ink: #f0eee9;
+  --color-bright: #ffffff;
+  --color-verified: #e11d2a; /* the verified seal (distinct from the UI accent) */
+
+  /* single UI accent — deep red, ties into the live-red. Used ONLY for: the
+     active battle phase, the primary action (vote / I'm in), live signals and
+     the winner state. Never for body text, borders or generic hovers. */
+  --color-accent: #e5341f; /* ~4.84:1 as text on black (AA) */
+  --color-accent-ink: #0a0a0a; /* dark text on an accent fill (~4.57:1, AA) */
+  --color-accent-hover: #c72d1a;
+
+  /* correct-answer green — ONLY for "you got it right" feedback in the games.
+     Distinct from the red accent, which now means "wrong" in those moments. */
+  --color-good: #3fb950; /* ~6.7:1 as text on black (AA) */
+
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+/* SMPL identity: no rounded corners, anywhere. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+/* a11y: stop iOS from auto-resizing text, and remove the double-tap-zoom +
+   300ms tap delay on interactive elements. Pinch-zoom itself stays allowed on
+   the website (the app keeps user-scalable=no — see the viewport in index.html). */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+button,
+a,
+label,
+summary,
+[role='button'],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* kill the rubber-band/bounce so the fixed top bar doesn't drift and our own
+     pull-to-refresh isn't eaten by the native overscroll. */
+  overscroll-behavior: none;
+}
+body {
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+/* Thin archival scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2722;
+  border: 2px solid #000;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #38342e;
+}
+
+/* --- ambient live dot --- */
+@keyframes smpl-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}
+.pulse-dot {
+  animation: smpl-pulse 1.6s steps(1, end) infinite;
+}
+
+/* --- marquee ticker --- */
+@keyframes smpl-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: smpl-marquee 42s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* --- route + element fade-in --- */
+@keyframes smpl-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fadein {
+  /* `backwards` (not `both`): hold the start frame before the run, but DROP the
+     lingering end-state transform afterwards — a persisted transform turns this
+     wrapper into the containing block for position:fixed modals (cropper, etc.),
+     pushing them off-screen. */
+  animation: smpl-fadein 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* --- scroll reveal (editorial) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.9s ease, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- film grain (cinematic) --- */
+@keyframes smpl-grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-4%, -5%);
+  }
+  20% {
+    transform: translate(-8%, 3%);
+  }
+  30% {
+    transform: translate(5%, -8%);
+  }
+  40% {
+    transform: translate(-3%, 6%);
+  }
+  50% {
+    transform: translate(-9%, 4%);
+  }
+  60% {
+    transform: translate(6%, 2%);
+  }
+  70% {
+    transform: translate(-2%, -6%);
+  }
+  80% {
+    transform: translate(8%, 5%);
+  }
+  90% {
+    transform: translate(-6%, -3%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+.grain {
+  position: fixed;
+  top: -60%;
+  left: -60%;
+  width: 220%;
+  height: 220%;
+  pointer-events: none;
+  z-index: 24;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  background-size: 170px 170px;
+  animation: smpl-grain 6s steps(5) infinite;
+}
+
+/* --- de Plaat: the spinning record (listener game) --- */
+@keyframes smpl-record {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.record-spin {
+  transform-origin: 50% 50%;
+  animation: smpl-record 4s linear infinite;
+}
+
+/* --- DROP beat pads: a sequencer playhead rolls a glow across the columns --- */
+@keyframes smpl-drop-pad {
+  0%,
+  100% {
+    background: linear-gradient(155deg, #1b1815, #0a0907);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -2px 3px rgba(0, 0, 0, 0.65);
+  }
+  9% {
+    background: linear-gradient(155deg, #e5341f, #971f10);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 9px rgba(229, 52, 31, 0.7);
+  }
+  34% {
+    background: linear-gradient(155deg, #3a1a12, #150a06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -2px 3px rgba(0, 0, 0, 0.65);
+  }
+}
+.drop-pad {
+  border-radius: 22%;
+  background: linear-gradient(155deg, #1b1815, #0a0907);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -2px 3px rgba(0, 0, 0, 0.65);
+  animation: smpl-drop-pad 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop-pad {
+    animation: none;
+  }
+  .drop-pad.on {
+    background: linear-gradient(155deg, #6e2114, #150a06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 6px rgba(229, 52, 31, 0.4);
+  }
+}
+
+/* --- soft cinematic vignette --- */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: inset 0 0 240px 30px rgba(0, 0, 0, 0.9),
+    inset 0 0 90px rgba(0, 0, 0, 0.6);
+}
+
+/* --- hero ambient light bloom --- */
+@keyframes smpl-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.hero-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 70% at 50% 28%,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0) 60%
+  );
+  animation: smpl-breathe 8s ease-in-out infinite;
+}
+
+/* --- hover lighting (spotlight on cards/buttons) --- */
+.hover-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  background: radial-gradient(
+    100% 120% at 50% 0%,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0) 60%
+  );
+}
+.group:hover .hover-bloom {
+  opacity: 1;
+}
+
+/* pull-to-refresh spinner */
+@keyframes smpl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ptr-spin {
+  display: inline-block;
+  animation: smpl-spin 0.7s linear infinite;
+}
+
+/* --- winner "first pressing" stamp (one-time celebration overlay) --- */
+.winstamp {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  cursor: pointer;
+}
+.winstamp-wash {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+  opacity: 0;
+  animation: smpl-stamp-wash 3.3s ease forwards;
+}
+.winstamp-grain {
+  position: absolute;
+  z-index: 2;
+}
+.winstamp-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 24px;
+  text-align: center;
+  opacity: 0;
+  animation: smpl-stamp-dock 3.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.winstamp-word {
+  position: relative;
+  animation: smpl-stamp-kick 0.16s ease 0.45s both;
+}
+.winstamp-main,
+.winstamp-ghost {
+  display: block;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  font-size: clamp(2.75rem, 16vw, 8rem);
+  opacity: 0;
+  transform: rotate(var(--rot));
+  animation: smpl-stamp-slam 0.24s cubic-bezier(0.2, 0.9, 0.1, 1.05) 0.45s both;
+}
+.winstamp-main {
+  position: relative;
+  color: var(--color-accent);
+}
+.winstamp-ghost {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  z-index: -1;
+  color: var(--color-accent-hover);
+}
+.winstamp-reg {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 2.6vw, 13px);
+  letter-spacing: 0.14em;
+  color: var(--color-ink);
+  clip-path: inset(0 100% 0 0);
+  animation: smpl-stamp-wipe 0.4s ease 0.95s both;
+}
+.winstamp-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 2.4vw, 11px);
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+}
+.winstamp-ticks span {
+  opacity: 0;
+  animation: smpl-stamp-tick 0.3s ease both;
+}
+.winstamp-ticks span:nth-child(1) {
+  animation-delay: 1.08s;
+}
+.winstamp-ticks span:nth-child(2) {
+  animation-delay: 1.15s;
+}
+.winstamp-ticks span:nth-child(3) {
+  animation-delay: 1.22s;
+}
+@keyframes smpl-stamp-wash {
+  0% {
+    opacity: 0;
+  }
+  9% {
+    opacity: 0.93;
+  }
+  80% {
+    opacity: 0.93;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes smpl-stamp-dock {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  64% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(22vh) scale(0.16);
+  }
+}
+@keyframes smpl-stamp-slam {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--rot)) scale(1.18);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(var(--rot)) scale(0.97);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(var(--rot)) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes smpl-stamp-kick {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes smpl-stamp-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes smpl-stamp-tick {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* light/paper: never red text on cream — the mark becomes a filled accent plate
+   with the word knocked out in accent-ink, like a rubber stamp. */
+[data-theme='light'] .winstamp-main {
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  padding: 0.04em 0.18em;
+}
+
+/* new-follower toast */
+@keyframes smpl-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toast-in {
+  animation: smpl-toast-in 0.22s ease-out;
+}
+
+/* === LIGHT THEME (toggle via data-theme on <html>) ======================== */
+:root[data-theme='light'] {
+  --color-bg: #e9e6de;
+  --color-panel: #faf9f5;
+  --color-panel-2: #eeebe3;
+  --color-line: #d6d0c5;
+  --color-line-bright: #ada495;
+  --color-faint: #66645c; /* AA: ~4.7:1 on cream (was #8c867a, 2.9:1 — failed) */
+  --color-muted: #5f5e5a; /* AA: ~5.2:1 on cream — secondary text */
+  --color-ink-dim: #46423a;
+  --color-ink: #15120d;
+  --color-bright: #000000;
+  --color-good: #1a7f37; /* darker green so "correct" reads on cream */
+  /* accent stays the same red; on cream it is only ever a filled block with
+     accent-ink text, never red text on cream. */
+}
+/* the cinematic atmosphere is built for black — tone it down on paper */
+[data-theme='light'] .vignette {
+  box-shadow: inset 0 0 200px 24px rgba(40, 34, 24, 0.06), inset 0 0 70px rgba(40, 34, 24, 0.04);
+}
+[data-theme='light'] .grain {
+  opacity: 0.035;
+}
+[data-theme='light'] .hero-bloom {
+  background: radial-gradient(120% 70% at 50% 28%, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0) 60%);
+}
+[data-theme='light'] .hover-bloom {
+  background: radial-gradient(100% 120% at 50% 0%, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0) 60%);
+}
+/* the wordmark PNG is pure white — flip it to black on light chrome (NOT the
+   share-card poster, which stays a dark export). */
+[data-theme='light'] .logo-chrome {
+  filter: invert(1);
+}
+
+/* --- floating dust --- */
+@keyframes smpl-dust {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--o, 0.3);
+  }
+  88% {
+    opacity: var(--o, 0.3);
+  }
+  100% {
+    transform: translate(var(--dx, 0), -360px);
+    opacity: 0;
+  }
+}
+.dust {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.dust-particle {
+  position: absolute;
+  bottom: -8px;
+  background: var(--color-ink);
+  animation-name: smpl-dust;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* --- waveform breathing (live tracks) --- */
+@keyframes smpl-bar {
+  0%,
+  100% {
+    transform: scaleY(0.88);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.wave-bar {
+  animation: smpl-bar 1.9s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* faint engineering grid — kept very subtle, used behind the hero */
+.grid-bg {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The floating app tab bar is the one element allowed rounded corners
+   (class specificity beats the global `* { border-radius: 0 }`). */
+.tab-pill,
+.tab-pill-item {
+  border-radius: 9999px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain,
+  .dust,
+  .dust-particle,
+  .hero-bloom,
+  .wave-bar,
+  .marquee-track,
+  .record-spin,
+  .pulse-dot {
+    animation: none !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

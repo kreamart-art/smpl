@@ -31,6 +31,18 @@ export function signToken(payload, ttl = TTL) {
   return `${body}.${sig}`
 }
 
+// A signature for a plain value (the layout cookie). Scoped by purpose, so it
+// can never pass for a session token.
+export function signValue(purpose, value) {
+  return crypto.createHmac('sha256', SECRET).update(`${purpose}:${value}`).digest('base64url')
+}
+
+export function verifySignedValue(purpose, value, sig) {
+  const a = Buffer.from(String(sig || ''))
+  const b = Buffer.from(signValue(purpose, value))
+  return a.length === b.length && crypto.timingSafeEqual(a, b)
+}
+
 export function verifyToken(token) {
   if (!token || typeof token !== 'string' || !token.includes('.')) return null
   const [body, sig] = token.split('.')

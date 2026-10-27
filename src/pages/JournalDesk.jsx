@@ -11,11 +11,13 @@ export default function JournalDesk() {
   const t = useT()
   const { fetchMyArticles, currentUser } = useApp()
   const [data, setData] = useState(null)
+  // the id, not the object: the bootstrap poll hands back a new one every 25 s
+  const uid = currentUser?.id
 
   useEffect(() => {
-    if (!currentUser) return
+    if (!uid) return
     fetchMyArticles().then((r) => setData(r.ok ? r : { error: r.error }))
-  }, [currentUser, fetchMyArticles])
+  }, [uid, fetchMyArticles])
 
   if (!currentUser || data?.error) {
     return (

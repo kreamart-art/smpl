@@ -9,11 +9,14 @@ import { initNativePush } from '../lib/pushNative.js'
 export default function NativeBoot() {
   const { currentUser, registerDevice } = useApp()
   const navigate = useNavigate()
+  // the id, not the object: registering re-fetches the bootstrap, which hands
+  // back a new currentUser object (keyed on that, it would register forever)
+  const uid = currentUser?.id
 
   useEffect(() => {
-    if (!isNative || !currentUser) return
+    if (!isNative || !uid) return
     initNativePush(registerDevice, (url) => navigate(url))
-  }, [currentUser, registerDevice, navigate])
+  }, [uid, registerDevice, navigate])
 
   return null
 }
