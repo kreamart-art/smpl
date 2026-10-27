@@ -125,6 +125,7 @@ export function pubUser(r) {
     avatar: r.avatar || '',
     banner: r.banner || '', // profile banner photo (producer/artist)
     daw: r.daw || '', // DAW / tools shown on the profile
+    creativeRoles: P(r.creativeRoles), // display tags, never permissions
     joinedAt: r.joinedAt,
     foundingMember: !!r.joinedAt && r.joinedAt <= FOUNDING_CUTOFF, // permanent DAY ONE badge
     contactEmail: r.contactEmail || '', // optional, public — distinct from the private login email
@@ -370,4 +371,7 @@ export function migrate() {
   addColumn('battles', 'cover', 'TEXT')
   addColumn('battles', 'bpm', 'INTEGER')
   addColumn('battles', 'musicalKey', 'TEXT')
+  // 2026-10-27: creative roles shown on a profile (producer, rapper, dj, ...).
+  // Display only: permissions and battle gates keep using role.
+  addColumn('users', 'creativeRoles', 'TEXT')
 }

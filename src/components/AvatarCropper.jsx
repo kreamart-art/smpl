@@ -9,7 +9,10 @@ const OUT = 256 // exported avatar size (px)
 // Lightweight square cropper: drag to pan, slider to zoom, exports a JPEG
 // (256px data URL for avatars; covers ask for a larger Blob). Re-encoding on a
 // canvas also drops the photo's EXIF/GPS. No external dependency.
-export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBlob = false, title }) {
+export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBlob = false, title, aspect = 1 }) {
+  // the crop frame on screen: square for avatars/covers, wider for banners
+  const FW = aspect > 1 ? 300 : FRAME
+  const FH = Math.round(FW / aspect)
   const t = useT()
   const canvasRef = useRef(null)
   const imgRef = useRef(null)
@@ -31,38 +34,42 @@ export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBl
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  const clamp = useCallback((off, z) => {
-    const img = imgRef.current
-    if (!img) return off
-    const base = Math.max(FRAME / img.naturalWidth, FRAME / img.naturalHeight) * z
-    const maxX = Math.max(0, (img.naturalWidth * base - FRAME) / 2)
-    const maxY = Math.max(0, (img.naturalHeight * base - FRAME) / 2)
-    return { x: Math.max(-maxX, Math.min(maxX, off.x)), y: Math.max(-maxY, Math.min(maxY, off.y)) }
-  }, [])
+  const clamp = useCallback(
+    (off, z) => {
+      const img = imgRef.current
+      if (!img) return off
+      const base = Math.max(FW / img.naturalWidth, FH / img.naturalHeight) * z
+      const maxX = Math.max(0, (img.naturalWidth * base - FW) / 2)
+      const maxY = Math.max(0, (img.naturalHeight * base - FH) / 2)
+      return { x: Math.max(-maxX, Math.min(maxX, off.x)), y: Math.max(-maxY, Math.min(maxY, off.y)) }
+    },
+    [FW, FH],
+  )
 
   const draw = useCallback(
-    (ctx, size) => {
+    (ctx, outW) => {
       const img = imgRef.current
       if (!img) return
-      const k = size / FRAME
-      const scale = Math.max(FRAME / img.naturalWidth, FRAME / img.naturalHeight) * zoom * k
+      const outH = Math.round(outW / aspect)
+      const k = outW / FW
+      const scale = Math.max(FW / img.naturalWidth, FH / img.naturalHeight) * zoom * k
       const w = img.naturalWidth * scale
       const h = img.naturalHeight * scale
-      const dx = (size - w) / 2 + offset.x * k
-      const dy = (size - h) / 2 + offset.y * k
+      const dx = (outW - w) / 2 + offset.x * k
+      const dy = (outH - h) / 2 + offset.y * k
       ctx.fillStyle = '#000'
-      ctx.fillRect(0, 0, size, size)
+      ctx.fillRect(0, 0, outW, outH)
       ctx.imageSmoothingQuality = 'high'
       ctx.drawImage(img, dx, dy, w, h)
     },
-    [zoom, offset],
+    [zoom, offset, aspect, FW, FH],
   )
 
   useEffect(() => {
     if (!ready) return
     const c = canvasRef.current
-    if (c) draw(c.getContext('2d'), FRAME)
-  }, [ready, draw])
+    if (c) draw(c.getContext('2d'), FW)
+  }, [ready, draw, FW])
 
   const onDown = (e) => {
     const p = e.touches?.[0] || e
@@ -89,7 +96,7 @@ export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBl
   const save = () => {
     const out = document.createElement('canvas')
     out.width = size
-    out.height = size
+    out.height = Math.round(size / aspect)
     draw(out.getContext('2d'), size)
     if (asBlob) out.toBlob((b) => b && onSave(b), 'image/jpeg', 0.88)
     else onSave(out.toDataURL('image/jpeg', 0.85))
@@ -102,7 +109,7 @@ export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBl
       style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       onClick={onCancel}
     >
-      <div className="my-auto w-full max-w-[340px] border border-line-bright bg-panel" onClick={(e) => e.stopPropagation()}>
+      <div className="my-auto w-full max-w-[380px] border border-line-bright bg-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">{title || t('crop.title')}</span>
           <button onClick={onCancel} className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted hover:text-ink">
@@ -110,11 +117,11 @@ export default function AvatarCropper({ file, onSave, onCancel, size = OUT, asBl
           </button>
         </div>
         <div className="p-5">
-          <div className="mx-auto border border-line" style={{ width: FRAME, height: FRAME }}>
+          <div className="mx-auto border border-line" style={{ width: FW, height: FH }}>
             <canvas
               ref={canvasRef}
-              width={FRAME}
-              height={FRAME}
+              width={FW}
+              height={FH}
               className="block touch-none cursor-move select-none"
               onMouseDown={onDown}
               onMouseMove={onMove}

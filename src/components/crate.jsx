@@ -5,7 +5,13 @@ import { Link } from 'react-router-dom'
 import { mediaUrl } from '../api.js'
 import { IconChevronRight, IconPlay, IconPause } from './icons.jsx'
 
-export const catalogNo = (id) => `SMPL·${String(id || '').toUpperCase()}`
+// battles keep their long-standing number (SMPL·B_606C6A1E); tracks and
+// releases get a short one (SMPL·T5872E7, SMPL·R9CF2D0)
+export const catalogNo = (id) => {
+  const s = String(id || '')
+  const m = s.match(/^([tr])_([\w]{6})/i)
+  return m ? `SMPL·${m[1].toUpperCase()}${m[2].toUpperCase()}` : `SMPL·${s.toUpperCase()}`
+}
 
 // Section header: mono kicker left, optional "see all" right, hairline below.
 export function SectionHead({ title, to, more, className = '' }) {

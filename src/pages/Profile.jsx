@@ -2,10 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import Avatar from '../components/Avatar.jsx'
-import Waveform from '../components/Waveform.jsx'
-import Reveal from '../components/Reveal.jsx'
 import { Mentions } from '../components/Handle.jsx'
-import BattleCard from '../components/BattleCard.jsx'
 import ShareSheet from '../components/ShareSheet.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import FollowList from '../components/FollowList.jsx'
@@ -14,16 +11,21 @@ import CrateGrid from '../components/CrateGrid.jsx'
 import VerifiedBadge from '../components/VerifiedBadge.jsx'
 import WinnerBadge from '../components/WinnerBadge.jsx'
 import { UserSafetyMenu } from '../components/Safety.jsx'
-import { IconSettings, IconBattles, IconStats, IconFeed, IconCrate } from '../components/icons.jsx'
+import { IconSettings, IconCrate, IconDisc, IconVideo, IconTrophy, IconUser } from '../components/icons.jsx'
 import { ProfileTour } from '../components/Tour.jsx'
 import { Btn, Label, Field, inputCls, textareaCls } from '../components/ui.jsx'
 import SuggestInput from '../components/SuggestInput.jsx'
 import SuggestedPeople from '../components/SuggestedPeople.jsx'
 import CallerCard from '../components/CallerCard.jsx'
+import CoverPicker from '../components/CoverPicker.jsx'
+import { DisplayTitle, EmptyState, SectionHead } from '../components/crate.jsx'
+import { BattleRow } from '../components/BattleRow.jsx'
+import { ReleaseCard, TrackList, canPublishMusic } from '../components/music.jsx'
+import { mediaUrl } from '../api.js'
 import { suggestCities } from '../data/cities.js'
 import { fmtDate, fmtMonthYear } from '../utils/wave.js'
 import { safeHref } from '../utils/safeHref.js'
-import { roleLabel } from '../data/kind.js'
+import { roleLabel, CREATIVE_ROLES } from '../data/kind.js'
 import { useT } from '../i18n/index.jsx'
 
 // Downscale a picked image to a small square-ish JPEG data URL.
@@ -51,7 +53,7 @@ function fileToAvatar(file, cb) {
 // SMPL language: mono caps, hairline rules, an ink underline on the active tab.
 function ProfileTabs({ tabs, active, onSelect }) {
   return (
-    <div data-tour="profile-tabs" className="flex border-y border-line">
+    <div data-tour="profile-tabs" role="tablist" className="flex border-y border-line">
       {tabs.map((tabDef) => {
         const on = tabDef.key === active
         const Icon = tabDef.icon
@@ -60,14 +62,14 @@ function ProfileTabs({ tabs, active, onSelect }) {
             key={tabDef.key}
             type="button"
             onClick={() => onSelect(tabDef.key)}
+            role="tab"
             aria-selected={on}
-            aria-label={tabDef.label}
-            title={tabDef.label}
-            className={`-mb-px flex flex-1 items-center justify-center border-b-2 py-2.5 transition-colors duration-300 ${
+            className={`-mb-px flex flex-1 flex-col items-center justify-center gap-1 border-b-2 py-2.5 transition-colors duration-300 ${
               on ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink-dim'
             }`}
           >
-            <Icon size={22} className="shrink-0" />
+            <Icon size={20} className="shrink-0" />
+            <span className="font-mono text-[9px] uppercase tracking-[0.1em]">{tabDef.label}</span>
           </button>
         )
       })}
@@ -90,6 +92,8 @@ export function Editor({ user, onClose }) {
   const t = useT()
   const [form, setForm] = useState({
     avatar: user.avatar || '',
+    banner: user.banner || '',
+    creativeRoles: user.creativeRoles || [],
     bio: user.bio || '',
     location: user.location || '',
     contactEmail: user.contactEmail || '',
@@ -109,6 +113,8 @@ export function Editor({ user, onClose }) {
     setErr('')
     const r = await updateProfile({
       avatar: form.avatar,
+      banner: form.banner,
+      creativeRoles: form.creativeRoles,
       bio: form.bio,
       location: form.location,
       contactEmail: form.contactEmail,
@@ -153,6 +159,51 @@ export function Editor({ user, onClose }) {
                 {t('profile.removePhoto')}
               </button>
             ) : null}
+          </div>
+        </div>
+        <div>
+          <Label>{t('profile.cover')}</Label>
+          <CoverPicker
+            className="mt-2"
+            aspect={3}
+            size={1800}
+            value={form.banner}
+            hint={t('profile.coverHint')}
+            cropTitle={t('profile.cover')}
+            onChange={(url) => setForm((f) => ({ ...f, banner: url }))}
+          />
+        </div>
+        <div>
+          <div className="flex items-baseline justify-between">
+            <Label>{t('profile.roles')}</Label>
+            <span className="font-mono text-[10px] text-muted">{t('profile.rolesHint')}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {CREATIVE_ROLES.map((r) => {
+              const on = form.creativeRoles.includes(r)
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      creativeRoles: on
+                        ? f.creativeRoles.filter((x) => x !== r)
+                        : f.creativeRoles.length < 4
+                          ? [...f.creativeRoles, r]
+                          : f.creativeRoles,
+                    }))
+                  }
+                  className={`h-9 border px-3 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors ${
+                    on ? 'border-ink bg-ink text-bg' : 'border-line-bright text-ink hover:border-ink'
+                  }`}
+                >
+                  {t(`creative.${r}`)}
+                </button>
+              )
+            })}
           </div>
         </div>
         <Field label={t('profile.field.bio')} hint={t('profile.field.bioHint')}>
@@ -238,7 +289,7 @@ export function Editor({ user, onClose }) {
 export default function Profile() {
   const { alias } = useParams()
   const t = useT()
-  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, fetchCrate } =
+  const { getUserByAlias, producerStats, curatorStats, followerCount, isFollowing, toggleFollow, currentUser, follows, isBlocked, isAdmin, setUserRole, toggleVerified, fetchWaveformVideos, fetchCrate, fetchMusic } =
     useApp()
   const base = getUserByAlias(alias)
   const navigate = useNavigate()
@@ -246,6 +297,7 @@ export default function Profile() {
   const [followView, setFollowView] = useState(null) // null | 'followers' | 'following'
   const [clips, setClips] = useState([])
   const [crate, setCrate] = useState([])
+  const [music, setMusic] = useState({ tracks: [], releases: [] })
   const [tab, setTab] = useState(null) // active profile tab; null → derived default
   const contentRef = useRef(null)
 
@@ -276,6 +328,20 @@ export default function Profile() {
       alive = false
     }
   }, [base?.id, fetchCrate])
+
+  useEffect(() => {
+    if (!base?.id) {
+      setMusic({ tracks: [], releases: [] })
+      return
+    }
+    let alive = true
+    fetchMusic(base.id).then((r) => {
+      if (alive && r.ok) setMusic({ tracks: r.tracks || [], releases: r.releases || [] })
+    })
+    return () => {
+      alive = false
+    }
+  }, [base?.id, fetchMusic])
 
   // old deep link (?edit=1) → the dedicated edit page
   useEffect(() => {
@@ -308,8 +374,16 @@ export default function Profile() {
   // admin runs battles like a curator → show the curator/host file for both.
   const isCuratorProfile = user.role === 'curator' || user.role === 'admin'
   const cstats = isCuratorProfile ? curatorStats(user.id) : null
-  // one content section, IG/TikTok-style: competitors land on their clip grid, curators on their battles
-  const activeTab = tab ?? (isCuratorProfile ? 'record' : user.role === 'listener' ? 'crate' : 'clips')
+  const isListener = user.role === 'listener' && !user.dualRole
+  const hasMusic = music.tracks.length > 0 || music.releases.length > 0
+  const canMakeMusic = canPublishMusic(user)
+  const showMusic = hasMusic || (isSelf && canMakeMusic)
+  const showVideos = clips.length > 0 || (isSelf && !isListener && !isCuratorProfile)
+  // one content section: music first when there is some, else the maker's clips,
+  // the curator's battles, or a listener's crate
+  const activeTab =
+    tab ??
+    (hasMusic ? 'music' : clips.length ? 'videos' : isListener ? 'crate' : 'battles')
   // tapping the primary count jumps straight to the grid/record, like Instagram.
   // Resolve the real scroll container (the app shell scrolls an inner <main>, the
   // website scrolls the page) so the jump works in both shells.
@@ -331,119 +405,79 @@ export default function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-[1100px] px-4 py-10 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-[1100px] px-4 py-6 sm:px-6 sm:py-10">
       {isSelf ? <ProfileTour /> : null}
-      {/* PROFILE HEADER — one compact Instagram-style block, SMPL skin */}
+      {/* PROFILE HEADER: cover photo, avatar, name, what they do, real counts */}
       <div className="relative isolate overflow-hidden border border-line bg-panel">
-        <span className="hero-bloom" aria-hidden="true" />
-
-        {/* file label + role */}
-        <div className="relative flex items-center justify-between px-5 pt-4 font-mono text-[10px] uppercase tracking-[0.22em] text-faint sm:px-7">
-          <span>{isCuratorProfile ? t('profile.curatorFile') : t('profile.artistFile')}</span>
-          <span>{user.dualRole ? t('role.dual') : roleLabel(user.role)}</span>
+        <div className="sleeve-grid relative aspect-[3/1] w-full overflow-hidden bg-panel-2">
+          {user.banner ? <img src={mediaUrl(user.banner)} alt="" className="h-full w-full object-cover" /> : null}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-panel to-transparent" aria-hidden="true" />
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-dim sm:px-7">
+            <span className="bg-bg/60 px-1.5 py-0.5">{isCuratorProfile ? t('profile.curatorFile') : t('profile.artistFile')}</span>
+          </div>
         </div>
 
-        {/* slim waveform strip — SMPL signature */}
-        <div className="relative px-5 pt-3 sm:px-7">
-          <Waveform seed={`banner-${user.id}`} bars={120} height={40} animated baseClass="bg-line-bright" />
-        </div>
-
-        <div className="relative px-5 py-5 sm:px-7 sm:py-6">
-          {/* avatar + inline counts */}
-          <div className="flex items-center gap-4 sm:gap-7">
-            <div className="shrink-0">
-              <Avatar alias={user.alias} src={user.avatar} size={72} />
-            </div>
-            <div data-tour="profile-stats" className="flex flex-1 items-center justify-between sm:flex-none sm:justify-start sm:gap-10">
-              <button
-                onClick={() => goToContent(isCuratorProfile ? 'record' : 'clips')}
-                className="px-1 text-center transition-opacity hover:opacity-70"
-              >
-                <div className="font-mono text-xl tnum leading-none text-ink sm:text-2xl">
-                  {isCuratorProfile ? cstats.curated.length : clips.length}
-                </div>
-                <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-faint">
-                  {isCuratorProfile ? t('profile.tab.battles') : t('profile.tab.clips')}
-                </div>
-              </button>
-              <button onClick={() => setFollowView('followers')} className="px-1 text-center transition-opacity hover:opacity-70">
-                <div className="font-mono text-xl tnum leading-none text-ink sm:text-2xl">{followers}</div>
-                <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-faint">{t('common.followers')}</div>
-              </button>
-              <button onClick={() => setFollowView('following')} className="px-1 text-center transition-opacity hover:opacity-70">
-                <div className="font-mono text-xl tnum leading-none text-ink sm:text-2xl">{followingCount}</div>
-                <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-faint">{t('common.following')}</div>
-              </button>
+        <div className="relative px-5 pb-5 sm:px-7 sm:pb-6">
+          <div className="-mt-10 sm:-mt-12">
+            <div className="inline-block border-2 border-panel bg-panel">
+              <Avatar alias={user.alias} src={user.avatar} size={84} />
             </div>
           </div>
 
-          {/* name + handle */}
           <div className="mt-4">
-            <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-sans text-2xl font-bold uppercase leading-[0.9] tracking-tight sm:text-3xl">
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{user.alias}</span>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <DisplayTitle as="h1" size="md" className="min-w-0 break-words text-ink [overflow-wrap:anywhere]">
+                {user.alias}
+              </DisplayTitle>
               {user.verified || user.role === 'admin' ? <VerifiedBadge size={20} title={t('profile.verified')} /> : null}
               {user.wins ? <WinnerBadge wins={user.wins} size={15} title={t('profile.winnerBadge', { n: user.wins })} /> : null}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-              <span className="text-ink-dim">@{user.alias}</span>
-              {user.location ? (
-                <>
-                  <span className="text-faint">/</span>
-                  <span>◍ {user.location}</span>
-                </>
-              ) : null}
-              <span className="text-faint">/</span>
-              <span>{t('profile.memberSince', { month: fmtMonthYear(user.joinedAt) })}</span>
-              {isCuratorProfile ? (
-                <>
-                  <span className="text-faint">/</span>
-                  <span className="text-ink-dim">✓ {t('profile.badge.curator')}</span>
-                </>
-              ) : null}
+            </div>
+            <div className="mt-1.5 font-sans text-[14px] text-ink-dim">
+              {(user.creativeRoles?.length ? user.creativeRoles.map((r) => t(`creative.${r}`)) : [user.dualRole ? t('role.dual') : roleLabel(user.role)]).join(' · ')}
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
+              <span>@{user.alias}</span>
+              {user.location ? <span>· {user.location}</span> : null}
+              <span>· {t('profile.memberSince', { month: fmtMonthYear(user.joinedAt) })}</span>
+              {isCuratorProfile ? <span className="text-ink-dim">· {t('profile.badge.curator')}</span> : null}
             </div>
           </div>
 
-          {/* bio + genres — flows in the header, no sub-label */}
           {user.bio ? (
-            <p className="mt-3 whitespace-pre-line font-sans text-[14px] leading-relaxed text-ink-dim">
+            <p className="mt-3 line-clamp-4 whitespace-pre-line font-sans text-[15px] leading-relaxed text-ink-dim">
               <Mentions text={user.bio} />
             </p>
           ) : null}
-          {user.genres?.length ? (
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {user.genres.map((g) => (
-                <span key={g} className="border border-line px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-muted">
-                  {g}
-                </span>
-              ))}
-            </div>
-          ) : null}
 
-          {/* links as compact inline chips */}
-          {user.contactEmail || user.links?.length ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {user.contactEmail ? (
-                <a
-                  href={`mailto:${user.contactEmail}`}
-                  className="inline-flex items-center gap-1.5 border border-line-bright px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:border-ink"
-                >
-                  {t('profile.contactLabel')}
-                </a>
-              ) : null}
-              {user.links?.map((l) => (
-                <a
-                  key={l.label}
-                  href={safeHref(l.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 border border-line px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:border-line-bright"
-                >
-                  <span>{l.label}</span>
-                  <span className="text-muted">↗</span>
-                </a>
-              ))}
-            </div>
-          ) : null}
+          <div
+            data-tour="profile-stats"
+            className="mt-5 grid auto-cols-fr grid-flow-col divide-x divide-line border-y border-line"
+          >
+            {showMusic ? (
+              <button onClick={() => goToContent('music')} className="py-3 text-center transition-opacity hover:opacity-70">
+                <div className="font-mono text-lg tnum leading-none text-ink sm:text-xl">{music.releases.length || music.tracks.length}</div>
+                <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-faint">
+                  {music.releases.length ? t('profile.music.releases') : t('profile.music.tracks')}
+                </div>
+              </button>
+            ) : null}
+            {!isListener ? (
+              <button onClick={() => goToContent('battles')} className="py-3 text-center transition-opacity hover:opacity-70">
+                <div className="font-mono text-lg tnum leading-none text-ink sm:text-xl">
+                  {isCuratorProfile ? cstats.curated.length : stats.played}
+                </div>
+                <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-faint">{t('profile.tab.battles')}</div>
+              </button>
+            ) : null}
+            <button onClick={() => setFollowView('followers')} className="py-3 text-center transition-opacity hover:opacity-70">
+              <div className="font-mono text-lg tnum leading-none text-ink sm:text-xl">{followers}</div>
+              <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-faint">{t('common.followers')}</div>
+            </button>
+            <button onClick={() => setFollowView('following')} className="py-3 text-center transition-opacity hover:opacity-70">
+              <div className="font-mono text-lg tnum leading-none text-ink sm:text-xl">{followingCount}</div>
+              <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-faint">{t('common.following')}</div>
+            </button>
+          </div>
 
           {/* actions */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -550,46 +584,66 @@ export default function Profile() {
         </div>
       ) : null}
 
-      {/* prediction-game reputation — any profile that has made calls */}
-      <CallerCard user={user} className="mt-12" />
 
-      {/* suggested people to follow — only on your own profile */}
-      {isSelf ? <SuggestedPeople className="mt-12" limit={3} /> : null}
-
-      {/* PROFILE CONTENT — clips / stats / record folded into ONE tabbed section */}
+      {/* PROFILE CONTENT: music / videos / battles / crate / about */}
       <div ref={contentRef} className="mt-12 scroll-mt-20">
-      <Reveal>
         <ProfileTabs
           active={activeTab}
           onSelect={setTab}
           tabs={[
-            // curators (incl. the @SMPL mother account) only curate, never make
-            // beats — so no clips tab unless they somehow have some.
-            ((!isCuratorProfile && user.role !== 'listener') || clips.length > 0) && {
-              key: 'clips',
-              label: t('profile.tab.clips'),
-              count: clips.length,
-              icon: IconBattles,
-            },
-            { key: 'crate', label: t('crate.tab'), count: crate.length, icon: IconCrate },
-            { key: 'stats', label: t('profile.tab.stats'), icon: IconStats },
-            user.role !== 'listener' && {
-              key: 'record',
-              label: isCuratorProfile ? t('profile.tab.battles') : t('profile.tab.history'),
-              count: isCuratorProfile ? cstats.curated.length : stats.history.length,
-              icon: IconFeed,
-            },
+            showMusic && { key: 'music', label: t('profile.tab.music'), icon: IconDisc },
+            showVideos && { key: 'videos', label: t('profile.tab.videos'), icon: IconVideo },
+            !isListener && { key: 'battles', label: t('profile.tab.battles'), icon: IconTrophy },
+            { key: 'crate', label: t('profile.tab.crate'), icon: IconCrate },
+            { key: 'about', label: t('profile.tab.about'), icon: IconUser },
           ].filter(Boolean)}
         />
 
-        {/* CLIPS */}
-        {activeTab === 'clips' ? (
+        {/* MUSIC */}
+        {activeTab === 'music' ? (
+          <div className="mt-8 space-y-10">
+            {isSelf && canMakeMusic ? (
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  to="/create/track"
+                  className="inline-flex h-10 items-center bg-paper px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-paper-ink hover:bg-bright"
+                >
+                  {t('create.uploadTrack')}
+                </Link>
+                <Link
+                  to="/create/release"
+                  className="inline-flex h-10 items-center border border-line-bright px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-ink hover:bg-ink hover:text-bg"
+                >
+                  {t('create.publishRelease')}
+                </Link>
+              </div>
+            ) : null}
+            {music.releases.length ? (
+              <section>
+                <SectionHead title={t('profile.music.releases')} />
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {music.releases.map((r) => (
+                    <ReleaseCard key={r.id} release={r} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {music.tracks.length ? (
+              <section>
+                <SectionHead title={t('profile.music.tracks')} />
+                <TrackList tracks={music.tracks} maker={{ id: user.id, alias: user.alias, avatar: user.avatar, verified: user.verified }} />
+              </section>
+            ) : null}
+            {!hasMusic ? <EmptyState title={isSelf ? t('profile.music.emptySelf') : t('profile.music.empty')} /> : null}
+          </div>
+        ) : null}
+
+        {/* VIDEOS (waveform clips) */}
+        {activeTab === 'videos' ? (
           clips.length ? (
             <WaveformClips clips={clips} />
           ) : (
-            <p className="mt-8 border border-line bg-panel px-5 py-12 text-center font-mono text-[12px] leading-relaxed text-muted">
-              {isSelf ? t('profile.clips.emptySelf') : t('profile.clips.empty')}
-            </p>
+            <EmptyState className="mt-8" title={isSelf ? t('profile.clips.emptySelf') : t('profile.clips.empty')} />
           )
         ) : null}
 
@@ -598,96 +652,149 @@ export default function Profile() {
           crate.length ? (
             <CrateGrid items={crate} />
           ) : (
-            <p className="mt-8 border border-line bg-panel px-5 py-12 text-center font-mono text-[12px] leading-relaxed text-muted">
-              {isSelf ? t('crate.emptySelf') : t('crate.empty')}
-            </p>
+            <EmptyState className="mt-8" title={isSelf ? t('crate.emptySelf') : t('crate.empty')} />
           )
         ) : null}
 
-        {/* STATS */}
-        {activeTab === 'stats' ? (
-          <div className="mt-8 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+        {/* BATTLES: stats + the curated list or the match history */}
+        {activeTab === 'battles' ? (
+          <div className="mt-8 space-y-8">
+            <div className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+              {isCuratorProfile ? (
+                <>
+                  <StatCell label={t('profile.cstats.battles')} value={cstats.count} sub={t('profile.cstats.battlesSub')} />
+                  <StatCell label={t('profile.cstats.creators')} value={cstats.creators} sub={t('profile.cstats.creatorsSub')} />
+                  <StatCell label={t('profile.cstats.drops')} value={cstats.drops} sub={t('profile.cstats.dropsSub')} />
+                  <StatCell label={t('profile.cstats.winners')} value={cstats.winners} sub={t('profile.cstats.winnersSub')} />
+                </>
+              ) : (
+                <>
+                  <StatCell label={t('profile.stats.battles')} value={stats.played} sub={t('profile.stats.battlesSub')} />
+                  <StatCell label={t('profile.stats.won')} value={stats.won} sub={t('profile.stats.wonSub')} />
+                  <StatCell label={t('profile.stats.winRatio')} value={`${stats.winRatio}%`} sub={`${stats.won}/${stats.played}`} />
+                  <StatCell label={t('profile.stats.totalVotes')} value={stats.totalVotes} sub={t('profile.stats.totalVotesSub')} />
+                </>
+              )}
+            </div>
             {isCuratorProfile ? (
-              <>
-                <StatCell label={t('profile.cstats.battles')} value={cstats.count} sub={t('profile.cstats.battlesSub')} />
-                <StatCell label={t('profile.cstats.creators')} value={cstats.creators} sub={t('profile.cstats.creatorsSub')} />
-                <StatCell label={t('profile.cstats.drops')} value={cstats.drops} sub={t('profile.cstats.dropsSub')} />
-                <StatCell label={t('profile.cstats.winners')} value={cstats.winners} sub={t('profile.cstats.winnersSub')} />
-              </>
+              cstats.curated.length ? (
+                <div className="border-t border-line">
+                  {cstats.curated.map((b) => (
+                    <BattleRow key={b.id} battle={b} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title={t('profile.curated.empty')} />
+              )
             ) : (
-              <>
-                <StatCell label={t('profile.stats.battles')} value={stats.played} sub={t('profile.stats.battlesSub')} />
-                <StatCell label={t('profile.stats.won')} value={stats.won} sub={t('profile.stats.wonSub')} />
-                <StatCell label={t('profile.stats.winRatio')} value={`${stats.winRatio}%`} sub={`${stats.won}/${stats.played}`} />
-                <StatCell label={t('profile.stats.totalVotes')} value={stats.totalVotes} sub={t('profile.stats.totalVotesSub')} />
-              </>
+              <div className="border border-line bg-panel">
+                {stats.history.length ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[560px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-line font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
+                          <th className="px-5 py-3.5 text-left font-normal">{t('profile.history.col.battle')}</th>
+                          <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.position')}</th>
+                          <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.votes')}</th>
+                          <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.date')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.history.map((h, i) => {
+                          const won = h.position === 1
+                          return (
+                            <tr key={i} className="border-b border-line transition-colors duration-300 hover:bg-panel-2">
+                              <td className="px-5 py-4">
+                                <span className="font-sans text-[15px] uppercase tracking-tight">{h.battle}</span>
+                                {h.live ? (
+                                  <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-faint">{t('profile.history.onSmpl')}</span>
+                                ) : null}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <span className={`inline-block font-mono text-[11px] tnum ${won ? 'bg-ink px-2 py-0.5 text-bg' : 'text-ink-dim'}`}>
+                                  #{h.position}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-right font-mono text-[12px] text-ink tnum">{h.votes}</td>
+                              <td className="px-5 py-4 text-right font-mono text-[11px] text-muted tnum">{fmtDate(h.date)}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="px-5 py-6 font-sans text-[14px] text-muted">{t('profile.history.empty')}</p>
+                )}
+              </div>
             )}
           </div>
         ) : null}
 
-        {/* RECORD — curated battles (curator) or match history (competitor) */}
-        {activeTab === 'record' ? (
-          isCuratorProfile ? (
-            cstats.curated.length ? (
-              <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {cstats.curated.map((b) => (
-                  <BattleCard key={b.id} battle={b} />
-                ))}
-              </div>
-            ) : (
-              <p className="mt-8 border border-line bg-panel px-5 py-6 font-mono text-[12px] text-muted">
-                {t('profile.curated.empty')}
+        {/* ABOUT */}
+        {activeTab === 'about' ? (
+          <div className="mt-8 space-y-8">
+            {user.bio ? (
+              <p className="max-w-prose whitespace-pre-line font-sans text-[16px] leading-relaxed text-ink-dim">
+                <Mentions text={user.bio} />
               </p>
-            )
-          ) : (
-            <div className="mt-8 border border-line bg-panel">
-              {stats.history.length ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[560px] border-collapse">
-                    <thead>
-                      <tr className="border-b border-line font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-                        <th className="px-5 py-3.5 text-left font-normal">{t('profile.history.col.battle')}</th>
-                        <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.position')}</th>
-                        <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.votes')}</th>
-                        <th className="px-5 py-3.5 text-right font-normal">{t('profile.history.col.date')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.history.map((h, i) => {
-                        const won = h.position === 1
-                        return (
-                          <tr key={i} className="border-b border-line transition-colors duration-300 hover:bg-panel-2">
-                            <td className="px-5 py-4">
-                              <span className="font-sans text-[15px] uppercase tracking-tight">{h.battle}</span>
-                              {h.live ? (
-                                <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.14em] text-faint">{t('profile.history.onSmpl')}</span>
-                              ) : null}
-                            </td>
-                            <td className="px-5 py-4 text-right">
-                              <span
-                                className={`inline-block font-mono text-[11px] tnum ${
-                                  won ? 'bg-ink px-2 py-0.5 text-bg' : 'text-ink-dim'
-                                }`}
-                              >
-                                {won ? '★ #1' : `#${h.position}`}
-                              </span>
-                            </td>
-                            <td className="px-5 py-4 text-right font-mono text-[12px] text-ink tnum">{h.votes}</td>
-                            <td className="px-5 py-4 text-right font-mono text-[11px] text-muted tnum">{fmtDate(h.date)}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+            ) : null}
+            {user.genres?.length ? (
+              <section>
+                <SectionHead title={t('profile.field.genres')} />
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {user.genres.map((g) => (
+                    <span key={g} className="border border-line-bright px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-dim">
+                      {g}
+                    </span>
+                  ))}
                 </div>
-              ) : (
-                <p className="px-5 py-6 font-mono text-[12px] text-muted">{t('profile.history.empty')}</p>
-              )}
-            </div>
-          )
+              </section>
+            ) : null}
+            {user.contactEmail || user.links?.length ? (
+              <section>
+                <SectionHead title={t('profile.links')} />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {user.contactEmail ? (
+                    <a
+                      href={`mailto:${user.contactEmail}`}
+                      className="inline-flex items-center gap-1.5 border border-line-bright px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-ink hover:border-ink"
+                    >
+                      {t('profile.contactLabel')}
+                    </a>
+                  ) : null}
+                  {user.links?.map((l) => (
+                    <a
+                      key={l.label}
+                      href={safeHref(l.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 border border-line px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-ink hover:border-line-bright"
+                    >
+                      <span>{l.label}</span>
+                      <span className="text-muted">↗</span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {user.daw ? (
+              <section>
+                <SectionHead title="DAW" />
+                <p className="mt-3 font-mono text-[13px] text-ink-dim">{user.daw}</p>
+              </section>
+            ) : null}
+            {!user.bio && !user.genres?.length && !user.contactEmail && !user.links?.length && !user.daw && !user.caller?.calls ? (
+              <EmptyState title={t('profile.about.empty')} />
+            ) : null}
+            {/* prediction-game reputation: any profile that has made calls */}
+            <CallerCard user={user} />
+          </div>
         ) : null}
-      </Reveal>
       </div>
+
+      {/* people to follow: only on your own profile, below your own content */}
+      {isSelf ? <SuggestedPeople className="mt-12" limit={3} /> : null}
     </div>
   )
 }

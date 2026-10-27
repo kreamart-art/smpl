@@ -5,7 +5,7 @@ import { useT } from '../i18n/index.jsx'
 import { STATUS } from '../data/status.js'
 import Portal from './Portal.jsx'
 import { Tape } from './crate.jsx'
-import { IconClose, IconChevronRight, IconUpload, IconTrophy, IconUser, IconWave, IconPlus } from './icons.jsx'
+import { IconClose, IconChevronRight, IconUpload, IconTrophy, IconUser, IconWave, IconPlus, IconDisc } from './icons.jsx'
 
 function Row({ to, icon, title, sub, onClose }) {
   return (
@@ -90,6 +90,18 @@ export default function CreateSheet({ open, onClose }) {
               </>
             ) : null}
 
+            {maker || staff ? (
+              <>
+                <Row to="/create/track" onClose={onClose} icon={<IconWave size={20} />} title={t('create.uploadTrack')} sub={t('create.uploadTrackSub')} />
+                <Row
+                  to="/create/release"
+                  onClose={onClose}
+                  icon={<IconDisc size={20} />}
+                  title={t('create.publishRelease')}
+                  sub={t('create.publishReleaseSub')}
+                />
+              </>
+            ) : null}
             {maker
               ? mine.map((b) => (
                   <Row

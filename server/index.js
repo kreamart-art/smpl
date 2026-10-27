@@ -28,6 +28,7 @@ import { pushConfigured, vapidPublicKey, saveSubscription, removeSubscription, s
 import { saveDeviceToken, removeDeviceToken } from './nativepush.js'
 import { mountGame } from './game.js'
 import { cleanLinks, safeSourceUrl } from './sanitize.js'
+import { mountMusic, CREATIVE_ROLES } from './music.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -1653,9 +1654,20 @@ app.patch('/api/me', requireAuth, (req, res) => {
     set('genderText', g === 'self' ? String(b.genderText || '').trim().slice(0, 60) : '')
   }
   if (typeof b.avatar === 'string') set('avatar', b.avatar)
-  if (typeof b.banner === 'string') set('banner', b.banner)
+  if (typeof b.banner === 'string') {
+    // the caller's own uploaded image (or '' to clear): no data URLs bloating
+    // every bootstrap, no hotlinked trackers
+    const banner = battleCover(b.banner, req.user)
+    if (banner === undefined) return fail(res, 400, 'Upload the cover photo yourself first.')
+    set('banner', banner)
+  }
   if (typeof b.daw === 'string') set('daw', b.daw.trim().slice(0, 80))
   if (Array.isArray(b.links)) set('links', JSON.stringify(cleanLinks(b.links)))
+  if (Array.isArray(b.creativeRoles)) {
+    // display tags only; permissions keep coming from role
+    const roles = [...new Set(b.creativeRoles.map(String))].filter((r) => CREATIVE_ROLES.includes(r)).slice(0, 4)
+    set('creativeRoles', JSON.stringify(roles))
+  }
   if (b.genres !== undefined) {
     const raw = Array.isArray(b.genres) ? b.genres : String(b.genres || '').split(',')
     const list = raw.map((g) => String(g).trim()).filter(Boolean).slice(0, 12) // anti-abuse ceiling
@@ -1838,6 +1850,9 @@ app.get('/api/me/export', requireAuth, (req, res) => {
     messagesSent: db
       .prepare('SELECT id, toId, body, imageUrl, audioUrl, createdAt FROM messages WHERE fromId = ? AND deletedAt IS NULL')
       .all(uid),
+    clips: db.prepare('SELECT id, battleId, url, tag, createdAt FROM waveform_videos WHERE userId = ?').all(uid),
+    crate: db.prepare('SELECT submissionId, battleId, createdAt FROM crate_items WHERE userId = ?').all(uid),
+    ...music.exportForUser(uid),
   }
   return ok(res, { data })
 })
@@ -1891,6 +1906,11 @@ app.post('/api/me/delete', requireAuth, (req, res) => {
       )
     }
     db.prepare('DELETE FROM follows WHERE followerId = ? OR followeeId = ?').run(uid, uid)
+    // their own media and saves leave with them (the cleanup job then removes
+    // the clip files nothing points at any more)
+    db.prepare('DELETE FROM waveform_videos WHERE userId = ?').run(uid)
+    db.prepare('DELETE FROM crate_items WHERE userId = ?').run(uid)
+    music.deleteForUser(uid)
     db.prepare('DELETE FROM users WHERE id = ?').run(uid)
     db.exec('COMMIT')
   } catch {
@@ -2882,6 +2902,7 @@ app.get('/sitemap.xml', (req, res) => {
       add(`/battles/${encodeURIComponent(b.id)}`, '0.8', 'daily')
     for (const u of db.prepare('SELECT alias FROM users').all())
       add(`/profile/${encodeURIComponent(u.alias)}`, '0.5', 'weekly')
+    for (const path of music.publicUrls()) add(path, '0.6', 'weekly')
   } catch {
     /* a missing table shouldn't break the sitemap */
   }
@@ -2895,6 +2916,11 @@ app.get('/sitemap.xml', (req, res) => {
 // Server-authoritative: the answer key + grading live in game.js, so a score
 // can't be forged client-side. Registered before the SPA catch-all below.
 mountGame(app, { db, ok, fail, rateLimit, langOf })
+
+// ----- music publishing: tracks + releases (see server/music.js) --------------
+const music = mountMusic(app, {
+  db, ok, fail, rateLimit, requireAuth, isStaff, uploadOwner, getUserRow, isBlocked, probeDuration, cleanBpm, cleanKey, STATUS,
+})
 
 // ----- production: serve the built SPA from the same origin ------------------
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))

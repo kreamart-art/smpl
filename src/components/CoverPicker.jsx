@@ -3,10 +3,13 @@ import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import AvatarCropper from './AvatarCropper.jsx'
 import { Cover } from './crate.jsx'
+import { mediaUrl } from '../api.js'
 
-// Square artwork for a battle (later a release): pick, crop, upload. The crop is
-// re-encoded to a 1400px JPEG, which also strips the photo's location data.
-export default function CoverPicker({ value, onChange, title, className = '' }) {
+// Artwork picker: pick, crop, upload. Square for sleeves (battles, tracks,
+// releases), wide for a profile cover photo. The crop is re-encoded to a JPEG,
+// which also strips the photo's location data.
+export default function CoverPicker({ value, onChange, title, className = '', aspect = 1, size = 1400, cropTitle, hint }) {
+  const wide = aspect > 1
   const t = useT()
   const { uploadImage } = useApp()
   const [file, setFile] = useState(null)
@@ -35,10 +38,16 @@ export default function CoverPicker({ value, onChange, title, className = '' }) 
   }
 
   return (
-    <div className={`flex items-start gap-4 ${className}`}>
-      <div className="w-24 shrink-0">
-        <Cover src={value} title={title || '?'} titleSize="xs" />
-      </div>
+    <div className={`${wide ? 'space-y-3' : 'flex items-start gap-4'} ${className}`}>
+      {wide ? (
+        <div className="sleeve-grid w-full overflow-hidden border border-line bg-panel-2" style={{ aspectRatio: String(aspect) }}>
+          {value ? <img src={mediaUrl(value)} alt="" className="h-full w-full object-cover" /> : null}
+        </div>
+      ) : (
+        <div className="w-24 shrink-0">
+          <Cover src={value} title={title || '?'} titleSize="xs" />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <label
@@ -59,15 +68,16 @@ export default function CoverPicker({ value, onChange, title, className = '' }) 
             </button>
           ) : null}
         </div>
-        <p className="mt-2 font-sans text-[13px] leading-snug text-muted">{t('cover.hint')}</p>
+        <p className="mt-2 font-sans text-[13px] leading-snug text-muted">{hint || t('cover.hint')}</p>
         {err ? <p className="mt-1 font-sans text-[13px] text-accent">{err}</p> : null}
       </div>
       {file ? (
         <AvatarCropper
           file={file}
-          size={1400}
+          size={size}
+          aspect={aspect}
           asBlob
-          title={t('cover.cropTitle')}
+          title={cropTitle || t('cover.cropTitle')}
           onSave={onSave}
           onCancel={() => setFile(null)}
         />

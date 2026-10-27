@@ -11,6 +11,7 @@ import WaveformClips from '../components/WaveformClips.jsx'
 import SuggestedPeople from '../components/SuggestedPeople.jsx'
 import GameTeaser from '../components/GameTeaser.jsx'
 import { FeedRow } from './Feed.jsx'
+import { ReleaseCard, TrackCard } from '../components/music.jsx'
 
 const LIVE = new Set([STATUS.VOTING_PHASE, STATUS.SUBMISSION_PHASE])
 
@@ -65,16 +66,18 @@ const TABS = ['forYou', 'battles', 'music']
 
 export default function Home() {
   const t = useT()
-  const { battles, getUser, currentUser, fetchFeed, fetchLatestClips } = useApp()
+  const { battles, getUser, currentUser, fetchFeed, fetchLatestClips, fetchLatestMusic } = useApp()
   const [tab, setTab] = useState('forYou')
   const [clips, setClips] = useState(null)
   const [feed, setFeed] = useState(null)
+  const [drops, setDrops] = useState(null)
 
   useEffect(() => {
     let alive = true
     const load = () => {
       fetchLatestClips(9).then((r) => alive && setClips(r.ok ? r.videos || [] : []))
       fetchFeed().then((r) => alive && setFeed(r.ok ? r.feed || [] : []))
+      fetchLatestMusic(8).then((r) => alive && setDrops(r.ok ? r : { releases: [], tracks: [] }))
     }
     load()
     window.addEventListener('smpl:refresh', load)
@@ -82,7 +85,7 @@ export default function Home() {
       alive = false
       window.removeEventListener('smpl:refresh', load)
     }
-  }, [fetchFeed, fetchLatestClips])
+  }, [fetchFeed, fetchLatestClips, fetchLatestMusic])
 
   const ranked = useMemo(() => rankBattles(battles), [battles])
   const featured = ranked[0] || null
@@ -101,7 +104,7 @@ export default function Home() {
   const show = (section) =>
     tab === 'forYou' ||
     (tab === 'battles' && ['featured', 'live', 'upcoming', 'results'].includes(section)) ||
-    (tab === 'music' && ['results', 'clips'].includes(section))
+    (tab === 'music' && ['drops', 'results', 'clips'].includes(section))
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-5 sm:px-6 sm:pt-8">
@@ -125,6 +128,22 @@ export default function Home() {
         <div className="mt-6">
           {featured ? <BattleHero battle={featured} kicker={t('home.featured')} /> : <EmptyState title={t('home.noBattles')} />}
         </div>
+      ) : null}
+
+      {show('drops') && drops && (drops.releases.length || drops.tracks.length) ? (
+        <section className="mt-12">
+          <SectionHead title={t('home.drops')} />
+          <div className="-mx-4 mt-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+            {drops.releases.map((r) => (
+              <ReleaseCard key={r.id} release={r} maker={r.maker} className="w-[46vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none" />
+            ))}
+            {drops.releases.length < 4
+              ? drops.tracks.slice(0, 4 - drops.releases.length).map((tr) => (
+                  <TrackCard key={tr.id} track={tr} maker={tr.maker} className="w-[46vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none" />
+                ))
+              : null}
+          </div>
+        </section>
       ) : null}
 
       {show('results') ? (

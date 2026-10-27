@@ -11,12 +11,13 @@ import WaveformClips from '../components/WaveformClips.jsx'
 import Vinyl from '../components/Vinyl.jsx'
 import { SectionHead, Kicker, DisplayTitle, EmptyState } from '../components/crate.jsx'
 import { BattleRow } from '../components/BattleRow.jsx'
+import { ReleaseCard, TrackCard } from '../components/music.jsx'
 import { IconChevronRight } from '../components/icons.jsx'
 import { GENRES } from '../data/genres.js'
 import { mediaUrl } from '../api.js'
 import { suggestCities } from '../data/cities.js'
 
-const TYPES = ['all', 'artists', 'battles', 'clips']
+const TYPES = ['all', 'artists', 'battles', 'music', 'clips']
 const ROLE_TABS = [
   { key: 'all', labelKey: 'social.people.filterAll' },
   { key: 'producer', labelKey: 'social.people.filterProducers' },
@@ -145,12 +146,13 @@ export default function Discover() {
   const t = useT()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const { users, battles, followerCount, isBlocked, currentUser, getUser, fetchLatestClips } = useApp()
+  const { users, battles, followerCount, isBlocked, currentUser, getUser, fetchLatestClips, fetchLatestMusic } = useApp()
   const type = TYPES.includes(params.get('type')) ? params.get('type') : 'all'
   const setType = (k) => setParams(k === 'all' ? {} : { type: k }, { replace: true })
   const [role, setRole] = useState('all')
   const [q, setQ] = useState('')
   const [clips, setClips] = useState(null)
+  const [music, setMusic] = useState(null)
   const query = q.trim().toLowerCase()
 
   useEffect(() => {
@@ -161,6 +163,15 @@ export default function Discover() {
       alive = false
     }
   }, [type, fetchLatestClips])
+
+  useEffect(() => {
+    if (type !== 'music' && type !== 'all') return
+    let alive = true
+    fetchLatestMusic(48).then((r) => alive && setMusic(r.ok ? r : { releases: [], tracks: [] }))
+    return () => {
+      alive = false
+    }
+  }, [type, fetchLatestMusic])
 
   const visibleUsers = useMemo(() => users.filter((u) => !isBlocked(u.id)), [users, isBlocked])
 
@@ -210,6 +221,16 @@ export default function Discover() {
       ),
     [clips, query],
   )
+
+  const musicHits = useMemo(() => {
+    const m = music || { releases: [], tracks: [] }
+    const hit = (x) =>
+      !query ||
+      x.title.toLowerCase().includes(query) ||
+      (x.maker?.alias || '').toLowerCase().includes(query) ||
+      (x.genre || '').toLowerCase().includes(query)
+    return { releases: m.releases.filter(hit), tracks: m.tracks.filter(hit) }
+  }, [music, query])
 
   // genres somebody on SMPL actually works in or battles on, with real counts
   const genreTiles = useMemo(() => {
@@ -289,11 +310,14 @@ export default function Discover() {
   const showArtists = type === 'all' || type === 'artists'
   const showBattles = (type === 'all' && query) || type === 'battles'
   const showClips = type === 'clips'
+  const showMusic = type === 'music' || (type === 'all' && query)
+  const musicCount = musicHits.releases.length + musicHits.tracks.length
   const nothing =
     query &&
     (!showArtists || !creators.length) &&
     (!showBattles || !battleHits.length) &&
-    (!showClips || !clipHits.length)
+    (!showClips || !clipHits.length) &&
+    (!showMusic || !musicCount)
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
@@ -403,6 +427,24 @@ export default function Discover() {
             </div>
           ) : !nothing ? (
             <p className="mt-4 font-sans text-[14px] text-muted">{t('discover.noResults', { q })}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {showMusic ? (
+        <section className="mt-10">
+          <SectionHead title={t('discover.type.music')} />
+          {music === null ? null : musicCount ? (
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {musicHits.releases.map((r) => (
+                <ReleaseCard key={r.id} release={r} maker={r.maker} />
+              ))}
+              {musicHits.tracks.map((tr) => (
+                <TrackCard key={tr.id} track={tr} maker={tr.maker} />
+              ))}
+            </div>
+          ) : !nothing ? (
+            <EmptyState className="mt-4" title={query ? t('discover.noResults', { q }) : t('home.dropsEmpty')} />
           ) : null}
         </section>
       ) : null}

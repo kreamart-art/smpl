@@ -607,6 +607,18 @@ export function AppProvider({ children }) {
   const renderWaveformVideo = useCallback((data) => api.post('/api/waveform/render', data), [])
   const fetchWaveformVideos = useCallback((userId) => api.get(`/api/users/${userId}/waveform-videos`), [])
   const fetchLatestClips = useCallback((limit = 12) => api.get(`/api/waveform-videos?limit=${limit}`), [])
+  // music publishing (tracks + releases)
+  const fetchMusic = useCallback((userId) => api.get(`/api/users/${userId}/music`), [])
+  const fetchLatestMusic = useCallback((limit = 12) => api.get(`/api/music/latest?limit=${limit}`), [])
+  const fetchTrack = useCallback((id) => api.get(`/api/tracks/${encodeURIComponent(id)}`), [])
+  const fetchRelease = useCallback((id) => api.get(`/api/releases/${encodeURIComponent(id)}`), [])
+  const createTrack = useCallback((data) => api.post('/api/tracks', data), [])
+  const updateTrack = useCallback((id, data) => api.patch(`/api/tracks/${encodeURIComponent(id)}`, data), [])
+  const deleteTrack = useCallback((id) => api.del(`/api/tracks/${encodeURIComponent(id)}`), [])
+  const createRelease = useCallback((data) => api.post('/api/releases', data), [])
+  const updateRelease = useCallback((id, data) => api.patch(`/api/releases/${encodeURIComponent(id)}`, data), [])
+  const deleteRelease = useCallback((id) => api.del(`/api/releases/${encodeURIComponent(id)}`), [])
+  const publishEntry = useCallback((submissionId, data) => api.post(`/api/submissions/${submissionId}/publish`, data), [])
   const fetchWaveformVideo = useCallback((id) => api.get(`/api/waveform-videos/${id}`), [])
   const deleteWaveformVideo = useCallback((id) => api.del(`/api/me/waveform-video/${id}`), [])
   // crate — save beats/verses to your profile (mutate so cratedIds refreshes)
@@ -714,6 +726,17 @@ export function AppProvider({ children }) {
     renderWaveformVideo,
     fetchWaveformVideos,
     fetchLatestClips,
+    fetchMusic,
+    fetchLatestMusic,
+    fetchTrack,
+    fetchRelease,
+    createTrack,
+    updateTrack,
+    deleteTrack,
+    createRelease,
+    updateRelease,
+    deleteRelease,
+    publishEntry,
     fetchWaveformVideo,
     deleteWaveformVideo,
     cratedIds,
@@ -966,7 +989,7 @@ export function PlaybackProvider({ children }) {
       ms.metadata = new window.MediaMetadata({
         title: track.label || 'SMPL',
         artist: track.artist || 'SMPL',
-        album: track.sub || '',
+        album: track.album || track.sub || '',
         artwork: [{ src: track.artwork ? mediaUrl(track.artwork) : '/icon-512.png', sizes: '512x512' }],
       })
     } catch {

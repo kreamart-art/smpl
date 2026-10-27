@@ -104,6 +104,7 @@ export default function BattleDetail() {
     isHouse,
     disqualifySubmission,
     isCrated,
+    publishEntry,
   } = app
 
   const battle = getBattle(id)
@@ -117,6 +118,7 @@ export default function BattleDetail() {
   const [winnerCard, setWinnerCard] = useState(null)
   const [tab, setTab] = useState('entries')
   const [sort, setSort] = useState(null)
+  const [published, setPublished] = useState({}) // submissionId -> trackId
 
   const approvedSubs = useMemo(
     () => (battle ? battleSubmissions(battle.id).filter((s) => s.approved) : []),
@@ -805,6 +807,29 @@ export default function BattleDetail() {
                     ) : null}
                     <div className="flex flex-wrap items-center gap-2 border border-t-0 border-line bg-panel px-3 py-2">
                       <CrateButton submissionId={s.id} />
+                      {/* your finished entry can live on as a track, same file, no copy */}
+                      {s.mine && playableAudio(s.audioUrl) ? (
+                        published[s.id] ? (
+                          <Link
+                            to={`/track/${published[s.id]}`}
+                            className="ml-auto font-mono text-[10px] uppercase tracking-[0.12em] text-ink underline-offset-4 hover:underline"
+                          >
+                            {t('publishEntry.done')}
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const r = await publishEntry(s.id, { title: battle.title })
+                              if (r.ok) setPublished((p) => ({ ...p, [s.id]: r.track.id }))
+                              else setMsg({ ok: false, text: r.error })
+                            }}
+                            className="ml-auto h-8 border border-line-bright px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-ink transition-colors hover:bg-ink hover:text-bg"
+                          >
+                            {t('publishEntry.cta')}
+                          </button>
+                        )
+                      ) : null}
                     </div>
                     {waveRow(s, `${battle.title} · #${rank} · ${getUser(s.producerId)?.alias || ''}`)}
                     <CommentThread submissionId={s.id} producerId={s.producerId} />

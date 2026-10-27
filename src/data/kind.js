@@ -52,3 +52,8 @@ export function canEnter(user, battle) {
   const staff = user.role === 'curator' || user.role === 'admin'
   return user.role === need || (!!user.dualRole && competitor) || (staff && !!user.curatorCompetes)
 }
+
+// display tags a member can show on their profile (the server holds the same list)
+export const CREATIVE_ROLES = [
+  'producer', 'beatmaker', 'rapper', 'vocalist', 'singer', 'songwriter', 'dj', 'engineer', 'musician', 'visual',
+]

@@ -12,6 +12,10 @@ import Signup from './pages/Signup.jsx'
 import Feed from './pages/Feed.jsx'
 import Discover from './pages/Discover.jsx'
 import Home from './pages/Home.jsx'
+import TrackPage from './pages/TrackPage.jsx'
+import ReleasePage from './pages/ReleasePage.jsx'
+import UploadTrack from './pages/UploadTrack.jsx'
+import PublishRelease from './pages/PublishRelease.jsx'
 import Settings from './pages/Settings.jsx'
 import EditProfile from './pages/EditProfile.jsx'
 import LinksManager from './pages/LinksManager.jsx'
@@ -107,6 +111,12 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/home" element={<Home />} />
         <Route path="/discover" element={<Discover />} />
+        <Route path="/track/:id" element={<TrackPage />} />
+        <Route path="/release/:id" element={<ReleasePage />} />
+        <Route path="/create/track" element={<UploadTrack />} />
+        <Route path="/create/track/:id" element={<UploadTrack />} />
+        <Route path="/create/release" element={<PublishRelease />} />
+        <Route path="/create/release/:id" element={<PublishRelease />} />
         <Route path="/battles" element={<Battles />} />
         <Route path="/battles/:id" element={<BattleDetail />} />
         <Route path="/game" element={<Game />} />
