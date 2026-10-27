@@ -5,6 +5,7 @@ import { usePWA } from '../context/PWAContext.jsx'
 import { useT } from '../i18n/index.jsx'
 import Avatar from './Avatar.jsx'
 import VerifiedBadge from './VerifiedBadge.jsx'
+import { IconChevronRight, IconClose } from './icons.jsx'
 
 const cityOf = (loc) => (loc || '').split(',')[0].trim()
 const countryOf = (loc) => {
@@ -153,23 +154,24 @@ export default function SuggestedPeople({ limit = 6, className = '' }) {
 
   return (
     <section className={className}>
-      <div className="flex items-baseline justify-between gap-3 border-b border-line pb-3">
+      <div className="flex items-end justify-between gap-3 border-b border-line pb-2">
         <div>
-          <h2 className="font-sans text-lg font-bold uppercase tracking-tight">{t('suggest.title')}</h2>
-          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">{t('suggest.sub')}</div>
+          <h2 className="t-kicker text-ink">{t('suggest.title')}</h2>
+          <div className="t-kicker mt-1 text-faint">{t('suggest.sub')}</div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <Link to="/people" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted transition-colors hover:text-ink">
+          <Link to="/discover?type=artists" className="t-kicker inline-flex items-center gap-1 text-muted transition-colors hover:text-ink">
             {t('suggest.seeAll')}
+            <IconChevronRight size={12} />
           </Link>
           {standalone ? (
             <button
               onClick={dismissSection}
               aria-label={t('suggest.dismiss')}
               title={t('suggest.dismiss')}
-              className="flex h-6 w-6 items-center justify-center font-mono text-[12px] text-faint transition-colors hover:text-ink"
+              className="flex h-6 w-6 items-center justify-center text-faint transition-colors hover:text-ink"
             >
-              ✕
+              <IconClose size={12} />
             </button>
           ) : null}
         </div>
@@ -184,9 +186,9 @@ export default function SuggestedPeople({ limit = 6, className = '' }) {
             <button
               onClick={() => dismiss(u.id)}
               aria-label={t('suggest.dismiss')}
-              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center font-mono text-[11px] text-faint transition-colors hover:text-ink"
+              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center text-faint transition-colors hover:text-ink"
             >
-              ✕
+              <IconClose size={11} />
             </button>
             <Link to={`/profile/${encodeURIComponent(u.alias)}`} className="mt-1.5">
               <Avatar alias={u.alias} src={u.avatar} size={54} />

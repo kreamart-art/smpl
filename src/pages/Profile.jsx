@@ -409,7 +409,8 @@ export default function Profile() {
       {isSelf ? <ProfileTour /> : null}
       {/* PROFILE HEADER: cover photo, avatar, name, what they do, real counts */}
       <div className="relative isolate overflow-hidden border border-line bg-panel">
-        <div className="sleeve-grid relative aspect-[3/1] w-full overflow-hidden bg-panel-2">
+        {/* without a cover photo the empty grid stays low on wide screens */}
+        <div className={`sleeve-grid relative w-full overflow-hidden bg-panel-2 ${user.banner ? 'aspect-[3/1]' : 'aspect-[3/1] sm:aspect-[6/1]'}`}>
           {user.banner ? <img src={mediaUrl(user.banner)} alt="" className="h-full w-full object-cover" /> : null}
           <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-panel to-transparent" aria-hidden="true" />
           <div className="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-dim sm:px-7">

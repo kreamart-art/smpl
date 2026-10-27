@@ -80,7 +80,7 @@ export default function BattleHero({ battle, kicker }) {
               <StatusBadge status={battle.status} size="sm" />
               <div className="mt-2 text-muted">
                 <When battle={battle} />
-                {entries ? <span> · {t('home.entries', { n: entries })}</span> : null}
+                {entries ? <span> · {t(entries === 1 ? 'home.entryOne' : 'home.entries', { n: entries })}</span> : null}
               </div>
             </div>
             <div className="flex items-center gap-2">

@@ -178,7 +178,8 @@ export default function ArticleBody({ body, refs = [] }) {
         if (b.t === 'h3') return <h3 key={k} className="pt-2 font-sans text-[1.3rem] font-semibold text-ink">{inline(b.text, k)}</h3>
         if (b.t === 'quote')
           return (
-            <blockquote key={k} className="paper my-2 px-6 py-5 t-display text-[1.7rem] leading-tight text-paper-ink">
+            // .t-display's tight 0.88 leading is for one-line heads; a quote runs over lines
+            <blockquote key={k} className="paper my-2 px-6 py-5 t-display text-[1.7rem] text-paper-ink" style={{ lineHeight: 1.04 }}>
               {inline(b.text, k)}
             </blockquote>
           )

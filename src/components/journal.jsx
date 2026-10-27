@@ -53,7 +53,8 @@ export function StoryLead({ story }) {
   return (
     <Link to={`/journal/${story.slug}`} className="group relative block border border-line-bright bg-panel">
       <Tape className="-top-2 right-8" rotate={4} />
-      <StoryImage story={story} duo className="aspect-[16/10] w-full" />
+      {/* wide screens: a flatter frame so the headline sits in the first view */}
+      <StoryImage story={story} duo className="aspect-[16/10] w-full lg:aspect-[21/9]" />
       <div className="relative -mt-16 px-5 pb-6 sm:-mt-24 sm:px-8 sm:pb-8">
         <span className="inline-block bg-paper px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-paper-ink">
           {t(`journal.cat.${story.category}`)}

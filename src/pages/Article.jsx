@@ -51,7 +51,7 @@ export default function Article() {
       <div className="relative">
         {a.coverUrl ? (
           <figure>
-            <img src={mediaUrl(a.coverUrl)} alt={a.coverAlt || ''} className="photocopy max-h-[70vh] w-full object-cover" />
+            <img src={mediaUrl(a.coverUrl)} alt={a.coverAlt || ''} className="photocopy max-h-[70vh] w-full object-cover lg:max-h-[52vh]" />
             {a.coverCredit ? (
               <figcaption className="mx-auto max-w-[760px] px-4 pt-2 font-mono text-[11px] text-faint sm:px-6">
                 {t('journal.credit', { credit: a.coverCredit })}

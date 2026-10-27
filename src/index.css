@@ -95,20 +95,20 @@ body {
   color: var(--color-bg);
 }
 
-/* Thin archival scrollbar */
+/* Thin archival scrollbar, in the theme's own colours (black bars on cream otherwise) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #000;
+  background: var(--color-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2722;
-  border: 2px solid #000;
+  background: var(--color-line);
+  border: 2px solid var(--color-bg);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #38342e;
+  background: var(--color-line-bright);
 }
 
 /* --- ambient live dot --- */

@@ -28,7 +28,9 @@ export default function ClipPage() {
   useEffect(() => {
     let alive = true
     fetchWaveformVideo(id).then((r) => {
-      if (alive) setData(r.ok ? r : null)
+      if (!alive) return
+      setData(r.ok ? r : null)
+      if (r.ok && r.video) document.title = `${r.video.title || 'Clip'}${r.producer ? ` by @${r.producer.alias}` : ''}: SMPL`
     })
     return () => {
       alive = false
@@ -88,7 +90,8 @@ export default function ClipPage() {
     setBusy(false)
   }
   return (
-    <div className="mx-auto max-w-[480px] px-4 py-8 sm:py-12">
+    // waveform clips are portrait; studio, music and live videos are landscape
+    <div className={`mx-auto px-4 py-8 sm:py-12 ${!video.kind || video.kind === 'waveform' ? 'max-w-[480px]' : 'max-w-[880px]'}`}>
       <div className="flex items-stretch gap-2">
         {producer ? (
           <Link
@@ -160,10 +163,7 @@ export default function ClipPage() {
         ) : null}
       </div>
 
-      {video.kind && video.kind !== 'waveform' ? (
-        <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{t(`video.kind.${video.kind}`)}</div>
-      ) : null}
-      {video.title ? <h1 className="t-display mt-1 text-[clamp(1.8rem,7vw,3rem)] text-ink">{video.title}</h1> : null}
+      {video.title ? <h1 className="t-display mt-4 text-[clamp(1.8rem,7vw,3rem)] text-ink">{video.title}</h1> : null}
       {video.tag && !video.title ? (
         <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{video.tag}</div>
       ) : null}

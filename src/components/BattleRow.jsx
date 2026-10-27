@@ -55,7 +55,7 @@ function RowCount({ battle }) {
     )
   }
   const n = battleSubmissions(battle.id).length
-  return n ? <span className="tnum text-ink-dim">{t('home.entries', { n })}</span> : null
+  return n ? <span className="tnum text-ink-dim">{t(n === 1 ? 'home.entryOne' : 'home.entries', { n })}</span> : null
 }
 
 export function BattleRow({ battle, showCount = true }) {

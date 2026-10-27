@@ -215,6 +215,7 @@ export const crate = {
     'home.listen': 'Listen',
     'home.inRoom': '{n} in the room',
     'home.entries': '{n} entries',
+    'home.entryOne': '1 entry',
 
     'discover.title': 'Discover',
     'discover.kicker': 'Artists · battles · clips',
@@ -445,6 +446,7 @@ export const crate = {
     'home.listen': 'Luister',
     'home.inRoom': '{n} in de room',
     'home.entries': '{n} inzendingen',
+    'home.entryOne': '1 inzending',
 
     'discover.title': 'Ontdek',
     'discover.kicker': 'Artiesten · battles · clips',
