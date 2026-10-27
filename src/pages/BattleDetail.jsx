@@ -394,7 +394,9 @@ export default function BattleDetail() {
             battle.kind === 'VERSES' ? t('battleDetail.meta.versesIn') : t('battleDetail.meta.beatsIn'),
             String(approvedSubs.length),
           ],
-          [t(CD_KEY[battle.status]), ts ? fmtDate(ts) : t('battleDetail.meta.closed')],
+          manual
+            ? [t('battles.card.cd.manualLabel'), t('battles.card.cd.manualValue')]
+            : [t(CD_KEY[battle.status]), ts ? fmtDate(ts) : t('battleDetail.meta.closed')],
         ].map(([k, v]) => (
           <div key={k} className="bg-bg px-4 py-3">
             <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{k}</div>
