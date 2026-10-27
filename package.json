@@ -15,7 +15,8 @@
     "cap:assets": "npx @capacitor/assets@latest generate --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'",
     "cap:sync": "npm run build && cap sync",
     "cap:ios": "npm run build && cap sync ios && cap open ios",
-    "cap:android": "npm run build && cap sync android && cap open android"
+    "cap:android": "npm run build && cap sync android && cap open android",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
