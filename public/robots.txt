@@ -1,5 +1,5 @@
-# SMPL — https://usesmpl.com
-# Public pages are open to crawlers; private/auth pages are not.
+# SMPL: https://usesmpl.com
+# Public pages are open to crawlers; private, tool and auth pages are not.
 User-agent: *
 Allow: /
 Disallow: /settings
@@ -10,5 +10,12 @@ Disallow: /login
 Disallow: /forgot
 Disallow: /reset
 Disallow: /verify
+Disallow: /auth/
+Disallow: /edit-profile
+Disallow: /create/
+Disallow: /journal/write
+Disallow: /journal/desk
+Disallow: /share/
+Disallow: /sample-maker
 
 Sitemap: https://usesmpl.com/sitemap.xml

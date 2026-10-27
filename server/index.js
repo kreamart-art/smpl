@@ -30,6 +30,7 @@ import { mountGame } from './game.js'
 import { cleanLinks, safeSourceUrl } from './sanitize.js'
 import { mountMusic, CREATIVE_ROLES } from './music.js'
 import { mountJournal } from './journal.js'
+import { createSeo } from './seo.js'
 
 // Public origin used to build links inside emails (reset / verify). Override
 // with SMPL_APP_URL; falls back to the live domain in prod, localhost in dev.
@@ -2934,8 +2935,11 @@ const journal = mountJournal(app, {
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 if (existsSync(distDir)) {
   app.use(express.static(distDir))
+  // per-page title / description / image / canonical (+ 404 for unknown ids)
+  const seo = createSeo({ db, indexPath: `${distDir}/index.html`, baseUrl: APP_URL })
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next()
+    if (seo) return seo(req, res)
     res.sendFile(`${distDir}/index.html`)
   })
 }
