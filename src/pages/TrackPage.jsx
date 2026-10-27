@@ -20,7 +20,10 @@ export default function TrackPage() {
   const [data, setData] = useState(null)
 
   const load = useCallback(() => {
-    fetchTrack(id).then((r) => setData(r.ok ? r : { error: true }))
+    fetchTrack(id).then((r) => {
+      setData(r.ok ? r : { error: true })
+      if (r.ok) document.title = `${r.track.title}${r.maker ? ` by @${r.maker.alias}` : ''}: SMPL`
+    })
   }, [fetchTrack, id])
   useEffect(load, [load])
 

@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import Nav from './Nav.jsx'
 import Footer from './Footer.jsx'
 import TransportBar from './TransportBar.jsx'
@@ -40,6 +40,11 @@ const PAGE_TITLES = {
   '/dashboard': 'Dashboard: SMPL',
   '/messages': 'Messages: SMPL',
   '/notifications': 'Notifications: SMPL',
+  '/create/track': 'Upload a track: SMPL',
+  '/create/release': 'Publish a release: SMPL',
+  '/create/video': 'Upload a video: SMPL',
+  '/journal/desk': 'Journal desk: SMPL',
+  '/journal/write': 'Write: SMPL Journal',
 }
 function pageTitle(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
@@ -48,7 +53,25 @@ function pageTitle(pathname) {
     return a ? `@${a}: SMPL` : 'Profile: SMPL'
   }
   if (pathname.startsWith('/battles/')) return 'Battle: SMPL'
+  // the page itself names the track, release or story once it has loaded
+  if (pathname.startsWith('/track/')) return 'Track: SMPL'
+  if (pathname.startsWith('/release/')) return 'Release: SMPL'
+  if (pathname.startsWith('/clip/')) return 'Clip: SMPL'
+  if (pathname.startsWith('/journal/')) return 'Journal: SMPL'
   return 'SMPL: Same sample. Different soul.'
+}
+
+// while a page's code loads: the same five bars as the boot screen, quietly
+function RouteLoading() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-label="loading">
+      <div className="flex items-end gap-1.5">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span key={i} className="wave-bar block h-4 w-[3px] bg-muted" style={{ animationDelay: `${i * 0.12}s` }} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function Layout() {
@@ -83,7 +106,9 @@ export default function Layout() {
         >
           <PullToRefresh>
             <div key={pathname} className="fadein">
-              <Outlet />
+              <Suspense fallback={<RouteLoading />}>
+                <Outlet />
+              </Suspense>
             </div>
           </PullToRefresh>
         </main>
@@ -108,7 +133,9 @@ export default function Layout() {
       <VerifyEmailBanner />
       <main className="relative flex-1">
         <div key={pathname} className="fadein">
-          <Outlet />
+          <Suspense fallback={<RouteLoading />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
       <Footer />

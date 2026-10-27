@@ -1,46 +1,52 @@
-import { useRef, useEffect } from 'react'
+import { lazy, Suspense, useRef, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useApp } from './context/AppContext.jsx'
 import Layout from './components/Layout.jsx'
+// the core of the app loads up front; everything else loads when opened
 import Landing from './pages/Landing.jsx'
+import Home from './pages/Home.jsx'
 import Battles from './pages/Battles.jsx'
 import BattleDetail from './pages/BattleDetail.jsx'
 import Profile from './pages/Profile.jsx'
-import Dashboard from './pages/Dashboard.jsx'
-import Login from './pages/Login.jsx'
-import Signup from './pages/Signup.jsx'
-import Feed from './pages/Feed.jsx'
 import Discover from './pages/Discover.jsx'
-import Home from './pages/Home.jsx'
-import TrackPage from './pages/TrackPage.jsx'
-import ReleasePage from './pages/ReleasePage.jsx'
-import UploadTrack from './pages/UploadTrack.jsx'
-import PublishRelease from './pages/PublishRelease.jsx'
-import UploadVideo from './pages/UploadVideo.jsx'
-import Journal from './pages/Journal.jsx'
-import Article from './pages/Article.jsx'
-import JournalDesk from './pages/JournalDesk.jsx'
-import ArticleEditor from './pages/ArticleEditor.jsx'
-import Settings from './pages/Settings.jsx'
-import EditProfile from './pages/EditProfile.jsx'
-import LinksManager from './pages/LinksManager.jsx'
-import GenderPicker from './pages/GenderPicker.jsx'
-import GenrePicker from './pages/GenrePicker.jsx'
-import SampleMaker from './pages/SampleMaker.jsx'
-import Notifications from './pages/Notifications.jsx'
-import Messages from './pages/Messages.jsx'
-import SharePage from './pages/SharePage.jsx'
-import ClipPage from './pages/ClipPage.jsx'
-import Legal from './pages/Legal.jsx'
-import Contact from './pages/Contact.jsx'
-import Help from './pages/Help.jsx'
-import Game from './pages/Game.jsx'
-import League from './pages/League.jsx'
-import { PredictHub, PredictBattle } from './pages/Predict.jsx'
-import Play from './pages/Play.jsx'
-import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/Recover.jsx'
-import AuthMagic from './pages/AuthMagic.jsx'
-import NotFound from './pages/NotFound.jsx'
+
+const named = (load, name) => lazy(() => load().then((m) => ({ default: m[name] })))
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
+const Login = lazy(() => import('./pages/Login.jsx'))
+const Signup = lazy(() => import('./pages/Signup.jsx'))
+const Feed = lazy(() => import('./pages/Feed.jsx'))
+const TrackPage = lazy(() => import('./pages/TrackPage.jsx'))
+const ReleasePage = lazy(() => import('./pages/ReleasePage.jsx'))
+const UploadTrack = lazy(() => import('./pages/UploadTrack.jsx'))
+const PublishRelease = lazy(() => import('./pages/PublishRelease.jsx'))
+const UploadVideo = lazy(() => import('./pages/UploadVideo.jsx'))
+const Journal = lazy(() => import('./pages/Journal.jsx'))
+const Article = lazy(() => import('./pages/Article.jsx'))
+const JournalDesk = lazy(() => import('./pages/JournalDesk.jsx'))
+const ArticleEditor = lazy(() => import('./pages/ArticleEditor.jsx'))
+const Settings = lazy(() => import('./pages/Settings.jsx'))
+const EditProfile = lazy(() => import('./pages/EditProfile.jsx'))
+const LinksManager = lazy(() => import('./pages/LinksManager.jsx'))
+const GenderPicker = lazy(() => import('./pages/GenderPicker.jsx'))
+const GenrePicker = lazy(() => import('./pages/GenrePicker.jsx'))
+const SampleMaker = lazy(() => import('./pages/SampleMaker.jsx'))
+const Notifications = lazy(() => import('./pages/Notifications.jsx'))
+const Messages = lazy(() => import('./pages/Messages.jsx'))
+const SharePage = lazy(() => import('./pages/SharePage.jsx'))
+const ClipPage = lazy(() => import('./pages/ClipPage.jsx'))
+const Legal = lazy(() => import('./pages/Legal.jsx'))
+const Contact = lazy(() => import('./pages/Contact.jsx'))
+const Help = lazy(() => import('./pages/Help.jsx'))
+const Game = lazy(() => import('./pages/Game.jsx'))
+const League = lazy(() => import('./pages/League.jsx'))
+const PredictHub = named(() => import('./pages/Predict.jsx'), 'PredictHub')
+const PredictBattle = named(() => import('./pages/Predict.jsx'), 'PredictBattle')
+const Play = lazy(() => import('./pages/Play.jsx'))
+const ForgotPassword = named(() => import('./pages/Recover.jsx'), 'ForgotPassword')
+const ResetPassword = named(() => import('./pages/Recover.jsx'), 'ResetPassword')
+const VerifyEmail = named(() => import('./pages/Recover.jsx'), 'VerifyEmail')
+const AuthMagic = lazy(() => import('./pages/AuthMagic.jsx'))
+const NotFound = lazy(() => import('./pages/NotFound.jsx'))
 
 function BootScreen({ error }) {
   const vref = useRef(null)
@@ -111,7 +117,14 @@ export default function App() {
   return (
     <Routes>
       {/* full-bleed, no chrome — a shareable poster */}
-      <Route path="/share/:kind/:id" element={<SharePage />} />
+      <Route
+        path="/share/:kind/:id"
+        element={
+          <Suspense fallback={null}>
+            <SharePage />
+          </Suspense>
+        }
+      />
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/home" element={<Home />} />

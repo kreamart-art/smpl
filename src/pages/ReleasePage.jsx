@@ -18,7 +18,10 @@ export default function ReleasePage() {
   const [data, setData] = useState(null)
 
   const load = useCallback(() => {
-    fetchRelease(id).then((r) => setData(r.ok ? r : { error: true }))
+    fetchRelease(id).then((r) => {
+      setData(r.ok ? r : { error: true })
+      if (r.ok) document.title = `${r.release.title}${r.maker ? ` by @${r.maker.alias}` : ''}: SMPL`
+    })
   }, [fetchRelease, id])
   useEffect(load, [load])
 
