@@ -24,6 +24,7 @@ import { mediaUrl } from '../api.js'
 import { kindCopy } from '../data/kind.js'
 import KindBadge from '../components/KindBadge.jsx'
 import { useT, useI18n } from '../i18n/index.jsx'
+import { playableAudio } from '../utils/audio.js'
 
 // Countdown caption per status → battleDetail.cd.* key (mirrors countdownTarget).
 const CD_KEY = {
@@ -65,10 +66,6 @@ function PhasePipeline({ status }) {
   )
 }
 
-// Only drive the real <audio> element from URLs that are actually playable
-// audio files (our uploads, or a direct file link) — not SoundCloud/YouTube pages.
-const playableAudio = (u) =>
-  !!u && (u.startsWith('/api/uploads/') || /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i.test(u))
 
 function Feedback({ msg }) {
   if (!msg) return null
@@ -175,6 +172,7 @@ export default function BattleDetail() {
     duration: battle.sampleDuration || 10,
     seed: `sample-${battle.id}`,
     src: battle.sampleRevealed && playableAudio(battle.sampleUrl) ? battle.sampleUrl : undefined,
+    href: `/battles/${battle.id}`,
   }
 
   const beatMeta = (s, idx, revealed) => ({
@@ -184,7 +182,10 @@ export default function BattleDetail() {
     duration: s.duration || battle.sampleDuration || 15,
     seed: s.id,
     src: playableAudio(s.audioUrl) ? s.audioUrl : undefined,
+    href: `/battles/${battle.id}`,
   })
+  // the voting list plays as one queue, in the same shuffled order people see
+  const votingQueue = shuffled.map((s, i) => beatMeta(s, i + 1, !battle.blind))
 
   const requireLogin = (action) => {
     setMsg({ ok: false, text: t('battleDetail.fb.loginTo', { action: t(`battleDetail.fb.action.${action}`) }) })
@@ -394,7 +395,9 @@ export default function BattleDetail() {
             battle.kind === 'VERSES' ? t('battleDetail.meta.versesIn') : t('battleDetail.meta.beatsIn'),
             String(approvedSubs.length),
           ],
-          [t(CD_KEY[battle.status]), ts ? fmtDate(ts) : t('battleDetail.meta.closed')],
+          manual
+            ? [t('battles.card.cd.manualLabel'), t('battles.card.cd.manualValue')]
+            : [t(CD_KEY[battle.status]), ts ? fmtDate(ts) : t('battleDetail.meta.closed')],
         ].map(([k, v]) => (
           <div key={k} className="bg-bg px-4 py-3">
             <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{k}</div>
@@ -583,7 +586,7 @@ export default function BattleDetail() {
             <div className="space-y-3">
               {shuffled.map((s, i) => {
                 const index = i + 1
-                const meta = beatMeta(s, index, !battle.blind)
+                const meta = votingQueue[i]
                 const isOwn = s.mine
                 const votedThis = myVote && myVote.submissionId === s.id
                 let btn
@@ -631,6 +634,8 @@ export default function BattleDetail() {
                   <div key={s.id}>
                     <BeatPlayer
                       meta={meta}
+                      queue={votingQueue}
+                      queueIndex={i}
                       index={index}
                       noun={c.drop.toUpperCase()}
                       revealed={!battle.blind}
@@ -681,6 +686,7 @@ export default function BattleDetail() {
               // a curator-broken tie can crown an entry that isn't first by votes
               const order = winSub ? [winSub, ...ranked.filter((x) => x.id !== winSub.id)] : ranked
               const noVotes = ranked.every((x) => !x.votes)
+              const winQueue = order.map((x, i) => beatMeta(x, i + 1, true))
               const topTie = ranked.length > 1 && ranked[0].votes === ranked[1].votes
               const pendingKey = noVotes
                 ? 'battleDetail.winner.noVotes'
@@ -706,7 +712,7 @@ export default function BattleDetail() {
                   <div className="space-y-3">
                     {order.map((s, i) => {
                 const rank = i + 1
-                const meta = beatMeta(s, rank, true)
+                const meta = winQueue[i]
                 // only a declared winner is ever marked as one
                 const isWinner = declared && s.id === battle.winnerSubmissionId
                 const iWon = isWinner && !!s.mine
@@ -714,6 +720,8 @@ export default function BattleDetail() {
                   <div key={s.id}>
                     <BeatPlayer
                       meta={meta}
+                      queue={winQueue}
+                      queueIndex={i}
                       index={rank}
                       noun={c.drop.toUpperCase()}
                       rank={rank}

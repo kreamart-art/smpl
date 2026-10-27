@@ -1,48 +1,32 @@
-// The crate grid shown on a profile — the beats/verses this person saved from
-// battles. Each row plays inline and links to the maker + the battle. Items
-// from a battle still in voting are private (the server only sends them to the
-// owner) and marked "result pending".
-import { useRef, useState } from 'react'
+// The crate grid shown on a profile: the beats/verses this person saved from
+// battles. Rows play through the shared player as one list (next/prev walk the
+// crate) and link to the maker + the battle. Items from a battle still in
+// voting are private (the server only sends them to the owner) and marked
+// "result pending".
 import { Link } from 'react-router-dom'
 import Avatar from './Avatar.jsx'
 import VerifiedBadge from './VerifiedBadge.jsx'
-import { IconPlay, IconPause } from './icons.jsx'
-import { mediaUrl } from '../api.js'
+import { PlayButton } from './crate.jsx'
+import { usePlayback } from '../context/AppContext.jsx'
+import { playableAudio } from '../utils/audio.js'
 import { useT } from '../i18n/index.jsx'
 
-function CrateRow({ item }) {
+function CrateRow({ item, queue, index }) {
   const t = useT()
-  const ref = useRef(null)
-  const [playing, setPlaying] = useState(false)
-  const toggle = () => {
-    const a = ref.current
-    if (!a) return
-    if (a.paused) {
-      a.play()
-      setPlaying(true)
-    } else {
-      a.pause()
-      setPlaying(false)
-    }
-  }
+  const { track, playing, playList } = usePlayback()
+  const meta = queue[index]
+  const isPlaying = track?.id === meta.id && playing
   const prod = item.producer
   return (
     <div className="flex items-center gap-3 border border-line bg-panel px-4 py-3">
-      {item.audioUrl ? (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={playing ? t('common.pause') : t('common.play')}
-          className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink transition-colors hover:bg-ink hover:text-bg"
-        >
-          {playing ? <IconPause size={15} /> : <IconPlay size={14} />}
-          <audio ref={ref} src={mediaUrl(item.audioUrl)} onEnded={() => setPlaying(false)} preload="none" />
-        </button>
-      ) : (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-line text-faint">
-          <IconPlay size={14} />
-        </div>
-      )}
+      <PlayButton
+        variant="line"
+        size={40}
+        playing={isPlaying}
+        disabled={!meta.src}
+        onClick={() => playList(queue, index)}
+        label={isPlaying ? t('common.pause') : t('common.play')}
+      />
       <div className="min-w-0 flex-1">
         {prod ? (
           <Link
@@ -73,10 +57,21 @@ function CrateRow({ item }) {
 }
 
 export default function CrateGrid({ items = [] }) {
+  const t = useT()
+  // same track ids as the battle page, so a beat playing there shows as playing here
+  const queue = items.map((it) => ({
+    id: `beat-${it.submissionId || it.id}`,
+    src: playableAudio(it.audioUrl) ? it.audioUrl : undefined,
+    label: it.producer ? it.producer.alias : it.pending ? t('crate.pending') : t('crate.anon'),
+    sub: it.battleTitle,
+    seed: it.submissionId || it.id,
+    duration: 0,
+    href: `/battles/${it.battleId}`,
+  }))
   return (
     <div className="mt-8 grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {items.map((it) => (
-        <CrateRow key={it.id} item={it} />
+      {items.map((it, i) => (
+        <CrateRow key={it.id} item={it} queue={queue} index={i} />
       ))}
     </div>
   )

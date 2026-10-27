@@ -7,10 +7,12 @@ import { PWAProvider } from './context/PWAContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { LangProvider } from './i18n/index.jsx'
 import { isNative, initNative } from './lib/native.js'
+import { installExclusiveAudio } from './lib/exclusiveAudio.js'
 import './index.css'
 
 // Native shell (Capacitor): lock portrait, set the status bar, hide the splash.
 initNative()
+installExclusiveAudio()
 
 // Register the service worker in production (web only — the native app bundles
 // its own assets and doesn't want a SW intercepting requests).

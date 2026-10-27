@@ -6,8 +6,7 @@ import Waveform from '../components/Waveform.jsx'
 import Reveal from '../components/Reveal.jsx'
 import { DustField } from '../components/Atmosphere.jsx'
 import { Btn } from '../components/ui.jsx'
-import StatusBadge from '../components/StatusBadge.jsx'
-import { STATUS_GROUP, STATUS } from '../data/status.js'
+import { STATUS_GROUP } from '../data/status.js'
 import { useT } from '../i18n/index.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 import { AnnouncementSection } from '../components/AnnouncementVideo.jsx'
@@ -65,26 +64,12 @@ export default function Landing() {
   const t = useT()
   const { battles, currentUser } = useApp()
   const { standalone } = usePWA()
-  // the installed app is battle-first; the marketing homepage is web-only
-  if (standalone) return <Navigate to="/battles" replace />
+  // members (and the installed app) start at Home; the marketing page is for visitors
+  if (standalone || currentUser) return <Navigate to="/home" replace />
   const active = battles.filter((b) => STATUS_GROUP[b.status] === 'active')
   const upcoming = battles.filter((b) => STATUS_GROUP[b.status] === 'upcoming')
   const featured = active[0]
   const restActive = active.slice(1)
-
-  // Signed-in visitors get an action-first hero: the live (or next) battle with
-  // a phase-aware primary CTA, instead of the pure slogan.
-  const focus = active[0] || upcoming[0] || null
-  const competitor =
-    !!currentUser && (currentUser.role === 'producer' || currentUser.role === 'artist' || currentUser.dualRole)
-  const focusCta = !focus
-    ? null
-    : focus.status === STATUS.VOTING_PHASE
-      ? t('landing.cta.voteNow')
-      : focus.status === STATUS.SUBMISSION_PHASE && competitor
-        ? t('landing.cta.submit')
-        : t('landing.cta.view')
-  const showAction = !!currentUser && !!focus
 
   return (
     <div>
@@ -107,55 +92,27 @@ export default function Landing() {
             </div>
           </div>
 
-          {showAction ? (
-            /* signed-in: action-first — the live or next battle + a phase CTA */
-            <div className="py-12">
-              <div className="mb-5 flex items-center gap-3">
-                <StatusBadge status={focus.status} size="lg" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
-                  {t('landing.action.kicker')}
-                </span>
-              </div>
-              <h1 className="font-sans font-bold uppercase tracking-tighter text-[clamp(2.3rem,8.5vw,6.5rem)] leading-[0.85]">
-                {focus.title}
-              </h1>
-              {focus.sampleRevealed && focus.sampleArtist ? (
-                <p className="mt-6 max-w-xl font-mono text-[13px] leading-relaxed text-muted">
-                  <span className="text-faint">SAMPLE</span> {focus.sampleArtist} / {focus.sampleSong}
-                </p>
-              ) : null}
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Btn to={`/battles/${focus.id}`} variant="accent" size="lg">
-                  {focusCta}
-                </Btn>
-                <Btn to="/battles" variant="ghost" size="lg">
-                  {t('landing.hero.browse')}
-                </Btn>
-              </div>
+          {/* visitors: the pure slogan moment */}
+          <div className="py-12">
+            <h1 className="font-sans font-bold uppercase tracking-tighter text-[clamp(3rem,13.5vw,12.5rem)] leading-[0.8]">
+              <span className="block">{t('landing.hero.headline1')}</span>
+              <span className="block text-ink-dim">{t('landing.hero.headline2')}</span>
+            </h1>
+            <p className="mt-9 max-w-xl font-mono text-[13px] leading-relaxed text-muted">
+              {t('landing.hero.sub')}
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Btn to="/signup" variant="solid" size="lg">
+                {t('landing.hero.join')}
+              </Btn>
+              <Btn to="/signup?role=listener" variant="ghost" size="lg">
+                {t('landing.hero.listenVote')}
+              </Btn>
+              <Btn to="/battles" variant="dim" size="lg">
+                {t('landing.hero.browse')}
+              </Btn>
             </div>
-          ) : (
-            /* visitors: the pure slogan moment */
-            <div className="py-12">
-              <h1 className="font-sans font-bold uppercase tracking-tighter text-[clamp(3rem,13.5vw,12.5rem)] leading-[0.8]">
-                <span className="block">{t('landing.hero.headline1')}</span>
-                <span className="block text-ink-dim">{t('landing.hero.headline2')}</span>
-              </h1>
-              <p className="mt-9 max-w-xl font-mono text-[13px] leading-relaxed text-muted">
-                {t('landing.hero.sub')}
-              </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Btn to="/signup" variant="solid" size="lg">
-                  {t('landing.hero.join')}
-                </Btn>
-                <Btn to="/signup?role=listener" variant="ghost" size="lg">
-                  {t('landing.hero.listenVote')}
-                </Btn>
-                <Btn to="/battles" variant="dim" size="lg">
-                  {t('landing.hero.browse')}
-                </Btn>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* bottom — waveform + credits */}
           <div>

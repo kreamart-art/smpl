@@ -11,9 +11,9 @@ function ago(ts, t) {
   const m = Math.floor(d / 60000)
   const h = Math.floor(m / 60)
   const day = Math.floor(h / 24)
-  if (day > 0) return `${day}d ago`
-  if (h > 0) return `${h}h ago`
-  if (m > 0) return `${m}m ago`
+  if (day > 0) return `${day}d`
+  if (h > 0) return `${h}h`
+  if (m > 0) return `${m}m`
   return t('social.time.justNow')
 }
 
@@ -41,7 +41,7 @@ function phrase(t, key, vars, nodes) {
   return segs.map((s, i) => <span key={i}>{s}</span>)
 }
 
-function FeedRow({ it, getUser }) {
+export function FeedRow({ it, getUser }) {
   const t = useT()
   const navigate = useNavigate()
   const alias = it.userId ? getUser(it.userId)?.alias : null

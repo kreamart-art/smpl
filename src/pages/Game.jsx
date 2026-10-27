@@ -7,6 +7,7 @@ import Vinyl from '../components/Vinyl.jsx'
 import LeagueBoard from '../components/LeagueBoard.jsx'
 import { Btn, Label } from '../components/ui.jsx'
 import { IconPlay, IconPause, IconLock, IconCheck } from '../components/icons.jsx'
+import { registerDetachedAudio } from '../lib/exclusiveAudio.js'
 
 // ---- audio: official ~30s previews from the iTunes catalogue, capped to 15s.
 // We resolve the preview URL through OUR server (/api/game/preview) instead of
@@ -40,6 +41,7 @@ function PlayClip({ term, label }) {
   const audioRef = useRef(null)
   const timerRef = useRef(null)
   const liveRef = useRef(true)
+  const unregisterRef = useRef(null)
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -61,6 +63,8 @@ function PlayClip({ term, label }) {
     }
     setState((s) => (s === 'na' ? 'na' : 'idle'))
   }, [])
+
+  useEffect(() => () => unregisterRef.current?.(), [])
 
   // warm the preview URL on mount; tear down on unmount / term change
   useEffect(() => {
@@ -94,8 +98,14 @@ function PlayClip({ term, label }) {
     if (state === 'playing') return stop()
     if (state === 'loading') return
     // one persistent element: the first in-gesture play() unlocks it on iOS
-    const a = audioRef.current || (audioRef.current = new Audio())
+    if (!audioRef.current) {
+      audioRef.current = new Audio()
+      // one sound at a time: this clip pauses the player, and the player pauses it
+      unregisterRef.current = registerDetachedAudio(audioRef.current)
+    }
+    const a = audioRef.current
     a.onended = stop
+    a.onpause = () => liveRef.current && stop()
     // common path: URL is already warmed, so play synchronously inside the tap
     if (term in previewCache) {
       const url = previewCache[term]

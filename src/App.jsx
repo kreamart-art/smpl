@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useApp } from './context/AppContext.jsx'
 import Layout from './components/Layout.jsx'
 import Landing from './pages/Landing.jsx'
@@ -10,7 +10,8 @@ import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Feed from './pages/Feed.jsx'
-import People from './pages/People.jsx'
+import Discover from './pages/Discover.jsx'
+import Home from './pages/Home.jsx'
 import Settings from './pages/Settings.jsx'
 import EditProfile from './pages/EditProfile.jsx'
 import LinksManager from './pages/LinksManager.jsx'
@@ -104,6 +105,8 @@ export default function App() {
       <Route path="/share/:kind/:id" element={<SharePage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/discover" element={<Discover />} />
         <Route path="/battles" element={<Battles />} />
         <Route path="/battles/:id" element={<BattleDetail />} />
         <Route path="/game" element={<Game />} />
@@ -117,7 +120,7 @@ export default function App() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:alias" element={<Messages />} />
-        <Route path="/people" element={<People />} />
+        <Route path="/people" element={<Navigate to="/discover" replace />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings/gender" element={<GenderPicker />} />
         <Route path="/edit-profile" element={<EditProfile />} />

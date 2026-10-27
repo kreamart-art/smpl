@@ -71,7 +71,7 @@ export default function InstallBanner() {
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line-bright bg-black/95 backdrop-blur-md">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line-bright bg-chrome backdrop-blur-md">
         <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-4 py-3 sm:px-6">
           <img src="/icon-192.png" alt="" className="h-10 w-10 border border-line-bright" aria-hidden />
           <div className="min-w-0 flex-1">

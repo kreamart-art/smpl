@@ -606,6 +606,7 @@ export function AppProvider({ children }) {
   // every device, unlike the old in-browser recorder that froze on mobile).
   const renderWaveformVideo = useCallback((data) => api.post('/api/waveform/render', data), [])
   const fetchWaveformVideos = useCallback((userId) => api.get(`/api/users/${userId}/waveform-videos`), [])
+  const fetchLatestClips = useCallback((limit = 12) => api.get(`/api/waveform-videos?limit=${limit}`), [])
   const fetchWaveformVideo = useCallback((id) => api.get(`/api/waveform-videos/${id}`), [])
   const deleteWaveformVideo = useCallback((id) => api.del(`/api/me/waveform-video/${id}`), [])
   // crate — save beats/verses to your profile (mutate so cratedIds refreshes)
@@ -712,6 +713,7 @@ export function AppProvider({ children }) {
     saveWaveformVideo,
     renderWaveformVideo,
     fetchWaveformVideos,
+    fetchLatestClips,
     fetchWaveformVideo,
     deleteWaveformVideo,
     cratedIds,
@@ -763,131 +765,178 @@ export function AppProvider({ children }) {
 const PlayCtx = createContext(null)
 export const usePlayback = () => useContext(PlayCtx)
 
+// One shared <audio> for the whole app. A track is a meta object:
+// { id, src, label, sub, seed, duration, href?, artwork? }. A list the listener
+// starts (a battle's entries, a crate, a release) becomes the queue; when a
+// track ends the next one in that list plays, and nothing else ever autoplays.
+// status: idle | loading | playing | paused | error | unavailable
 export function PlaybackProvider({ children }) {
   const [track, setTrack] = useState(null)
-  const [playing, setPlaying] = useState(false)
+  const [status, setStatus] = useState('idle')
   const [elapsed, setElapsed] = useState(0)
   const [audioDur, setAudioDur] = useState(0)
-  const elapsedRef = useRef(0)
-  const trackRef = useRef(null)
+  const [queue, setQueue] = useState([])
+  const [index, setIndex] = useState(-1)
   const audioRef = useRef(null)
+  const trackRef = useRef(null)
+  const queueRef = useRef({ list: [], index: -1 })
   const seekRef = useRef(null) // pending seek fraction, applied once metadata loads
+  const switchingRef = useRef(false) // a new source is loading: ignore the old one's pause
 
-  const real = !!track?.src
-
-  const play = () => {
+  const start = () => {
     const a = audioRef.current
     if (!a) return
     const p = a.play()
-    if (p && p.catch) p.catch(() => {})
-  }
-  const loadReal = (src, frac = 0) => {
-    const a = audioRef.current
-    if (!a) return
-    setAudioDur(0)
-    seekRef.current = frac > 0 ? frac : null
-    a.src = mediaUrl(src)
-    a.load()
-    play()
+    if (p && p.catch)
+      p.catch((err) => {
+        switchingRef.current = false
+        // a newer load interrupted this one: that load owns the status now
+        if (err?.name === 'AbortError') return
+        setStatus(err?.name === 'NotAllowedError' ? 'paused' : 'error')
+      })
   }
 
-  // Wire the shared <audio> element once — real tracks drive elapsed/duration.
+  const load = (meta, frac = 0) => {
+    const a = audioRef.current
+    trackRef.current = meta
+    setTrack(meta)
+    setElapsed(0)
+    setAudioDur(0)
+    if (!a) return
+    if (!meta.src) {
+      // nothing playable behind this entry: say so, never fake a running transport
+      a.pause()
+      a.removeAttribute('src')
+      setStatus('unavailable')
+      return
+    }
+    seekRef.current = frac > 0 ? frac : null
+    switchingRef.current = true
+    setStatus('loading')
+    a.src = mediaUrl(meta.src)
+    a.load()
+    start() // synchronous inside the tap, so iOS allows it
+  }
+
+  const resume = () => {
+    const a = audioRef.current
+    if (!a || !trackRef.current?.src) return
+    setStatus('loading')
+    start()
+  }
+
+  const setQueueState = (list, i) => {
+    queueRef.current = { list, index: i }
+    setQueue(list)
+    setIndex(i)
+  }
+
+  const playIndex = (i) => {
+    const { list } = queueRef.current
+    if (!list[i]) return
+    setQueueState(list, i)
+    load(list[i])
+  }
+  const playIndexRef = useRef(playIndex)
+  playIndexRef.current = playIndex
+
   useEffect(() => {
     const a = audioRef.current
     if (!a) return
-    const onTime = () => {
-      elapsedRef.current = a.currentTime
-      setElapsed(a.currentTime)
+    const handlers = {
+      timeupdate: () => setElapsed(a.currentTime),
+      loadedmetadata: () => {
+        setAudioDur(a.duration || 0)
+        if (seekRef.current != null) {
+          a.currentTime = seekRef.current * (a.duration || 0)
+          seekRef.current = null
+        }
+      },
+      waiting: () => setStatus((s) => (s === 'paused' ? s : 'loading')),
+      playing: () => {
+        switchingRef.current = false
+        setStatus('playing')
+      },
+      pause: () => {
+        if (switchingRef.current) return
+        setStatus((s) => (s === 'error' || s === 'unavailable' ? s : 'paused'))
+      },
+      error: () => {
+        if (!a.getAttribute('src')) return
+        switchingRef.current = false
+        setStatus('error')
+      },
+      ended: () => {
+        const { list, index: i } = queueRef.current
+        if (i >= 0 && i < list.length - 1) {
+          playIndexRef.current(i + 1)
+        } else {
+          a.currentTime = 0
+          setElapsed(0)
+          setStatus('paused')
+        }
+      },
     }
-    const onMeta = () => {
-      setAudioDur(a.duration || 0)
-      if (seekRef.current != null) {
-        a.currentTime = seekRef.current * (a.duration || 0)
-        seekRef.current = null
-      }
-    }
-    const onEnded = () => {
-      setPlaying(false)
-      elapsedRef.current = 0
-      setElapsed(0)
-    }
-    a.addEventListener('timeupdate', onTime)
-    a.addEventListener('loadedmetadata', onMeta)
-    a.addEventListener('ended', onEnded)
+    for (const [ev, fn] of Object.entries(handlers)) a.addEventListener(ev, fn)
     return () => {
-      a.removeEventListener('timeupdate', onTime)
-      a.removeEventListener('loadedmetadata', onMeta)
-      a.removeEventListener('ended', onEnded)
+      for (const [ev, fn] of Object.entries(handlers)) a.removeEventListener(ev, fn)
     }
   }, [])
 
-  // Simulated transport — only for tracks WITHOUT real audio.
-  useEffect(() => {
-    if (!playing || !track || real) return
-    let raf
-    let last = null
-    const loop = (ts) => {
-      if (last == null) last = ts
-      const dt = (ts - last) / 1000
-      last = ts
-      let n = elapsedRef.current + dt
-      const d = track.duration || 1
-      if (n >= d) n = n % d
-      elapsedRef.current = n
-      setElapsed(n)
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
-  }, [playing, track, real])
-
-  // Effective duration of the current track (real audio overrides the estimate).
-  const duration = real ? audioDur || track?.duration || 0 : track?.duration || 0
-
   const toggle = useCallback((meta) => {
-    const cur = trackRef.current
     const a = audioRef.current
+    const cur = trackRef.current
     if (cur && cur.id === meta.id) {
-      setPlaying((p) => {
-        const np = !p
-        if (meta.src && a) np ? play() : a.pause()
-        return np
-      })
+      if (!meta.src || !a) return
+      if (a.paused) resume()
+      else a.pause()
       return
     }
-    elapsedRef.current = 0
-    setElapsed(0)
-    setAudioDur(0)
-    trackRef.current = meta
-    setTrack(meta)
-    setPlaying(true)
-    if (meta.src) loadReal(meta.src, 0)
-    else if (a) {
-      a.pause()
-      a.removeAttribute('src')
+    setQueueState([], -1)
+    load(meta)
+  }, [])
+
+  // Start a list from one of its items; next/prev and auto-advance stay inside it.
+  const playList = useCallback((list, i) => {
+    const meta = list[i]
+    if (!meta) return
+    const cur = trackRef.current
+    const a = audioRef.current
+    setQueueState(list, i)
+    if (cur && cur.id === meta.id) {
+      if (!meta.src || !a) return
+      if (a.paused) resume()
+      else a.pause()
+      return
     }
+    load(meta)
+  }, [])
+
+  const next = useCallback(() => playIndexRef.current(queueRef.current.index + 1), [])
+  const prev = useCallback(() => {
+    const a = audioRef.current
+    // like any player: first tap goes back to the start of the track
+    if (a && a.currentTime > 3) {
+      a.currentTime = 0
+      return
+    }
+    playIndexRef.current(queueRef.current.index - 1)
   }, [])
 
   const playAt = useCallback((meta, frac) => {
     const f = Math.max(0, Math.min(1, frac))
-    const cur = trackRef.current
     const a = audioRef.current
-    const same = cur && cur.id === meta.id
-    trackRef.current = meta
-    setTrack(meta)
-    setPlaying(true)
-    if (meta.src) {
-      if (same && a && a.duration) {
+    const cur = trackRef.current
+    if (cur && cur.id === meta.id && meta.src && a) {
+      if (a.duration) {
         a.currentTime = f * a.duration
-        play()
-      } else {
-        loadReal(meta.src, f)
-      }
+        setElapsed(a.currentTime)
+      } else seekRef.current = f
+      if (a.paused) resume()
       return
     }
-    const n = f * (meta.duration || 0)
-    elapsedRef.current = n
-    setElapsed(n)
+    setQueueState([], -1)
+    load(meta, f)
   }, [])
 
   const stop = useCallback(() => {
@@ -896,15 +945,80 @@ export function PlaybackProvider({ children }) {
       a.pause()
       a.removeAttribute('src')
     }
-    setPlaying(false)
-    setTrack(null)
     trackRef.current = null
+    setTrack(null)
+    setStatus('idle')
     setAudioDur(0)
-    elapsedRef.current = 0
     setElapsed(0)
+    setQueueState([], -1)
   }, [])
 
-  const value = { track, playing, elapsed, duration, toggle, playAt, stop }
+  // Lock screen / headset / car controls (Media Session). In a blind battle the
+  // meta carries "BEAT #n" only, so nothing here can name the maker.
+  useEffect(() => {
+    const ms = typeof navigator !== 'undefined' ? navigator.mediaSession : null
+    if (!ms) return
+    if (!track) {
+      ms.metadata = null
+      return
+    }
+    try {
+      ms.metadata = new window.MediaMetadata({
+        title: track.label || 'SMPL',
+        artist: track.artist || 'SMPL',
+        album: track.sub || '',
+        artwork: [{ src: track.artwork ? mediaUrl(track.artwork) : '/icon-512.png', sizes: '512x512' }],
+      })
+    } catch {
+      /* MediaMetadata missing on older browsers */
+    }
+  }, [track])
+
+  const playing = status === 'playing' || status === 'loading'
+  useEffect(() => {
+    const ms = typeof navigator !== 'undefined' ? navigator.mediaSession : null
+    if (ms) ms.playbackState = track ? (playing ? 'playing' : 'paused') : 'none'
+  }, [track, playing])
+
+  useEffect(() => {
+    const ms = typeof navigator !== 'undefined' ? navigator.mediaSession : null
+    if (!ms) return
+    const a = () => audioRef.current
+    const set = (action, fn) => {
+      try {
+        ms.setActionHandler(action, fn)
+      } catch {
+        /* unsupported action */
+      }
+    }
+    set('play', () => resume())
+    set('pause', () => a()?.pause())
+    set('nexttrack', () => next())
+    set('previoustrack', () => prev())
+    set('seekto', (d) => {
+      if (a() && d.seekTime != null) a().currentTime = d.seekTime
+    })
+    return () => ['play', 'pause', 'nexttrack', 'previoustrack', 'seekto'].forEach((x) => set(x, null))
+  }, [next, prev])
+
+  const duration = audioDur || track?.duration || 0
+  const value = {
+    track,
+    status,
+    playing,
+    elapsed,
+    duration,
+    toggle,
+    playAt,
+    stop,
+    playList,
+    next,
+    prev,
+    queue,
+    index,
+    hasNext: index >= 0 && index < queue.length - 1,
+    hasPrev: index > 0,
+  }
   return (
     <PlayCtx.Provider value={value}>
       <audio ref={audioRef} preload="metadata" />

@@ -26,6 +26,20 @@
 
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* condensed editorial display: page heroes, sleeve titles, story headlines only */
+  --font-display: "Anton", "Oswald", Impact, "Arial Narrow", sans-serif;
+
+  /* crate materials. Aged paper is a physical surface, the same in both themes:
+     zine blocks, sleeve labels, tape and the paper buttons. */
+  --color-paper: #d9cec1;
+  --color-paper-2: #c9bcad;
+  --color-paper-ink: #17130e; /* ~12:1 on paper */
+  --color-paper-muted: #5a4f43; /* ~4.9:1 on paper (AA) */
+  /* print ink for stamps and sleeve labels: on paper, or as a fill under paper
+     text. Never a button colour and never text on black (too dark there). */
+  --color-oxblood: #8e1b22;
+  /* translucent chrome behind the bars and the mini player */
+  --color-chrome: rgb(0 0 0 / 0.86);
 }
 
 /* SMPL identity: no rounded corners, anywhere. */
@@ -514,6 +528,7 @@ body {
   --color-ink: #15120d;
   --color-bright: #000000;
   --color-good: #1a7f37; /* darker green so "correct" reads on cream */
+  --color-chrome: rgb(233 230 222 / 0.9);
   /* accent stays the same red; on cream it is only ever a filled block with
      accent-ink text, never red text on cream. */
 }
@@ -592,6 +607,107 @@ body {
 
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* === CRATE: paper, tape, stamps, sleeves ================================== */
+/* Type roles. Display = condensed caps for heroes and sleeve titles. Kicker =
+   the small mono label above a section (tighter tracking than the old 0.22em). */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 0.88;
+  letter-spacing: 0.004em;
+}
+.t-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* aged paper with a faint fibre/stain texture */
+.paper {
+  background-color: var(--color-paper);
+  color: var(--color-paper-ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.27 0 0 0 0 0.17 0 0 0 0.32 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 36px rgba(70, 48, 24, 0.22);
+}
+
+/* a torn bottom edge (zine cut-outs, sleeve labels) */
+.torn-b {
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='9'%3E%3Cpath d='M0 0H44V5L40 7L35 4L30 8L25 5L19 7L14 3L9 8L4 5L0 7Z'/%3E%3C/svg%3E") bottom / 44px 9px repeat-x,
+    linear-gradient(#000, #000) top / 100% calc(100% - 8px) no-repeat;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='9'%3E%3Cpath d='M0 0H44V5L40 7L35 4L30 8L25 5L19 7L14 3L9 8L4 5L0 7Z'/%3E%3C/svg%3E") bottom / 44px 9px repeat-x,
+    linear-gradient(#000, #000) top / 100% calc(100% - 8px) no-repeat;
+}
+
+/* a strip of masking tape holding something down */
+.tape {
+  position: absolute;
+  z-index: 2;
+  width: 76px;
+  height: 22px;
+  pointer-events: none;
+  background: rgba(226, 214, 190, 0.8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  clip-path: polygon(2% 4%, 98% 0, 100% 28%, 97% 52%, 100% 76%, 97% 100%, 3% 96%, 0 72%, 3% 48%, 0 24%);
+  transform: rotate(var(--tape-rot, -4deg));
+}
+
+/* a rubber stamp: inked border + uneven ink */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  border: 2px solid currentColor;
+  padding: 0.2em 0.55em;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  line-height: 1.1;
+  transform: rotate(var(--stamp-rot, -3deg));
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+}
+
+/* photography treatments: a photocopied archive print, and a red duotone */
+.photocopy {
+  filter: grayscale(1) contrast(1.18) brightness(0.94);
+}
+.duo-red {
+  position: relative;
+  isolation: isolate;
+  background: #000;
+}
+.duo-red > img,
+.duo-red > video {
+  filter: grayscale(1) contrast(1.25) brightness(1.05);
+}
+.duo-red::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--color-accent);
+  mix-blend-mode: multiply;
+}
+
+/* the paper "sleeve" placeholder when a release/battle has no artwork */
+.sleeve-grid {
+  background-image: linear-gradient(rgba(240, 238, 233, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 238, 233, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* keyboard focus: a sharp ink outline everywhere (no radius, offset off the edge) */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
 }
 
 /* The floating app tab bar is the one element allowed rounded corners

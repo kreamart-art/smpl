@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
-import { IconBell } from './icons.jsx'
+import { IconBell, IconClose } from './icons.jsx'
+import { usePWA } from '../context/PWAContext.jsx'
+import { TAB_BAR_H } from './BottomTabBar.jsx'
 import { pushSupported, pushPermission, isPushSubscribed, enablePush } from '../lib/push.js'
 
 // Notification opt-in popup. When a signed-in member opens the app/site with
@@ -12,6 +14,7 @@ import { pushSupported, pushPermission, isPushSubscribed, enablePush } from '../
 // Mounted in both Layout branches, so it works in the app AND on the website.
 export default function PushPrompt() {
   const { currentUser, pushConfigured } = useApp()
+  const { standalone } = usePWA()
   const t = useT()
   const [perm, setPerm] = useState('default')
   const [subscribed, setSubscribed] = useState(true) // assume fine until checked (no flash)
@@ -75,7 +78,10 @@ export default function PushPrompt() {
   // it sits in the app/site itself rather than interrupting as a modal. The
   // install banner already yields to this via its topBannerShowing() check.
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line-bright bg-black/95 backdrop-blur-md">
+    <div
+      className="fixed inset-x-0 z-40 border-t border-line-bright bg-chrome backdrop-blur-md"
+      style={{ bottom: standalone ? `calc(env(safe-area-inset-bottom) + ${TAB_BAR_H}px)` : 0 }}
+    >
       <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-4 py-3 sm:px-6">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-line-bright text-ink">
           <IconBell size={18} />
@@ -95,9 +101,9 @@ export default function PushPrompt() {
         <button
           onClick={dismiss}
           aria-label={t('push.notNow')}
-          className="flex h-10 w-9 shrink-0 items-center justify-center border border-line font-mono text-muted hover:border-line-bright hover:text-ink"
+          className="flex h-10 w-9 shrink-0 items-center justify-center border border-line text-muted hover:border-line-bright hover:text-ink"
         >
-          ✕
+          <IconClose size={16} />
         </button>
       </div>
     </div>

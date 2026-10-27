@@ -2653,6 +2653,24 @@ function clipVisible(video, viewer) {
   return !b || !b.blind || b.status === STATUS.WINNER_DECLARED
 }
 
+// The newest saved clips across SMPL (Home + Discover), with their maker.
+app.get('/api/waveform-videos', (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 48)
+  const before = Number(req.query.before) || Date.now() + 1
+  const rows = db
+    .prepare('SELECT * FROM waveform_videos WHERE createdAt < ? ORDER BY createdAt DESC LIMIT ?')
+    .all(before, limit * 2)
+  const videos = []
+  for (const v of rows) {
+    if (videos.length >= limit) break
+    if (!clipVisible(v, req.user)) continue
+    const u = getUserRow(v.userId)
+    if (!u || (req.user && isBlocked(req.user.id, u.id))) continue
+    videos.push({ ...v, producer: { id: u.id, alias: u.alias, avatar: u.avatar || '', verified: !!u.verified } })
+  }
+  return ok(res, { videos })
+})
+
 // A producer's saved waveform clips (public profile content).
 app.get('/api/users/:id/waveform-videos', (req, res) => {
   const videos = db

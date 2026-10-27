@@ -10,9 +10,9 @@ import { mediaUrl } from '../api.js'
 
 // Square grid of saved clips. Tap one to open its page, where the owner gets a
 // ⋯ menu to remove it (delete lives on the post, IG-style — not on the grid).
-export default function WaveformClips({ clips = [] }) {
+export default function WaveformClips({ clips = [], className = 'mt-8' }) {
   return (
-    <div className="mt-8 grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5 lg:grid-cols-5">
+    <div className={`${className} grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-1.5 lg:grid-cols-5`}>
       {clips.map((v) => (
         <div key={v.id} className="group relative">
           <Link

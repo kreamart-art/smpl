@@ -10,7 +10,8 @@ import { Btn } from './ui.jsx'
 import { useT } from '../i18n/index.jsx'
 import { usePWA } from '../context/PWAContext.jsx'
 
-export const WELCOME_KEY = 'smpl_tour_welcome_v1'
+// v2: the tab bar became Home / Arena / Create / Discover / Profile
+export const WELCOME_KEY = 'smpl_tour_welcome_v2'
 export const BATTLE_KEY = 'smpl_tour_battle_v1'
 export const PROFILE_KEY = 'smpl_tour_profile_v1'
 export const SHARE_KEY = 'smpl_tour_share_v1'
@@ -39,15 +40,15 @@ export const resetTours = () => {
   }
 }
 
-// Bottom-bar sweep (left to right), then the messages icon up top.
+// Bottom-bar sweep (left to right), then alerts + messages up top.
 const WELCOME_STEPS = [
   { key: 'intro' },
-  { key: 'battles', target: '[data-tour="battles"]' },
-  { key: 'feed', target: '[data-tour="feed"]' },
-  { key: 'people', target: '[data-tour="people"]' },
-  { key: 'play', target: '[data-tour="play"]' },
-  { key: 'alerts', target: '[data-tour="alerts"]' },
+  { key: 'home', target: '[data-tour="home"]' },
+  { key: 'arena', target: '[data-tour="arena"]' },
+  { key: 'create', target: '[data-tour="create"]' },
+  { key: 'discover', target: '[data-tour="discover"]' },
   { key: 'profile', target: '[data-tour="profile"]' },
+  { key: 'alerts', target: '[data-tour="alerts"]' },
   { key: 'messages', target: '[data-tour="messages"]' },
 ].map((s) => ({ ...s, ns: 'welcome' }))
 

@@ -1,66 +1,82 @@
-import { NavLink, useLocation } from 'react-router-dom'
-import { useRef, useState, useLayoutEffect } from 'react'
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { useT } from '../i18n/index.jsx'
-import { IconTrophy, IconFeed, IconUser, IconPeople, IconGamepad } from './icons.jsx'
+import { IconHome, IconTrophy, IconSearch, IconUser, IconPlus } from './icons.jsx'
+import CreateSheet from './CreateSheet.jsx'
 
-function Tab({ to, label, icon, tourKey }) {
+// Height of the bar above the safe area. Layout + TransportBar offset by it.
+export const TAB_BAR_H = 60
+
+// Which tab owns the current route (sub-pages keep their section lit).
+function sectionOf(pathname, ownProfile) {
+  if (pathname === '/home' || pathname === '/feed') return 'home'
+  if (/^\/(battles|play|game|predict|league)(\/|$)/.test(pathname)) return 'arena'
+  if (/^\/(discover|people)(\/|$)/.test(pathname)) return 'discover'
+  if (pathname === ownProfile || /^\/(settings|edit-profile)(\/|$)/.test(pathname)) return 'profile'
+  return null
+}
+
+function Tab({ to, label, icon, active, tourKey }) {
   return (
-    <NavLink
+    <Link
       to={to}
       aria-label={label}
-      title={label}
+      aria-current={active ? 'page' : undefined}
       data-tour={tourKey}
-      className={({ isActive }) =>
-        `tab-pill-item relative z-10 flex flex-1 items-center justify-center py-1.5 transition-colors duration-200 ${
-          isActive ? 'text-ink' : 'text-muted'
-        }`
-      }
+      className={`relative flex flex-1 flex-col items-center justify-center gap-1 pt-1.5 transition-colors ${
+        active ? 'text-ink' : 'text-muted hover:text-ink'
+      }`}
     >
+      {active ? <span aria-hidden="true" className="absolute inset-x-[22%] top-0 h-[2px] bg-ink" /> : null}
       {icon}
-    </NavLink>
+      <span className="font-mono text-[9px] uppercase tracking-[0.1em]">{label}</span>
+    </Link>
   )
 }
 
-// Floating, pill-shaped tab bar (hovers above the bottom — Instagram-style).
-// Icons only. A single grey highlight slides from the old tab to the new one as
-// you navigate (it measures the active tab and eases to its box).
+// Fixed bottom navigation of the installed app: Home / Arena / Create / Discover / Profile.
 export default function BottomTabBar() {
   const { currentUser } = useApp()
   const t = useT()
   const { pathname } = useLocation()
-  const trackRef = useRef(null)
-  const [ind, setInd] = useState(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const profileTo = currentUser ? `/profile/${encodeURIComponent(currentUser.alias)}` : '/login'
-
-  useLayoutEffect(() => {
-    const el = trackRef.current?.querySelector('a[aria-current="page"]')
-    if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight })
-    else setInd(null) // no tab in the bar is active (e.g. someone else's profile)
-  }, [pathname, currentUser])
+  const section = sectionOf(decodeURIComponent(pathname), currentUser ? `/profile/${currentUser.alias}` : null)
 
   return (
-    <nav
-      className="fixed inset-x-0 z-50 flex justify-center px-4"
-      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
-    >
-      <div
-        ref={trackRef}
-        className="tab-pill relative flex w-full max-w-[440px] items-center gap-1 border border-line-bright bg-black/70 px-2 py-1 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+    <>
+      <nav
+        aria-label={t('nav.label')}
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-chrome backdrop-blur-xl"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {ind ? (
-          <span
-            aria-hidden="true"
-            className="tab-pill-item pointer-events-none absolute z-0 bg-ink/10 transition-all duration-300 ease-out motion-reduce:transition-none"
-            style={{ left: ind.left, top: ind.top, width: ind.width, height: ind.height }}
+        <div className="mx-auto flex max-w-[560px] items-stretch px-1" style={{ height: TAB_BAR_H }}>
+          <Tab to="/home" label={t('nav.home')} icon={<IconHome size={22} />} active={section === 'home'} tourKey="home" />
+          <Tab to="/battles" label={t('nav.arena')} icon={<IconTrophy size={22} />} active={section === 'arena'} tourKey="arena" />
+          <div className="flex flex-1 items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              aria-label={t('nav.create')}
+              aria-haspopup="dialog"
+              data-tour="create"
+              className="flex h-11 w-11 items-center justify-center bg-paper text-paper-ink shadow-[0_6px_18px_-6px_rgba(0,0,0,0.8)] transition-colors hover:bg-bright"
+            >
+              <IconPlus size={22} />
+            </button>
+          </div>
+          <Tab
+            to="/discover"
+            label={t('nav.discover')}
+            icon={<IconSearch size={22} />}
+            active={section === 'discover'}
+            tourKey="discover"
           />
-        ) : null}
-        <Tab to="/battles" label={t('common.battles')} icon={<IconTrophy size={28} />} tourKey="battles" />
-        <Tab to="/feed" label={t('common.feed')} icon={<IconFeed size={28} />} tourKey="feed" />
-        <Tab to="/people" label={t('common.people')} icon={<IconPeople size={28} />} tourKey="people" />
-        <Tab to="/play" label={t('play.nav')} icon={<IconGamepad size={28} />} tourKey="play" />
-        <Tab to={profileTo} label={t('common.profile')} icon={<IconUser size={28} />} tourKey="profile" />
-      </div>
-    </nav>
+          <Tab to={profileTo} label={t('nav.profile')} icon={<IconUser size={22} />} active={section === 'profile'} tourKey="profile" />
+        </div>
+      </nav>
+      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} />
+    </>
   )
 }

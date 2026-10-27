@@ -4,7 +4,7 @@ import Nav from './Nav.jsx'
 import Footer from './Footer.jsx'
 import TransportBar from './TransportBar.jsx'
 import AppTopBar from './AppTopBar.jsx'
-import BottomTabBar from './BottomTabBar.jsx'
+import BottomTabBar, { TAB_BAR_H } from './BottomTabBar.jsx'
 import WelcomeTour from './Tour.jsx'
 import PasswordSetupPrompt from './PasswordSetupPrompt.jsx'
 import InstallBanner from './InstallBanner.jsx'
@@ -21,7 +21,9 @@ import { AnnouncementPopup } from './AnnouncementVideo.jsx'
 // Per-route <title> — unique titles help search results + the browser tab.
 const PAGE_TITLES = {
   '/': 'SMPL: Beat & Verse Battles · Same sample. Different soul.',
-  '/battles': 'Battles: SMPL',
+  '/home': 'Home: SMPL',
+  '/battles': 'Arena: SMPL',
+  '/discover': 'Discover: SMPL',
   '/feed': 'Feed: SMPL',
   '/people': 'People: SMPL',
   '/game': 'Guess the Sample: SMPL',
@@ -63,8 +65,8 @@ export default function Layout() {
     // inside a DM conversation the composer owns the bottom — hide the tab bar
     // (and transport) so only the typing bar shows. The inbox keeps the bar.
     const inThread = /^\/messages\/.+/.test(pathname)
-    // leave room for the floating tab bar (+ the transport when playing)
-    const pad = (track ? 64 : 0) + 86
+    // leave room for the tab bar (+ the mini player when something is loaded)
+    const pad = (track ? 64 : 0) + TAB_BAR_H + 16
     return (
       <div className="relative flex min-h-full flex-col">
         <Vignette />

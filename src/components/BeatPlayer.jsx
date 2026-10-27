@@ -4,6 +4,7 @@ import VerifiedBadge from './VerifiedBadge.jsx'
 import Waveform from './Waveform.jsx'
 import { Glyph } from './AudioPlayer.jsx'
 import { fmtTime } from '../utils/wave.js'
+import { useT } from '../i18n/index.jsx'
 
 // A single beat row. Shows the producer's @handle (linked to profile) when
 // revealed — from the voting phase on, so people vote for their favourite.
@@ -20,8 +21,13 @@ export default function BeatPlayer({
   seal,
   rank,
   rightSlot,
+  queue,
+  queueIndex,
 }) {
-  const { track, playing, elapsed, duration, toggle, playAt } = usePlayback()
+  const t = useT()
+  const { track, playing, elapsed, duration, toggle, playAt, playList } = usePlayback()
+  // inside a list, play starts that list as the queue (next/prev in the player)
+  const onPlay = () => (queue ? playList(queue, queueIndex) : toggle(meta))
   const isCurrent = track?.id === meta.id
   const isPlaying = isCurrent && playing
   const dur = (isCurrent && duration) || meta.duration
@@ -59,7 +65,7 @@ export default function BeatPlayer({
               `${noun} #${index}`
             )}
           </span>
-          {isWinner ? <span className="font-mono text-[10px] font-bold">★ WINNER</span> : null}
+          {isWinner ? <span className="font-mono text-[10px] font-bold uppercase">{t('beat.winner')}</span> : null}
           {isWinner && seal ? (
             <span className="shrink-0 border border-black/30 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.18em]">
               {seal}
@@ -69,7 +75,7 @@ export default function BeatPlayer({
         <div className="flex items-center gap-3">
           {showVotes ? (
             <span className="font-mono text-[11px] tnum">
-              {votes} {votes === 1 ? 'vote' : 'votes'}
+              {votes === 1 ? t('beat.voteOne') : t('beat.votes', { n: votes })}
             </span>
           ) : null}
           <span className="font-mono text-[10px] tnum opacity-70">
@@ -80,8 +86,8 @@ export default function BeatPlayer({
 
       <div className="flex items-stretch">
         <button
-          onClick={() => toggle(meta)}
-          aria-label={isPlaying ? 'pause' : 'play'}
+          onClick={onPlay}
+          aria-label={isPlaying ? t('common.pause') : t('common.play')}
           className={`flex min-h-[44px] w-12 shrink-0 touch-manipulation items-center justify-center border-r transition-colors ${
             isWinner
               ? 'border-black/25 hover:bg-accent-ink hover:text-accent'

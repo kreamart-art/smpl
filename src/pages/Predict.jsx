@@ -8,10 +8,8 @@ import { Btn } from '../components/ui.jsx'
 import { STATUS, countdownTarget } from '../data/status.js'
 import { shuffleSeeded } from '../utils/wave.js'
 import { kindCopy } from '../data/kind.js'
+import { playableAudio } from '../utils/audio.js'
 
-// Only drive the <audio> from real playable files (our uploads / direct links).
-const playableAudio = (u) =>
-  !!u && (u.startsWith('/api/uploads/') || /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i.test(u))
 
 // ---------- /predict : the list of live battles you can call ----------
 export function PredictHub() {
