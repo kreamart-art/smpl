@@ -146,7 +146,7 @@ export default function WaveformVideo({ audioUrl, producer = '', tag = '', battl
 
     // soft top bloom
     const bloom = g.createRadialGradient(W / 2, H * 0.06, 0, W / 2, H * 0.06, H * 0.55)
-    bloom.addColorStop(0, 'rgba(255,255,255,0.08)')
+    bloom.addColorStop(0, 'rgba(255,255,255,0.13)')
     bloom.addColorStop(1, 'rgba(255,255,255,0)')
     g.fillStyle = bloom
     g.fillRect(0, 0, W, H)

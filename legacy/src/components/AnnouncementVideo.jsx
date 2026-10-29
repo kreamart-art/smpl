@@ -106,10 +106,10 @@ export function AnnouncementPopup() {
       className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-sm"
       style={{ padding: 'max(env(safe-area-inset-top),16px) 14px max(env(safe-area-inset-bottom),16px)' }}
     >
-      <div className="relative mx-auto aspect-[1080/1920] max-h-[82dvh] w-full max-w-[400px] border border-white/15">
+      <div className="relative mx-auto aspect-[1080/1920] max-h-[82dvh] w-full max-w-[400px] border border-white/30">
         <AnnouncementVideo className="h-full w-full" />
         {left > 0 ? (
-          <div className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center border border-white/20 bg-black/70 font-mono text-[13px] text-white/70">
+          <div className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center border border-white/35 bg-black/70 font-mono text-[13px] text-white/70">
             {left}
           </div>
         ) : (

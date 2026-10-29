@@ -44,7 +44,7 @@ export default function Vinyl({ size = 168, spin = true, className = '' }) {
         {/* disc with depth */}
         <circle cx="100" cy="100" r="97" fill={`url(#${disc})`} stroke="#000" strokeWidth="1" />
         {/* edge bevel catching light */}
-        <circle cx="100" cy="100" r="96" fill="none" stroke="#ffffff" strokeOpacity="0.06" strokeWidth="0.6" />
+        <circle cx="100" cy="100" r="96" fill="none" stroke="#ffffff" strokeOpacity="0.14" strokeWidth="0.6" />
         {/* fine grooves */}
         {grooves.map((r, i) => (
           <circle
@@ -54,16 +54,16 @@ export default function Vinyl({ size = 168, spin = true, className = '' }) {
             r={r}
             fill="none"
             stroke="#ffffff"
-            strokeOpacity={i % 2 ? 0.035 : 0.075}
+            strokeOpacity={i % 2 ? 0.07 : 0.14}
             strokeWidth="0.5"
           />
         ))}
         {/* a couple of brighter rings for sheen */}
-        <circle cx="100" cy="100" r="74" fill="none" stroke="#ffffff" strokeOpacity="0.17" strokeWidth="0.5" />
-        <circle cx="100" cy="100" r="56" fill="none" stroke="#ffffff" strokeOpacity="0.13" strokeWidth="0.5" />
+        <circle cx="100" cy="100" r="74" fill="none" stroke="#ffffff" strokeOpacity="0.28" strokeWidth="0.5" />
+        <circle cx="100" cy="100" r="56" fill="none" stroke="#ffffff" strokeOpacity="0.22" strokeWidth="0.5" />
         {/* label */}
         <circle cx="100" cy="100" r="33" fill={`url(#${lab})`} stroke="rgba(0,0,0,0.42)" strokeWidth="1" />
-        <circle cx="100" cy="100" r="33" fill="none" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="0.5" />
+        <circle cx="100" cy="100" r="33" fill="none" stroke="#ffffff" strokeOpacity="0.42" strokeWidth="0.5" />
         <text
           x="100"
           y="86"
@@ -88,17 +88,17 @@ export default function Vinyl({ size = 168, spin = true, className = '' }) {
         </text>
         {/* spindle hole with depth */}
         <circle cx="100" cy="100" r="3.6" fill="#050403" stroke="rgba(0,0,0,0.6)" strokeWidth="0.5" />
-        <circle cx="100" cy="100" r="3.6" fill="none" stroke="#ffffff" strokeOpacity="0.25" strokeWidth="0.4" />
+        <circle cx="100" cy="100" r="3.6" fill="none" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="0.4" />
       </svg>
 
       {/* static specular reflection — a light streak that doesn't spin */}
       <svg viewBox="0 0 200 200" width={size} height={size} className="pointer-events-none absolute inset-0" aria-hidden="true">
         <defs>
           <linearGradient id={sheen} x1="0.1" y1="0" x2="0.85" y2="1">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
-            <stop offset="26%" stopColor="#ffffff" stopOpacity="0.03" />
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.3" />
+            <stop offset="26%" stopColor="#ffffff" stopOpacity="0.06" />
             <stop offset="55%" stopColor="#ffffff" stopOpacity="0" />
-            <stop offset="78%" stopColor="#ffffff" stopOpacity="0.06" />
+            <stop offset="78%" stopColor="#ffffff" stopOpacity="0.1" />
             <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
           </linearGradient>
         </defs>

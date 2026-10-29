@@ -25,13 +25,13 @@ export default function ShareCard({ cardRef, kind, data, format = 'story', logoS
       {/* light + grid + vignette */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.09), rgba(255,255,255,0) 55%)' }}
+        style={{ background: 'radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.14), rgba(255,255,255,0) 55%)' }}
       />
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
+            'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
           backgroundSize: '92px 92px',
         }}
       />
