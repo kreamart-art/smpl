@@ -10,8 +10,8 @@
 <style>
   :root{
     --bg:#000; --panel:#090908; --panel2:#121110;
-    --line:#646361; --line2:#7c7b78;
-    --ink:#f0eee9; --dim:#b7b1a6; --mut:#8c8c88; --faint:#83837f; --bright:#fff;
+    --line:#8a8986; --line2:#aaa9a5;
+    --ink:#f0eee9; --dim:#d6d4d0; --mut:#b6b4b1; --faint:#a4a39f; --bright:#fff;
     --accent:#e5341f; --accent2:#c72d1a; --accent-ink:#0a0a0a; --good:#3fb950;
     --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
     --sans:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
@@ -101,7 +101,7 @@
   .steps{display:flex; gap:4px; flex:1}
   .cell{flex:1; height:18px; border:1px solid #1b1916; cursor:pointer; background:#0b0a09;
     box-shadow:inset 0 1px 2px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.02);}
-  .cell:nth-child(4n+1){border-left-color:#646361}
+  .cell:nth-child(4n+1){border-left-color:#8a8986}
   .cell.on{background:linear-gradient(180deg,#ff6a52,var(--accent)); border-color:var(--accent2); box-shadow:0 0 7px rgba(229,52,31,.7), inset 0 1px 0 rgba(255,255,255,.25)}
   .lane[data-row="chop"] .cell.on{background:linear-gradient(180deg,#ffd9a0,#e0a060); border-color:#b87a32; box-shadow:0 0 7px rgba(224,160,96,.6), inset 0 1px 0 rgba(255,255,255,.3)}
   .cell.play{outline:1px solid var(--line2); outline-offset:-1px}

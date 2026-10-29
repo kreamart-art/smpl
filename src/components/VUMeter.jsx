@@ -37,7 +37,7 @@ export default function VUMeter({
     const C = {
       accent: tok('--color-accent', '#e5341f'),
       ink: tok('--color-ink', '#f0eee9'),
-      lineBright: tok('--color-line-bright', '#7c7b78'),
+      lineBright: tok('--color-line-bright', '#aaa9a5'),
     }
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const DEG = Math.PI / 180,

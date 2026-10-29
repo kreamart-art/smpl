@@ -71,8 +71,8 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
     if (!c) return
     const g = c.getContext('2d')
     const cream = '#f0eee9'
-    const muted = '#8d8678'
-    const faint = '#7c7b78'
+    const muted = '#b6b4b1'
+    const faint = '#aaa9a5'
     const accent = '#E5341F'
 
     // letter-spaced, centred text. mono by default; sans (Space Grotesk) for the
@@ -114,7 +114,7 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
     g.fillRect(0, 0, W, H)
 
     // thin inset frame
-    g.strokeStyle = '#646361'
+    g.strokeStyle = '#8a8986'
     g.lineWidth = 1
     g.strokeRect(40, 40, W - 80, H - 80)
 
@@ -134,7 +134,7 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
 
     // what this is
     trk(kind === 'VERSES' ? 'OPEN VERSE CHAMPION' : 'BEAT BATTLE WINNER', W / 2, 270, 26, accent, 9)
-    hline(250, W - 250, 312, '#646361')
+    hline(250, W - 250, 312, '#8a8986')
 
     // the winner — the hero
     trk('@' + alias, W / 2, 478, 88, cream, 0, { sans: true })
@@ -147,7 +147,7 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
     trk(`WON OUT OF ${flips} ${kind === 'VERSES' ? 'VERSES' : 'FLIPS'}`, W / 2, 886, 29, cream, 2)
 
     // footer
-    hline(190, W - 190, 938, '#646361')
+    hline(190, W - 190, 938, '#8a8986')
     trk('SAME SAMPLE. DIFFERENT SOUL.', W / 2, 988, 21, faint, 4)
     trk('USESMPL.COM', W / 2, 1030, 25, cream, 9)
 
@@ -177,7 +177,7 @@ export default function WinnerCard({ alias = '', battleTitle = '', flips = 0, se
     const x1 = W - 184
     const step = (x1 - x0) / (count - 1)
     const bw = 9
-    g.strokeStyle = '#646361'
+    g.strokeStyle = '#8a8986'
     g.lineWidth = 1
     g.beginPath()
     g.moveTo(x0 - 14, cy)

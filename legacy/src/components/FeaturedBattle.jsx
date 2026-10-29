@@ -88,7 +88,7 @@ export default function FeaturedBattle({ battle }) {
             bars={96}
             height={120}
             animated={live}
-            baseClass="bg-line-bright transition-colors duration-500 group-hover:bg-muted"
+            baseClass="bg-line-bright transition-colors duration-500 group-hover:bg-ink-dim"
           />
           <div className="font-mono text-[9px] uppercase tracking-[0.24em] text-faint">
             One {c.sourceLabel.toLowerCase()} · {battle.signups.length} {c.drops}

@@ -91,7 +91,7 @@ export default function SuggestInput({
                       onMouseEnter={() => setActive(idx)}
                       onClick={() => pick(item)}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-left font-mono text-[12px] transition-colors ${
-                        active === idx ? 'bg-ink text-bg' : 'text-ink hover:bg-line'
+                        active === idx ? 'bg-ink text-bg' : 'text-ink hover:bg-ink/10'
                       }`}
                     >
                       {item.icon || null}

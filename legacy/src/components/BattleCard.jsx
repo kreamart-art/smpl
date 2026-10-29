@@ -80,7 +80,7 @@ export default function BattleCard({ battle }) {
           bars={68}
           height={44}
           animated={live}
-          baseClass="bg-line-bright transition-colors duration-500 group-hover:bg-muted"
+          baseClass="bg-line-bright transition-colors duration-500 group-hover:bg-ink-dim"
         />
       </div>
 
