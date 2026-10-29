@@ -5,9 +5,10 @@ import { useI18n } from '../i18n/index.jsx'
 import Avatar from './Avatar.jsx'
 import VerifiedBadge from './VerifiedBadge.jsx'
 
-// The Guess-the-Sample LEAGUE: an all-time progression board. Players rank by
-// levels cleared, then total points (sum of best scores), then who got there
-// first. `refreshKey` re-fetches when it changes (e.g. after a level clears).
+// The Guess-the-Sample LEAGUE: this week's progression board (it rolls over
+// every Monday 00:00 UTC). Players rank by levels cleared this week, then total
+// points (sum of best scores), then who got there first. `refreshKey`
+// re-fetches when it changes (e.g. after a level clears).
 export default function LeagueBoard({ refreshKey = 0, limit = 20 }) {
   const { t } = useI18n()
   const [board, setBoard] = useState(null)
@@ -21,15 +22,28 @@ export default function LeagueBoard({ refreshKey = 0, limit = 20 }) {
   }, [load, refreshKey])
 
   if (!board) return null
-  const { top = [], me, total = 0 } = board
+  const { top = [], me, total = 0, endsAt } = board
+  // days until the league rolls over (Monday 00:00 UTC), counted like the old
+  // weekly board did. 1 or less reads as "resets today".
+  const daysLeft = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 86_400_000)) : null
+  const resetText =
+    daysLeft === null ? '' : daysLeft <= 1 ? t('game.resetsToday') : t('game.resetsIn', { n: daysLeft })
   const rows = top.slice(0, limit)
 
   return (
     <div>
       <div className="flex items-end justify-between border-b border-line pb-3">
         <div>
-          <h2 className="font-sans text-lg font-bold uppercase tracking-wide">{t('league.title')}</h2>
-          <div className="mt-1 font-mono text-[11px] text-muted">{t('league.sub')}</div>
+          <div className="flex items-center gap-2.5">
+            <h2 className="font-sans text-lg font-bold uppercase tracking-wide">{t('league.title')}</h2>
+            <span className="border border-line-bright px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-dim">
+              {t('game.thisWeek')}
+            </span>
+          </div>
+          <div className="mt-1 font-mono text-[11px] text-muted">
+            {t('league.sub')}
+            {resetText ? <span className="text-faint"> · {resetText}</span> : null}
+          </div>
         </div>
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint tnum">{total}</span>
       </div>

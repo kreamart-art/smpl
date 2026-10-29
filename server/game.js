@@ -921,16 +921,17 @@ function shuffle(a) {
   return r
 }
 
-// Monday-anchored UTC week bucket. The board resets every Monday 00:00 UTC so
-// the top is never frozen by whoever first hit a perfect 14 — everyone gets a
-// fresh shot each week and a reason to come back. `id` is the ISO date of that
-// week's Monday; `endsAt` is next Monday (when the board rolls over).
+// Monday-anchored UTC week bucket. The board and the league reset every Monday
+// 00:00 UTC so the top is never frozen by whoever first hit a perfect 14 —
+// everyone gets a fresh shot each week and a reason to come back. `id` is the
+// ISO date of that week's Monday and `startsAt` that Monday in ms; `endsAt` is
+// next Monday (when the board and the league roll over).
 function weekBounds(ts = Date.now()) {
   const d = new Date(ts)
   const dow = (d.getUTCDay() + 6) % 7 // Mon = 0 … Sun = 6
   const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dow)
   const nextMonday = monday + 7 * 24 * 60 * 60 * 1000
-  return { id: new Date(monday).toISOString().slice(0, 10), endsAt: nextMonday }
+  return { id: new Date(monday).toISOString().slice(0, 10), startsAt: monday, endsAt: nextMonday }
 }
 
 export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
@@ -961,8 +962,8 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_week_scores ON game_week_scores (weekId, best DESC, bestAt ASC)')
 
   // Per-level progression: one row per (user, level). A level is `cleared` once
-  // bestScore >= CLEAR, which unlocks the next. The LEAGUE ranks by levels
-  // cleared, then total points (sum of best scores), then who got there first.
+  // bestScore >= CLEAR, which unlocks the next. All time: this decides what a
+  // member may play. The LEAGUE ranks the weekly copy (game_week_progress).
   db.exec(`CREATE TABLE IF NOT EXISTS game_progress (
     userId TEXT,
     level INTEGER,
@@ -975,6 +976,39 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
     PRIMARY KEY (userId, level)
   )`)
   db.exec('CREATE INDEX IF NOT EXISTS idx_progress_user ON game_progress (userId)')
+
+  // Weekly league: the same per-level progression per (week, user, level). The
+  // LEAGUE ranks this week's rows only, so it starts empty every Monday 00:00 UTC
+  // and everyone climbs again. Unlocks keep coming from game_progress (all time):
+  // a new week never locks anyone out of levels they already reached.
+  const hadWeekProgress = !!db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'game_week_progress'")
+    .get()
+  db.exec(`CREATE TABLE IF NOT EXISTS game_week_progress (
+    weekId TEXT,
+    userId TEXT,
+    level INTEGER,
+    bestScore INTEGER NOT NULL DEFAULT 0,
+    bestStreak INTEGER NOT NULL DEFAULT 0,
+    cleared INTEGER NOT NULL DEFAULT 0,
+    clearedAt INTEGER,
+    plays INTEGER NOT NULL DEFAULT 0,
+    updatedAt INTEGER,
+    PRIMARY KEY (weekId, userId, level)
+  )`)
+  // First boot with the weekly league (it used to be all time): carry over the
+  // levels first cleared earlier this week. A first clear this week also means
+  // that level's best score was set this week, so those rows are exact; older
+  // clears count again once they're replayed.
+  if (!hadWeekProgress) {
+    const { id: weekId, startsAt } = weekBounds()
+    db.prepare(
+      `INSERT OR IGNORE INTO game_week_progress
+         (weekId, userId, level, bestScore, bestStreak, cleared, clearedAt, plays, updatedAt)
+       SELECT ?, userId, level, bestScore, bestStreak, 1, clearedAt, 1, updatedAt
+         FROM game_progress WHERE cleared = 1 AND clearedAt >= ?`,
+    ).run(weekId, startsAt)
+  }
 
   // highest level a member may play = 1 + their highest cleared level (capped).
   const unlockedThrough = (userId) => {
@@ -1139,37 +1173,43 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
     )
   }
 
+  // per-level progression against either progress table: keep the best score
+  // for the level; clearing it (>= CLEAR) is sticky and stamps the first clear
+  // time (the league tie-break).
+  function bumpProgress(table, keyCols, keyVals, score, bestStreak, now) {
+    const where = keyCols.map((c) => `${c} = ?`).join(' AND ')
+    const cleared = score >= CLEAR ? 1 : 0
+    const row = db.prepare(`SELECT * FROM ${table} WHERE ${where}`).get(...keyVals)
+    if (!row) {
+      const cols = [...keyCols, 'bestScore', 'bestStreak', 'cleared', 'clearedAt', 'plays', 'updatedAt']
+      const qs = cols.map(() => '?').join(',')
+      db.prepare(`INSERT INTO ${table} (${cols.join(',')}) VALUES (${qs})`).run(
+        ...keyVals, score, bestStreak, cleared, cleared ? now : null, 1, now,
+      )
+      return
+    }
+    db.prepare(
+      `UPDATE ${table} SET bestScore = ?, bestStreak = ?, cleared = ?, clearedAt = ?, plays = plays + 1, updatedAt = ?
+        WHERE ${where}`,
+    ).run(
+      Math.max(row.bestScore, score),
+      Math.max(row.bestStreak || 0, bestStreak),
+      row.cleared || cleared,
+      row.clearedAt || (cleared ? now : null),
+      now,
+      ...keyVals,
+    )
+  }
+
   function finalize(userId, level, score, bestStreak) {
     const now = Date.now()
     const { id: weekId } = weekBounds(now)
     // permanent all-time record (history) + the live weekly board
     bumpBest('game_scores', ['userId'], [userId], score, bestStreak, now)
     bumpBest('game_week_scores', ['weekId', 'userId'], [weekId, userId], score, bestStreak, now)
-
-    // per-level progression: keep the best score for this level; clearing it
-    // (>= CLEAR) is sticky and stamps the first clear time (league tie-break).
-    const cleared = score >= CLEAR ? 1 : 0
-    const row = db.prepare('SELECT * FROM game_progress WHERE userId = ? AND level = ?').get(userId, level)
-    if (!row) {
-      db.prepare(
-        `INSERT INTO game_progress (userId, level, bestScore, bestStreak, cleared, clearedAt, plays, updatedAt)
-         VALUES (?,?,?,?,?,?,?,?)`,
-      ).run(userId, level, score, bestStreak, cleared, cleared ? now : null, 1, now)
-    } else {
-      const nowCleared = row.cleared || cleared
-      db.prepare(
-        `UPDATE game_progress SET bestScore = ?, bestStreak = ?, cleared = ?, clearedAt = ?, plays = plays + 1, updatedAt = ?
-          WHERE userId = ? AND level = ?`,
-      ).run(
-        Math.max(row.bestScore, score),
-        Math.max(row.bestStreak || 0, bestStreak),
-        nowCleared,
-        row.clearedAt || (cleared ? now : null),
-        now,
-        userId,
-        level,
-      )
-    }
+    // all-time progression (decides what's unlocked) + this week's league climb
+    bumpProgress('game_progress', ['userId', 'level'], [userId, level], score, bestStreak, now)
+    bumpProgress('game_week_progress', ['weekId', 'userId', 'level'], [weekId, userId, level], score, bestStreak, now)
   }
 
   // ---- the board: THIS WEEK's top players + the caller's own standing ----
@@ -1231,8 +1271,11 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
     return ok(res, { levelCount: LEVEL_COUNT, clearMin: CLEAR, levelSize: LEVEL_SIZE, unlocked, authed: !!req.user, levels })
   })
 
-  // ---- the LEAGUE: ranked by levels cleared, then points, then who first ----
+  // ---- the LEAGUE: THIS WEEK's climb, ranked by levels cleared, then points,
+  // then who got there first. It rolls over with the week (Monday 00:00 UTC);
+  // earlier weeks stay in game_week_progress as history. ----
   app.get('/api/game/league', (req, res) => {
+    const { id: weekId, endsAt } = weekBounds()
     const rows = db
       .prepare(
         `SELECT g.userId,
@@ -1240,13 +1283,14 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
                 SUM(g.bestScore) AS points,
                 MAX(g.clearedAt) AS lastAt,
                 u.alias, u.avatar, u.role, u.verified
-           FROM game_progress g JOIN users u ON u.id = g.userId
+           FROM game_week_progress g JOIN users u ON u.id = g.userId
+          WHERE g.weekId = ?
           GROUP BY g.userId
          HAVING levels > 0
           ORDER BY levels DESC, points DESC, lastAt ASC, u.alias ASC
           LIMIT 20`,
       )
-      .all()
+      .all(weekId)
     const top = rows.map((r, i) => ({
       rank: i + 1,
       alias: r.alias,
@@ -1262,9 +1306,9 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
       const mine = db
         .prepare(
           `SELECT SUM(CASE WHEN cleared = 1 THEN 1 ELSE 0 END) AS levels, SUM(bestScore) AS points, MAX(clearedAt) AS lastAt
-             FROM game_progress WHERE userId = ?`,
+             FROM game_week_progress WHERE weekId = ? AND userId = ?`,
         )
-        .get(req.user.id)
+        .get(weekId, req.user.id)
       if (mine && mine.levels > 0) {
         const above = db
           .prepare(
@@ -1272,12 +1316,12 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
                SELECT userId,
                       SUM(CASE WHEN cleared = 1 THEN 1 ELSE 0 END) AS levels,
                       SUM(bestScore) AS points, MAX(clearedAt) AS lastAt
-                 FROM game_progress GROUP BY userId HAVING levels > 0
+                 FROM game_week_progress WHERE weekId = ? GROUP BY userId HAVING levels > 0
              ) t
               WHERE t.levels > ? OR (t.levels = ? AND t.points > ?)
                  OR (t.levels = ? AND t.points = ? AND t.lastAt < ?)`,
           )
-          .get(mine.levels, mine.levels, mine.points, mine.levels, mine.points, mine.lastAt).c
+          .get(weekId, mine.levels, mine.levels, mine.points, mine.levels, mine.points, mine.lastAt).c
         me = { rank: above + 1, levels: mine.levels, points: mine.points, alias: req.user.alias }
       }
     }
@@ -1285,10 +1329,10 @@ export function mountGame(app, { db, ok, fail, rateLimit, langOf }) {
       .prepare(
         `SELECT COUNT(*) AS c FROM (
            SELECT userId, SUM(CASE WHEN cleared = 1 THEN 1 ELSE 0 END) AS levels
-             FROM game_progress GROUP BY userId HAVING levels > 0
+             FROM game_week_progress WHERE weekId = ? GROUP BY userId HAVING levels > 0
          ) t`,
       )
-      .get().c
-    return ok(res, { top, me, total, levelCount: LEVEL_COUNT, authed: !!req.user })
+      .get(weekId).c
+    return ok(res, { top, me, total, levelCount: LEVEL_COUNT, authed: !!req.user, weekId, endsAt })
   })
 }
